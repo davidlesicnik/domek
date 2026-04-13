@@ -30,6 +30,15 @@ This project uses current Next.js App Router conventions. Before changing framew
 - Keep Prisma schema changes in `prisma/schema.prisma`.
 - Do not hardcode provider-specific OIDC secrets or household-specific domains in application code.
 
+## Product And Visual Direction
+
+- Domek should feel like a calm home-planning board, not a corporate admin dashboard.
+- Use the current dashboard as the visual baseline: slim top chrome, serif display headings, centered content, compact status pills, understated cards, and small feature markers.
+- Product copy should sound household-native and practical. Prefer phrases like "Home board", "On the table", and "Everything in one place" over generic SaaS wording like "Overview", "Roadmap", or "productivity hub".
+- Keep the UI responsive and touch-friendly on mobile; horizontal nav scrolling is acceptable for the first slice.
+- Avoid one-note palettes and avoid dominant purple, beige/cream/sand/tan, dark blue/slate, or brown/orange themes. If using warm neutrals, balance them with muted green, rose, yellow, or other non-corporate accents.
+- Keep border radii at 8px or less and avoid decorative orbs, bokeh blobs, nested cards, and marketing-style hero sections.
+
 ## Commands
 
 ```bash
