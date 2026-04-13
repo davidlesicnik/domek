@@ -205,6 +205,50 @@ function groupEventsByDate(events: CalendarEventView[]) {
   }, {});
 }
 
+function CalendarEventCard({
+  calendarEvent,
+  className = "rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4",
+}: Readonly<{
+  calendarEvent: CalendarEventView;
+  className?: string;
+}>) {
+  return (
+    <article className={className}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cx(
+            "text-[11px] font-bold uppercase tracking-normal",
+            categoryStyles[calendarEvent.category].text,
+          )}
+        >
+          {categoryStyles[calendarEvent.category].label}
+        </span>
+        <span className="text-[11px] font-semibold text-[#777f7a]">
+          {eventTimeLabel(calendarEvent.time)}
+        </span>
+      </div>
+      <h3 className="mt-2 text-base font-semibold text-[#202321]">
+        {calendarEvent.name}
+      </h3>
+      {calendarEvent.people.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {calendarEvent.people.map((person) => (
+            <span
+              className={cx(
+                "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
+                getPersonPillStyle(person),
+              )}
+              key={person}
+            >
+              {person}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
   const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
   const [visibleMonth, setVisibleMonth] = useState<MonthCursor>(() => ({
@@ -569,42 +613,11 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
 
                   <div className="grid divide-y divide-[#e3ded6]">
                     {day.events.map((calendarEvent) => (
-                      <article
+                      <CalendarEventCard
+                        calendarEvent={calendarEvent}
                         className="p-4"
                         key={calendarEvent.id}
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={cx(
-                              "text-[11px] font-bold uppercase tracking-normal",
-                              categoryStyles[calendarEvent.category].text,
-                            )}
-                          >
-                            {categoryStyles[calendarEvent.category].label}
-                          </span>
-                          <span className="text-[11px] font-semibold text-[#777f7a]">
-                            {eventTimeLabel(calendarEvent.time)}
-                          </span>
-                        </div>
-                        <h3 className="mt-2 text-base font-semibold text-[#202321]">
-                          {calendarEvent.name}
-                        </h3>
-                        {calendarEvent.people.length > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {calendarEvent.people.map((person) => (
-                              <span
-                                className={cx(
-                                  "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
-                                  getPersonPillStyle(person),
-                                )}
-                                key={person}
-                              >
-                                {person}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                      </article>
+                      />
                     ))}
                   </div>
                 </section>
@@ -733,42 +746,10 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
           <div className="mt-6 grid gap-3">
             {selectedEvents.length > 0 ? (
               selectedEvents.map((calendarEvent) => (
-                <article
-                  className="rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4"
+                <CalendarEventCard
+                  calendarEvent={calendarEvent}
                   key={calendarEvent.id}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={cx(
-                        "text-[11px] font-bold uppercase tracking-normal",
-                        categoryStyles[calendarEvent.category].text,
-                      )}
-                    >
-                      {categoryStyles[calendarEvent.category].label}
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#777f7a]">
-                      {eventTimeLabel(calendarEvent.time)}
-                    </span>
-                  </div>
-                  <h3 className="mt-2 text-base font-semibold text-[#202321]">
-                    {calendarEvent.name}
-                  </h3>
-                  {calendarEvent.people.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {calendarEvent.people.map((person) => (
-                        <span
-                          className={cx(
-                            "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
-                            getPersonPillStyle(person),
-                          )}
-                          key={person}
-                        >
-                          {person}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
+                />
               ))
             ) : (
               <div className="rounded-md border border-dashed border-[#d8d2c8] bg-[#fbfaf6] p-5">
