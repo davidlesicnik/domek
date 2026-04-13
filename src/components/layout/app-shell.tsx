@@ -10,29 +10,37 @@ const navigation = ["Dashboard", "Calendar", "To-do", "Notes", "Chores", "Expens
 
 export function AppShell({ authConfigured, userName, children }: AppShellProps) {
   return (
-    <div className="min-h-dvh bg-[#f4f5f6] text-[#161616]">
-      <header className="border-b border-[#d7dce2] bg-[#ffffff]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+    <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
+      <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-medium text-[#0f766e]">Domek</p>
-            <h1 className="text-2xl font-semibold tracking-normal text-[#161616] sm:text-3xl">
-              Household planner
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+              Domek
+            </p>
+            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+              Home board
             </h1>
           </div>
-          <div className="flex flex-col gap-2 text-sm text-[#4b5563] sm:flex-row sm:items-center sm:justify-between">
-            <span>{userName ? `Signed in as ${userName}` : "Local setup mode"}</span>
+          <div className="flex flex-wrap gap-2 text-sm text-[#5d635f] sm:items-center sm:justify-end">
+            <span className="inline-flex h-8 items-center rounded-full bg-[#ebe7df] px-4 text-xs font-semibold">
+              {userName ? `Signed in as ${userName}` : "Local setup"}
+            </span>
             <a
-              className="inline-flex h-10 items-center justify-center rounded-md border border-[#b8c1cc] px-4 font-medium text-[#161616] transition hover:bg-[#eef2f7]"
+              className="inline-flex h-8 items-center justify-center rounded-full border border-[#b9cdbc] bg-[#eef7ef] px-5 text-xs font-semibold text-[#526c56] transition hover:bg-[#e1f0e3]"
               href={authConfigured ? "/api/auth/signout" : "#setup"}
             >
-              {authConfigured ? "Sign out" : "Configure OIDC"}
+              {authConfigured ? "Sign out" : "Set up sign-in"}
             </a>
           </div>
         </div>
-        <nav className="mx-auto flex w-full max-w-7xl gap-2 overflow-x-auto px-4 pb-4 sm:px-6 lg:px-8">
+        <nav className="mx-auto flex w-full max-w-[1280px] gap-7 overflow-x-auto px-4 sm:px-6">
           {navigation.map((item) => (
             <a
-              className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#eef2f7]"
+              className={`whitespace-nowrap border-b-2 px-0 py-4 text-sm font-medium transition ${
+                item === "Dashboard"
+                  ? "border-[#c85b45] text-[#b94e3f]"
+                  : "border-transparent text-[#4d5451] hover:border-[#cbd9ce] hover:text-[#171a18]"
+              }`}
               href={item === "Dashboard" ? "/" : `#${item.toLowerCase()}`}
               key={item}
             >
@@ -42,14 +50,15 @@ export function AppShell({ authConfigured, userName, children }: AppShellProps) 
         </nav>
       </header>
       {!authConfigured ? (
-        <div className="border-b border-[#fecdd3] bg-[#fff1f2] px-4 py-3 text-sm text-[#9f1239]">
-          <div className="mx-auto max-w-7xl">
-            OIDC is not configured yet. Add the Auth.js and OIDC environment values from
-            `.env.example` before using this outside local setup.
+        <div className="border-b border-[#e7d9c6] bg-[#fbf5e8] px-4 py-3 text-sm text-[#a6543c]">
+          <div className="mx-auto max-w-[1280px]">
+            OIDC not configured yet. Add the Auth.js and OIDC values from{" "}
+            <code className="rounded bg-[#eee2cf] px-2 py-0.5 text-xs">.env.example</code>{" "}
+            before using outside local setup.
           </div>
         </div>
       ) : null}
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-[1120px] px-4 py-8 sm:px-6 sm:py-10">
         {children}
       </main>
     </div>

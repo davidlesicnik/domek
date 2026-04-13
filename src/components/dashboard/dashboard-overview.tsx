@@ -2,69 +2,102 @@ import { FeatureCard } from "@/components/dashboard/feature-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 
 const stats = [
-  { label: "Today", value: "3", detail: "planned household items" },
-  { label: "Open tasks", value: "8", detail: "waiting for an owner" },
-  { label: "Monthly spend", value: "0 EUR", detail: "expense tracker placeholder" },
+  {
+    accent: "sage",
+    label: "Today",
+    value: "3",
+    detail: "things to keep an eye on",
+  },
+  {
+    accent: "rose",
+    label: "To sort",
+    value: "8",
+    detail: "jobs waiting for a person",
+  },
+  {
+    accent: "sun",
+    label: "This month",
+    value: "0 EUR",
+    detail: "spending starts here",
+  },
 ];
 
 const features = [
   {
+    accent: "sage",
     id: "calendar",
+    marker: "CAL",
     title: "Shared calendar",
-    summary: "Plan household events, appointments, and reminders in one shared view.",
-    status: "Roadmap",
+    summary:
+      "Birthdays, bins, school days, guests, and all the little dates that keep the house moving.",
+    status: "Soon",
   },
   {
+    accent: "rose",
     id: "to-do",
+    marker: "DO",
     title: "Shared to-do list",
-    summary: "Track tasks with ownership, due dates, and completion history.",
-    status: "Roadmap",
+    summary: "A place for the small jobs that otherwise live on scraps of paper and kitchen counters.",
+    status: "Soon",
   },
   {
+    accent: "sun",
     id: "notes",
+    marker: "NOTE",
     title: "Shared notes",
-    summary: "Keep household notes, links, and recurring reference details together.",
-    status: "Roadmap",
+    summary: "Wi-Fi notes, shopping ideas, pet care, trip lists, and anything worth finding again.",
+    status: "Soon",
   },
   {
+    accent: "moss",
     id: "chores",
+    marker: "JOB",
     title: "Chore list",
-    summary: "Rotate recurring chores and keep accountability visible.",
-    status: "Roadmap",
+    summary: "Recurring work without the weekly detective game of who did what last time.",
+    status: "Soon",
   },
   {
+    accent: "rose",
     id: "expenses",
+    marker: "EUR",
     title: "Expense tracker",
-    summary: "Record household spending and review simple monthly totals.",
-    status: "Roadmap",
+    summary: "Simple totals for shared costs, repairs, supplies, and the odd surprise bill.",
+    status: "Soon",
   },
 ];
 
 export function DashboardOverview() {
   return (
-    <div className="grid gap-6">
-      <section className="grid gap-4 rounded-md border border-[#d7dce2] bg-[#ffffff] p-4 sm:p-6">
-        <div className="max-w-3xl">
-          <p className="text-sm font-medium text-[#0f766e]">Overview</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-normal text-[#161616] sm:text-4xl">
-            Home, today
+    <div className="grid gap-8">
+      <section className="mx-auto grid w-full max-w-[940px] gap-8 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:p-10">
+        <div className="max-w-2xl">
+          <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            On the table
+          </p>
+          <h2 className="mt-3 font-serif text-4xl font-semibold tracking-normal text-[#171a18] sm:text-5xl">
+            What needs attention?
           </h2>
-          <p className="mt-3 text-base leading-7 text-[#4b5563]">
-            A shared starting point for the household. The first slice keeps the
-            structure ready for real data, authentication, and feature-by-feature growth.
+          <p className="mt-4 max-w-xl text-base leading-7 text-[#686e6a]">
+            One shared place for the calendar, the list on the fridge, the chore rhythm,
+            and the money bits no one wants to chase later.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           {stats.map((stat) => (
             <StatCard key={stat.label} {...stat} />
           ))}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {features.map((feature) => (
-          <FeatureCard key={feature.id} {...feature} />
-        ))}
+      <section>
+        <p className="mb-4 font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+          Everything in one place
+        </p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {features.map((feature) => (
+            <FeatureCard key={feature.id} {...feature} />
+          ))}
+        </div>
       </section>
     </div>
   );
