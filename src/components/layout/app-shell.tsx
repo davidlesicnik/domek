@@ -44,7 +44,7 @@ export function AppShell({ authConfigured, userName, children }: AppShellProps) 
           </div>
         </div>
       ) : null}
-      <main className="mx-auto w-full max-w-[1120px] px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-[1120px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
         {children}
       </main>
     </div>

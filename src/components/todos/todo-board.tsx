@@ -1,5 +1,6 @@
 "use client";
 
+import type { SVGProps } from "react";
 import { useState } from "react";
 
 import type { TodoItemView, TodoListView } from "@/lib/todo-lists";
@@ -7,6 +8,24 @@ import type { TodoItemView, TodoListView } from "@/lib/todo-lists";
 type TodoBoardProps = Readonly<{
   initialLists: TodoListView[];
 }>;
+
+type TodoIconProps = SVGProps<SVGSVGElement>;
+
+function ChevronLeftIcon(props: TodoIconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
 
 export function TodoBoard({ initialLists }: TodoBoardProps) {
   const [lists, setLists] = useState<TodoListView[]>(initialLists);
@@ -19,6 +38,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null);
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
+  const [isMobileListOpen, setIsMobileListOpen] = useState(false);
 
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
@@ -42,6 +62,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
       const { list } = (await res.json()) as { list: TodoListView };
       setLists((prev) => [...prev, list]);
       setSelectedListId(list.id);
+      setIsMobileListOpen(true);
     } catch {
       setNewListName(name);
     } finally {
@@ -57,6 +78,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
     if (selectedListId === listId) {
       setSelectedListId(remaining[0]?.id ?? null);
+      setIsMobileListOpen(false);
     }
 
     try {
@@ -163,12 +185,23 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
     }
   }
 
+  function openList(listId: string) {
+    setSelectedListId(listId);
+    setConfirmDeleteListId(null);
+    setConfirmDeleteItemId(null);
+    setIsMobileListOpen(true);
+  }
+
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-4 py-8 sm:px-6">
-      <h1 className="mb-6 font-serif text-2xl font-semibold text-[#171a18]">To-do</h1>
+    <div className="mx-auto w-full max-w-[1120px]">
+      <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">To-do</h1>
       <div className="grid items-start gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         {/* Left pane: list of todo lists */}
-        <aside className="flex flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8]">
+        <aside
+          className={`flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+            isMobileListOpen ? "hidden sm:flex" : "flex"
+          }`}
+        >
           <div className="border-b border-[#e0dcd4] px-4 py-3">
             <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#6a5b52]">
               Lists
@@ -188,7 +221,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
               return (
                 <li
-                  className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 transition ${
+                  className={`group flex items-start border-b border-[#e0dcd4] last:border-b-0 transition sm:items-center ${
                     isSelected
                       ? "border-l-2 border-l-[#6e9274] bg-[#edf3ee]"
                       : "border-l-2 border-l-transparent hover:bg-[#f4f1ea]"
@@ -196,10 +229,10 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                   key={list.id}
                 >
                   <button
-                    className={`flex flex-1 items-center gap-2 px-3 py-3 text-left text-sm ${
+                    className={`flex min-w-0 flex-1 items-center gap-2 px-3 py-3 text-left text-sm ${
                       isSelected ? "font-medium text-[#426148]" : "text-[#4d5451]"
                     }`}
-                    onClick={() => setSelectedListId(list.id)}
+                    onClick={() => openList(list.id)}
                     type="button"
                   >
                     <span className="flex-1 truncate">{list.name}</span>
@@ -216,17 +249,17 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                     )}
                   </button>
                   {confirmDeleteListId === list.id ? (
-                    <div className="mr-2 flex shrink-0 items-center gap-1">
+                    <div className="mr-2 flex shrink-0 flex-wrap items-center justify-end gap-1 py-2">
                       <span className="text-xs text-[#5d635f]">Delete?</span>
                       <button
-                        className="rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                         onClick={() => handleDeleteList(list.id)}
                         type="button"
                       >
                         Yes
                       </button>
                       <button
-                        className="rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                         onClick={() => setConfirmDeleteListId(null)}
                         type="button"
                       >
@@ -236,7 +269,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                   ) : (
                     <button
                       aria-label={`Delete ${list.name}`}
-                      className="mr-2 shrink-0 rounded p-1.5 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c]"
+                      className="mr-2 mt-1.5 shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0"
                       onClick={() => setConfirmDeleteListId(list.id)}
                       type="button"
                     >
@@ -250,11 +283,11 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
           {/* New list form */}
           <form
-            className="flex gap-2 border-t border-[#e0dcd4] px-4 py-3"
+            className="grid gap-2 border-t border-[#e0dcd4] px-4 py-3 sm:flex"
             onSubmit={handleCreateList}
           >
             <input
-              className="h-9 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
+              className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9"
               disabled={isSavingList}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="New list…"
@@ -262,7 +295,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
               value={newListName}
             />
             <button
-              className="h-9 shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
+              className="h-10 shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
               disabled={isSavingList || !newListName.trim()}
               type="submit"
             >
@@ -272,51 +305,63 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
         </aside>
 
         {/* Right pane: items for selected list */}
-        <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8]">
+        <div
+          className={`min-w-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+            isMobileListOpen ? "block" : "hidden sm:block"
+          }`}
+        >
           {selectedList ? (
             <>
-              <div className="border-b border-[#e0dcd4] px-5 py-3">
-                <h2 className="font-serif text-lg font-semibold text-[#171a18]">
+              <div className="flex items-center gap-3 border-b border-[#e0dcd4] px-4 py-3 sm:px-5">
+                <button
+                  aria-label="Back to lists"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                  onClick={() => setIsMobileListOpen(false)}
+                  type="button"
+                >
+                  <ChevronLeftIcon aria-hidden className="h-5 w-5" />
+                </button>
+                <h2 className="min-w-0 break-words font-serif text-lg font-semibold text-[#171a18]">
                   {selectedList.name}
                 </h2>
               </div>
 
               <ul className="flex-1 overflow-y-auto">
                 {selectedList.items.length === 0 && (
-                  <li className="m-5 rounded-md border border-dashed border-[#d8d2c8] px-5 py-8 text-center text-sm text-[#9a9e9b]">
+                  <li className="m-4 rounded-md border border-dashed border-[#d8d2c8] px-4 py-8 text-center text-sm text-[#9a9e9b] sm:m-5 sm:px-5">
                     Nothing here yet. Add an item below.
                   </li>
                 )}
                 {selectedList.items.map((item) => (
                   <li
-                    className="group flex items-center gap-3 border-b border-[#f0ede6] px-5 py-3 last:border-b-0"
+                    className="group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 last:border-b-0 sm:items-center sm:px-5"
                     key={item.id}
                   >
                     <input
                       checked={item.done}
-                      className="mt-px h-4 w-4 shrink-0 cursor-pointer accent-[#6e9274]"
+                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
                       onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
                       type="checkbox"
                     />
                     <span
-                      className={`flex-1 text-sm leading-snug ${
+                      className={`min-w-0 flex-1 break-words text-sm leading-snug ${
                         item.done ? "text-[#9a9e9b] line-through" : "text-[#2d3230]"
                       }`}
                     >
                       {item.text}
                     </span>
                     {confirmDeleteItemId === item.id ? (
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
                         <span className="text-xs text-[#5d635f]">Delete?</span>
                         <button
-                          className="rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                          className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                           onClick={() => handleDeleteItem(selectedList.id, item.id)}
                           type="button"
                         >
                           Yes
                         </button>
                         <button
-                          className="rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                          className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                           onClick={() => setConfirmDeleteItemId(null)}
                           type="button"
                         >
@@ -326,7 +371,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                     ) : (
                       <button
                         aria-label="Delete item"
-                        className="shrink-0 rounded p-1.5 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c]"
+                        className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
                         onClick={() => setConfirmDeleteItemId(item.id)}
                         type="button"
                       >
@@ -339,11 +384,11 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
               {/* Add item form */}
               <form
-                className="flex gap-2 border-t border-[#e0dcd4] p-4"
+                className="grid gap-2 border-t border-[#e0dcd4] p-4 sm:flex"
                 onSubmit={handleCreateItem}
               >
                 <input
-                  className="h-9 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
+                  className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9"
                   disabled={isSavingItem}
                   onChange={(e) => setNewItemText(e.target.value)}
                   placeholder="Add an item…"
@@ -351,7 +396,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                   value={newItemText}
                 />
                 <button
-                  className="h-9 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
+                  className="h-10 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
                   disabled={isSavingItem || !newItemText.trim()}
                   type="submit"
                 >

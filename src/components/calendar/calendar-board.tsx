@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { FormEvent, SVGProps } from "react";
 import { useMemo, useState } from "react";
 
 import {
@@ -22,6 +22,7 @@ type MonthCursor = Readonly<{
 }>;
 
 type ComposerMode = "dialog" | "panel";
+type CalendarIconProps = SVGProps<SVGSVGElement>;
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const personPillStyles = [
@@ -86,6 +87,38 @@ const weekdayFormatter = new Intl.DateTimeFormat("en", {
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+function ChevronLeftIcon(props: CalendarIconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon(props: CalendarIconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
 }
 
 function parseDateKey(dateKey: string) {
@@ -191,8 +224,29 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const monthDays = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
+  const currentMonthDays = useMemo(
+    () => monthDays.filter((date) => date.getUTCMonth() === visibleMonth.monthIndex),
+    [monthDays, visibleMonth.monthIndex],
+  );
+  const agendaDays = useMemo(
+    () =>
+      currentMonthDays
+        .map((date) => {
+          const dateKey = toDateKey(date);
+
+          return {
+            date,
+            dateKey,
+            events: eventsByDate[dateKey] ?? [],
+          };
+        })
+        .filter((day) => day.events.length > 0),
+    [currentMonthDays, eventsByDate],
+  );
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey]);
   const selectedEvents = eventsByDate[selectedDateKey] ?? [];
+  const isCurrentMonthVisible =
+    visibleMonth.monthIndex === today.getUTCMonth() && visibleMonth.year === today.getUTCFullYear();
 
   function goToMonth(offset: number) {
     const nextMonth = moveMonth(visibleMonth, offset);
@@ -209,9 +263,19 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
     setSelectedDateKey(todayKey);
   }
 
+  function selectDate(dateKey: string) {
+    const date = parseDateKey(dateKey);
+
+    setSelectedDateKey(dateKey);
+    setVisibleMonth({
+      monthIndex: date.getUTCMonth(),
+      year: date.getUTCFullYear(),
+    });
+  }
+
   function openComposer(dateKey: string, mode: ComposerMode) {
     if (mode === "panel") {
-      setSelectedDateKey(dateKey);
+      selectDate(dateKey);
     }
 
     setComposerDateKey(dateKey);
@@ -371,19 +435,19 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
           <span className="text-xs font-medium text-[#777f7a]">Separate names with commas.</span>
         </label>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {formError ? (
             <p className="w-full text-sm font-semibold text-[#a6543c]">{formError}</p>
           ) : null}
           <button
-            className="inline-flex h-10 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
             disabled={isSaving}
             type="submit"
           >
             {isSaving ? "Saving" : "Save event"}
           </button>
           <button
-            className="inline-flex h-10 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
             disabled={isSaving}
             onClick={closeComposer}
             type="button"
@@ -397,38 +461,40 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
 
   return (
     <section className="grid gap-5">
-      <div className="flex flex-col gap-4 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_12px_28px_rgba(31,35,30,0.07)] lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-5">
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_12px_28px_rgba(31,35,30,0.07)] sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <button
               aria-label="Previous month"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-xl font-semibold leading-none text-[#45614c] transition hover:bg-[#e2f0e4]"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
               onClick={() => goToMonth(-1)}
               type="button"
             >
-              <span aria-hidden>&larr;</span>
+              <ChevronLeftIcon aria-hidden className="h-5 w-5" />
             </button>
-            <div className="min-w-48 px-0 text-center">
-              <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+            <div className="min-w-0 flex-1 px-0 text-center sm:min-w-48">
+              <p className="font-serif text-xl font-semibold tracking-normal text-[#171a18] sm:text-2xl">
                 {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
               </p>
             </div>
             <button
               aria-label="Next month"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-xl font-semibold leading-none text-[#45614c] transition hover:bg-[#e2f0e4]"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
               onClick={() => goToMonth(1)}
               type="button"
             >
-              <span aria-hidden>&rarr;</span>
+              <ChevronRightIcon aria-hidden className="h-5 w-5" />
             </button>
           </div>
-          <button
-            className="inline-flex h-9 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-4 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5]"
-            onClick={goToToday}
-            type="button"
-          >
-            Today
-          </button>
+          {!isCurrentMonthVisible ? (
+            <button
+              className="hidden h-9 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-4 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:inline-flex"
+              onClick={goToToday}
+              type="button"
+            >
+              Today
+            </button>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -437,7 +503,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
 
             return (
               <span
-                className="inline-flex h-8 items-center gap-2 rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-3 text-xs font-semibold text-[#555d58]"
+                className="hidden h-8 items-center gap-2 rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-3 text-xs font-semibold text-[#555d58] sm:inline-flex"
                 key={category}
               >
                 <span aria-hidden className={cx("h-2.5 w-2.5 rounded-full", styles.dot)} />
@@ -447,7 +513,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
           })}
           <button
             aria-label="Add event"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#b85f6b] bg-[#f3dfe2] px-4 text-sm font-bold leading-none text-[#843541] transition hover:bg-[#eccfd4]"
+            className="hidden h-11 items-center justify-center gap-2 rounded-md border border-[#b85f6b] bg-[#f3dfe2] px-4 text-sm font-bold leading-none text-[#843541] transition hover:bg-[#eccfd4] sm:inline-flex"
             onClick={() => openComposer(selectedDateKey, "dialog")}
             type="button"
           >
@@ -460,7 +526,103 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
+        <div className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_12px_28px_rgba(31,35,30,0.07)] sm:hidden">
+          <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            Agenda
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <h2 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+              {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
+            </h2>
+            {!isCurrentMonthVisible ? (
+              <button
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5]"
+                onClick={goToToday}
+                type="button"
+              >
+                Today
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-5 grid gap-5">
+            {agendaDays.length > 0 ? (
+              agendaDays.map((day) => (
+                <section className="grid gap-0 rounded-md border border-[#e3ded6] bg-[#fbfaf6]" key={day.dateKey}>
+                  <button
+                    className="flex items-center justify-between gap-3 rounded-t-md border-b border-[#e3ded6] px-3 py-3 text-left transition hover:bg-[#f4f1ea]"
+                    onClick={() => selectDate(day.dateKey)}
+                    type="button"
+                  >
+                    <span>
+                      <span className="block font-serif text-lg font-semibold tracking-normal text-[#202321]">
+                        {fullDateFormatter.format(day.date)}
+                      </span>
+                      <span className="block text-xs font-semibold text-[#777f7a]">
+                        {weekdayFormatter.format(day.date)}
+                      </span>
+                    </span>
+                    <span className="rounded-full border border-[#c9d7cc] bg-[#eef6ef] px-2 py-1 text-[10px] font-bold text-[#45614c]">
+                      {day.events.length}
+                    </span>
+                  </button>
+
+                  <div className="grid divide-y divide-[#e3ded6]">
+                    {day.events.map((calendarEvent) => (
+                      <article
+                        className="p-4"
+                        key={calendarEvent.id}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cx(
+                              "text-[11px] font-bold uppercase tracking-normal",
+                              categoryStyles[calendarEvent.category].text,
+                            )}
+                          >
+                            {categoryStyles[calendarEvent.category].label}
+                          </span>
+                          <span className="text-[11px] font-semibold text-[#777f7a]">
+                            {eventTimeLabel(calendarEvent.time)}
+                          </span>
+                        </div>
+                        <h3 className="mt-2 text-base font-semibold text-[#202321]">
+                          {calendarEvent.name}
+                        </h3>
+                        {calendarEvent.people.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {calendarEvent.people.map((person) => (
+                              <span
+                                className={cx(
+                                  "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
+                                  getPersonPillStyle(person),
+                                )}
+                                key={person}
+                              >
+                                {person}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))
+            ) : (
+              <div className="rounded-md border border-dashed border-[#d8d2c8] bg-[#fbfaf6] p-5">
+                <p className="font-serif text-xl font-semibold tracking-normal text-[#202321]">
+                  Nothing on the table.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#68706b]">
+                  A quiet month for the house. Add a note when something comes up.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="hidden overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)] sm:block">
           <div className="grid grid-cols-7 border-b border-[#e6e0d7] bg-[#f7f4ec]">
             {weekdays.map((weekday) => (
               <div
@@ -498,7 +660,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                   <button
                     aria-label={`Select ${fullDateFormatter.format(date)}`}
                     className="absolute inset-0 z-10 cursor-pointer"
-                    onClick={() => setSelectedDateKey(dateKey)}
+                    onClick={() => selectDate(dateKey)}
                     type="button"
                   />
                   <div className="pointer-events-none relative z-20 flex min-h-32 flex-col gap-2">
@@ -514,7 +676,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                               ? "text-[#202321]"
                               : "text-[#929995]",
                         )}
-                        onClick={() => setSelectedDateKey(dateKey)}
+                        onClick={() => selectDate(dateKey)}
                         type="button"
                       >
                         {date.getUTCDate()}
@@ -534,7 +696,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                             categoryStyles[calendarEvent.category].chip,
                           )}
                           key={calendarEvent.id}
-                          onClick={() => setSelectedDateKey(dateKey)}
+                          onClick={() => selectDate(dateKey)}
                           type="button"
                         >
                           {calendarEvent.name}
@@ -543,7 +705,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                       {hiddenEventCount > 0 ? (
                         <button
                           className="pointer-events-auto text-left text-[11px] font-semibold text-[#68706b] underline decoration-[#b7c8ba] underline-offset-2"
-                          onClick={() => setSelectedDateKey(dateKey)}
+                          onClick={() => selectDate(dateKey)}
                           type="button"
                         >
                           +{hiddenEventCount} more
@@ -557,11 +719,11 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
           </div>
         </div>
 
-        <aside className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
+        <aside className="hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_12px_28px_rgba(31,35,30,0.07)] sm:block sm:p-5">
           <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
             {weekdayFormatter.format(selectedDate)}
           </p>
-          <h2 className="mt-2 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
+          <h2 className="mt-2 font-serif text-2xl font-semibold tracking-normal text-[#171a18] sm:text-3xl">
             {fullDateFormatter.format(selectedDate)}
           </h2>
           <p className="mt-2 text-sm font-medium text-[#858c87]">
@@ -637,14 +799,23 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
         </aside>
       </div>
 
+      <button
+        aria-label="Add event"
+        className="fixed bottom-[calc(5.5rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[#b85f6b] bg-[#f3dfe2] text-3xl font-bold leading-none text-[#843541] shadow-[0_14px_34px_rgba(31,35,30,0.22)] transition hover:bg-[#eccfd4] sm:hidden"
+        onClick={() => openComposer(selectedDateKey, "dialog")}
+        type="button"
+      >
+        <span aria-hidden>+</span>
+      </button>
+
       {composerMode === "dialog" ? (
         <div
           aria-labelledby="calendar-event-dialog-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#202321]/45 p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
           role="dialog"
         >
-          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)]">
+          <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
