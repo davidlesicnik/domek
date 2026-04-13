@@ -17,6 +17,8 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
   const [newItemText, setNewItemText] = useState("");
   const [isSavingList, setIsSavingList] = useState(false);
   const [isSavingItem, setIsSavingItem] = useState(false);
+  const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null);
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
 
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
@@ -48,6 +50,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
   }
 
   async function handleDeleteList(listId: string) {
+    setConfirmDeleteListId(null);
     const prev = lists;
     const remaining = lists.filter((l) => l.id !== listId);
     setLists(remaining);
@@ -137,6 +140,7 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
   }
 
   async function handleDeleteItem(listId: string, itemId: string) {
+    setConfirmDeleteItemId(null);
     const prevItem = lists.find((l) => l.id === listId)?.items.find((i) => i.id === itemId);
 
     setLists((prev) =>
@@ -161,8 +165,8 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
   return (
     <div className="mx-auto w-full max-w-[1120px] px-4 py-8 sm:px-6">
-      <h1 className="mb-6 font-serif text-2xl font-semibold text-[#171a18]">To-do lists</h1>
-      <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <h1 className="mb-6 font-serif text-2xl font-semibold text-[#171a18]">To-do</h1>
+      <div className="grid items-start gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         {/* Left pane: list of todo lists */}
         <aside className="flex flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8]">
           <div className="border-b border-[#e0dcd4] px-4 py-3">
@@ -184,16 +188,16 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
               return (
                 <li
-                  className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 ${
-                    isSelected ? "border-l-2 border-l-[#6e9274]" : "border-l-2 border-l-transparent"
+                  className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 transition ${
+                    isSelected
+                      ? "border-l-2 border-l-[#6e9274] bg-[#edf3ee]"
+                      : "border-l-2 border-l-transparent hover:bg-[#f4f1ea]"
                   }`}
                   key={list.id}
                 >
                   <button
-                    className={`flex flex-1 items-center gap-2 px-3 py-3 text-left text-sm transition ${
-                      isSelected
-                        ? "bg-[#edf3ee] font-medium text-[#426148]"
-                        : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                    className={`flex flex-1 items-center gap-2 px-3 py-3 text-left text-sm ${
+                      isSelected ? "font-medium text-[#426148]" : "text-[#4d5451]"
                     }`}
                     onClick={() => setSelectedListId(list.id)}
                     type="button"
@@ -211,14 +215,34 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                       </span>
                     )}
                   </button>
-                  <button
-                    aria-label={`Delete ${list.name}`}
-                    className="mr-2 shrink-0 rounded px-1.5 py-1 text-sm text-[#b0aca5] opacity-0 transition hover:text-[#a6543c] group-hover:opacity-100"
-                    onClick={() => handleDeleteList(list.id)}
-                    type="button"
-                  >
-                    ×
-                  </button>
+                  {confirmDeleteListId === list.id ? (
+                    <div className="mr-2 flex shrink-0 items-center gap-1">
+                      <span className="text-xs text-[#5d635f]">Delete?</span>
+                      <button
+                        className="rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                        onClick={() => handleDeleteList(list.id)}
+                        type="button"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        className="rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                        onClick={() => setConfirmDeleteListId(null)}
+                        type="button"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      aria-label={`Delete ${list.name}`}
+                      className="mr-2 shrink-0 rounded p-1.5 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c]"
+                      onClick={() => setConfirmDeleteListId(list.id)}
+                      type="button"
+                    >
+                      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                    </button>
+                  )}
                 </li>
               );
             })}
@@ -226,11 +250,11 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
 
           {/* New list form */}
           <form
-            className="flex gap-2 border-t border-[#e0dcd4] p-3"
+            className="flex gap-2 border-t border-[#e0dcd4] px-4 py-3"
             onSubmit={handleCreateList}
           >
             <input
-              className="h-9 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
+              className="h-9 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
               disabled={isSavingList}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="New list…"
@@ -238,12 +262,12 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
               value={newListName}
             />
             <button
-              className="h-9 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
+              className="h-9 shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
               disabled={isSavingList || !newListName.trim()}
               type="submit"
             >
               Add
-            </button>
+</button>
           </form>
         </aside>
 
@@ -281,14 +305,34 @@ export function TodoBoard({ initialLists }: TodoBoardProps) {
                     >
                       {item.text}
                     </span>
-                    <button
-                      aria-label="Delete item"
-                      className="shrink-0 rounded px-1.5 py-0.5 text-sm text-[#b0aca5] opacity-0 transition hover:text-[#a6543c] group-hover:opacity-100"
-                      onClick={() => handleDeleteItem(selectedList.id, item.id)}
-                      type="button"
-                    >
-                      ×
-                    </button>
+                    {confirmDeleteItemId === item.id ? (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className="text-xs text-[#5d635f]">Delete?</span>
+                        <button
+                          className="rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                          onClick={() => handleDeleteItem(selectedList.id, item.id)}
+                          type="button"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          className="rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                          onClick={() => setConfirmDeleteItemId(null)}
+                          type="button"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        aria-label="Delete item"
+                        className="shrink-0 rounded p-1.5 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c]"
+                        onClick={() => setConfirmDeleteItemId(item.id)}
+                        type="button"
+                      >
+                        <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
