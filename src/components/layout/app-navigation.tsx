@@ -7,6 +7,7 @@ const navigation = [
   { href: "/", label: "Dashboard" },
   { href: "/calendar", label: "Calendar" },
   { href: "/todos", label: "To-do" },
+  { href: "/#shopping", label: "Shopping" },
   { href: "/#notes", label: "Notes" },
   { href: "/#chores", label: "Chores" },
   { href: "/#expenses", label: "Expenses" },
