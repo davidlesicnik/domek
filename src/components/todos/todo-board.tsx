@@ -1,0 +1,328 @@
+"use client";
+
+import { useState } from "react";
+
+import type { TodoItemView, TodoListView } from "@/lib/todo-lists";
+
+type TodoBoardProps = Readonly<{
+  initialLists: TodoListView[];
+}>;
+
+export function TodoBoard({ initialLists }: TodoBoardProps) {
+  const [lists, setLists] = useState<TodoListView[]>(initialLists);
+  const [selectedListId, setSelectedListId] = useState<string | null>(
+    initialLists[0]?.id ?? null,
+  );
+  const [newListName, setNewListName] = useState("");
+  const [newItemText, setNewItemText] = useState("");
+  const [isSavingList, setIsSavingList] = useState(false);
+  const [isSavingItem, setIsSavingItem] = useState(false);
+
+  const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
+
+  async function handleCreateList(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newListName.trim();
+    if (!name || isSavingList) return;
+
+    setIsSavingList(true);
+    setNewListName("");
+
+    try {
+      const res = await fetch("/api/todos/lists", {
+        body: JSON.stringify({ name }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Failed to create list");
+
+      const { list } = (await res.json()) as { list: TodoListView };
+      setLists((prev) => [...prev, list]);
+      setSelectedListId(list.id);
+    } catch {
+      setNewListName(name);
+    } finally {
+      setIsSavingList(false);
+    }
+  }
+
+  async function handleDeleteList(listId: string) {
+    const prev = lists;
+    const remaining = lists.filter((l) => l.id !== listId);
+    setLists(remaining);
+
+    if (selectedListId === listId) {
+      setSelectedListId(remaining[0]?.id ?? null);
+    }
+
+    try {
+      const res = await fetch(`/api/todos/lists/${listId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete list");
+    } catch {
+      setLists(prev);
+      setSelectedListId(listId);
+    }
+  }
+
+  async function handleCreateItem(e: React.FormEvent) {
+    e.preventDefault();
+    const text = newItemText.trim();
+    if (!text || !selectedList || isSavingItem) return;
+
+    setIsSavingItem(true);
+    setNewItemText("");
+
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticItem: TodoItemView = { done: false, id: optimisticId, text };
+
+    setLists((prev) =>
+      prev.map((l) =>
+        l.id === selectedList.id ? { ...l, items: [...l.items, optimisticItem] } : l,
+      ),
+    );
+
+    try {
+      const res = await fetch(`/api/todos/lists/${selectedList.id}/items`, {
+        body: JSON.stringify({ text }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Failed to create item");
+
+      const { item } = (await res.json()) as { item: TodoItemView };
+      setLists((prev) =>
+        prev.map((l) =>
+          l.id === selectedList.id
+            ? { ...l, items: l.items.map((i) => (i.id === optimisticId ? item : i)) }
+            : l,
+        ),
+      );
+    } catch {
+      setNewItemText(text);
+      setLists((prev) =>
+        prev.map((l) =>
+          l.id === selectedList.id
+            ? { ...l, items: l.items.filter((i) => i.id !== optimisticId) }
+            : l,
+        ),
+      );
+    } finally {
+      setIsSavingItem(false);
+    }
+  }
+
+  async function handleToggleItem(listId: string, itemId: string, currentDone: boolean) {
+    setLists((prev) =>
+      prev.map((l) =>
+        l.id === listId
+          ? { ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, done: !currentDone } : i)) }
+          : l,
+      ),
+    );
+
+    try {
+      const res = await fetch(`/api/todos/items/${itemId}`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Failed to toggle item");
+    } catch {
+      setLists((prev) =>
+        prev.map((l) =>
+          l.id === listId
+            ? { ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, done: currentDone } : i)) }
+            : l,
+        ),
+      );
+    }
+  }
+
+  async function handleDeleteItem(listId: string, itemId: string) {
+    const prevItem = lists.find((l) => l.id === listId)?.items.find((i) => i.id === itemId);
+
+    setLists((prev) =>
+      prev.map((l) =>
+        l.id === listId ? { ...l, items: l.items.filter((i) => i.id !== itemId) } : l,
+      ),
+    );
+
+    try {
+      const res = await fetch(`/api/todos/items/${itemId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete item");
+    } catch {
+      if (prevItem) {
+        setLists((prev) =>
+          prev.map((l) =>
+            l.id === listId ? { ...l, items: [...l.items, prevItem] } : l,
+          ),
+        );
+      }
+    }
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1120px] px-4 py-8 sm:px-6">
+      <h1 className="mb-6 font-serif text-2xl font-semibold text-[#171a18]">To-do lists</h1>
+      <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+        {/* Left pane: list of todo lists */}
+        <aside className="flex flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8]">
+          <div className="border-b border-[#e0dcd4] px-4 py-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#6a5b52]">
+              Lists
+            </h2>
+          </div>
+
+          <ul className="flex-1 overflow-y-auto">
+            {lists.length === 0 && (
+              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">
+                No lists yet.
+              </li>
+            )}
+            {lists.map((list) => {
+              const doneCount = list.items.filter((i) => i.done).length;
+              const totalCount = list.items.length;
+              const isSelected = list.id === selectedListId;
+
+              return (
+                <li
+                  className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 ${
+                    isSelected ? "border-l-2 border-l-[#6e9274]" : "border-l-2 border-l-transparent"
+                  }`}
+                  key={list.id}
+                >
+                  <button
+                    className={`flex flex-1 items-center gap-2 px-3 py-3 text-left text-sm transition ${
+                      isSelected
+                        ? "bg-[#edf3ee] font-medium text-[#426148]"
+                        : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                    }`}
+                    onClick={() => setSelectedListId(list.id)}
+                    type="button"
+                  >
+                    <span className="flex-1 truncate">{list.name}</span>
+                    {totalCount > 0 && (
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                          isSelected
+                            ? "bg-[#c8deca] text-[#426148]"
+                            : "bg-[#ebe8de] text-[#6a5b52]"
+                        }`}
+                      >
+                        {doneCount}/{totalCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    aria-label={`Delete ${list.name}`}
+                    className="mr-2 shrink-0 rounded px-1.5 py-1 text-sm text-[#b0aca5] opacity-0 transition hover:text-[#a6543c] group-hover:opacity-100"
+                    onClick={() => handleDeleteList(list.id)}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* New list form */}
+          <form
+            className="flex gap-2 border-t border-[#e0dcd4] p-3"
+            onSubmit={handleCreateList}
+          >
+            <input
+              className="h-9 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
+              disabled={isSavingList}
+              onChange={(e) => setNewListName(e.target.value)}
+              placeholder="New list…"
+              type="text"
+              value={newListName}
+            />
+            <button
+              className="h-9 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
+              disabled={isSavingList || !newListName.trim()}
+              type="submit"
+            >
+              Add
+            </button>
+          </form>
+        </aside>
+
+        {/* Right pane: items for selected list */}
+        <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8]">
+          {selectedList ? (
+            <>
+              <div className="border-b border-[#e0dcd4] px-5 py-3">
+                <h2 className="font-serif text-lg font-semibold text-[#171a18]">
+                  {selectedList.name}
+                </h2>
+              </div>
+
+              <ul className="flex-1 overflow-y-auto">
+                {selectedList.items.length === 0 && (
+                  <li className="m-5 rounded-md border border-dashed border-[#d8d2c8] px-5 py-8 text-center text-sm text-[#9a9e9b]">
+                    Nothing here yet. Add an item below.
+                  </li>
+                )}
+                {selectedList.items.map((item) => (
+                  <li
+                    className="group flex items-center gap-3 border-b border-[#f0ede6] px-5 py-3 last:border-b-0"
+                    key={item.id}
+                  >
+                    <input
+                      checked={item.done}
+                      className="mt-px h-4 w-4 shrink-0 cursor-pointer accent-[#6e9274]"
+                      onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
+                      type="checkbox"
+                    />
+                    <span
+                      className={`flex-1 text-sm leading-snug ${
+                        item.done ? "text-[#9a9e9b] line-through" : "text-[#2d3230]"
+                      }`}
+                    >
+                      {item.text}
+                    </span>
+                    <button
+                      aria-label="Delete item"
+                      className="shrink-0 rounded px-1.5 py-0.5 text-sm text-[#b0aca5] opacity-0 transition hover:text-[#a6543c] group-hover:opacity-100"
+                      onClick={() => handleDeleteItem(selectedList.id, item.id)}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Add item form */}
+              <form
+                className="flex gap-2 border-t border-[#e0dcd4] p-4"
+                onSubmit={handleCreateItem}
+              >
+                <input
+                  className="h-9 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none"
+                  disabled={isSavingItem}
+                  onChange={(e) => setNewItemText(e.target.value)}
+                  placeholder="Add an item…"
+                  type="text"
+                  value={newItemText}
+                />
+                <button
+                  className="h-9 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50"
+                  disabled={isSavingItem || !newItemText.trim()}
+                  type="submit"
+                >
+                  Add
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
+              <p className="font-serif text-lg text-[#5d635f]">Nothing on the board yet.</p>
+              <p className="mt-1 text-sm text-[#9a9e9b]">Create a list on the left to get started.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

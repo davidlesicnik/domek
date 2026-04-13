@@ -29,6 +29,7 @@ model User {
   sessions       Session[]
   memberships    HouseholdMember[]
   calendarEvents CalendarEvent[]
+  todoLists      TodoList[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -38,6 +39,7 @@ model Household {
   name           String
   members        HouseholdMember[]
   calendarEvents CalendarEvent[]
+  todoLists      TodoList[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -73,6 +75,33 @@ model CalendarEvent {
   @@index([dateKey])
   @@index([householdId, dateKey])
   @@index([createdByUserId, dateKey])
+}
+
+model TodoList {
+  id              String     @id @default(cuid())
+  name            String     @db.VarChar(120)
+  householdId     String?
+  createdByUserId String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  items           TodoItem[]
+  household       Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy       User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([createdByUserId])
+}
+
+model TodoItem {
+  id         String   @id @default(cuid())
+  text       String   @db.VarChar(500)
+  done       Boolean  @default(false)
+  todoListId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  list       TodoList @relation(fields: [todoListId], references: [id], onDelete: Cascade)
+
+  @@index([todoListId])
 }
 
 model Account {
