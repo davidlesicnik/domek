@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 
+import { AppNavigation } from "@/components/layout/app-navigation";
+
 type AppShellProps = Readonly<{
   authConfigured: boolean;
   userName: string | null;
   children: ReactNode;
 }>;
-
-const navigation = ["Dashboard", "Calendar", "To-do", "Notes", "Chores", "Expenses"];
 
 export function AppShell({ authConfigured, userName, children }: AppShellProps) {
   return (
@@ -33,21 +33,7 @@ export function AppShell({ authConfigured, userName, children }: AppShellProps) 
             </a>
           </div>
         </div>
-        <nav className="mx-auto flex w-full max-w-[1280px] gap-7 overflow-x-auto px-4 sm:px-6">
-          {navigation.map((item) => (
-            <a
-              className={`whitespace-nowrap border-b-2 px-0 py-4 text-sm font-medium transition ${
-                item === "Dashboard"
-                  ? "border-[#c85b45] text-[#b94e3f]"
-                  : "border-transparent text-[#4d5451] hover:border-[#cbd9ce] hover:text-[#171a18]"
-              }`}
-              href={item === "Dashboard" ? "/" : `#${item.toLowerCase()}`}
-              key={item}
-            >
-              {item}
-            </a>
-          ))}
-        </nav>
+        <AppNavigation />
       </header>
       {!authConfigured ? (
         <div className="border-b border-[#e7d9c6] bg-[#fbf5e8] px-4 py-3 text-sm text-[#a6543c]">

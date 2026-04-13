@@ -25,7 +25,9 @@ Domek is a container-first household planner for shared household coordination. 
 ```bash
 npm install
 cp .env.example .env
+npm run db:up
 npm run db:generate
+npm run db:migrate
 npm run dev
 ```
 
@@ -33,12 +35,15 @@ Open `http://localhost:3000`.
 
 OIDC is optional for local scaffold work. When the Auth.js and OIDC variables are missing, the dashboard runs in local setup mode. Configure the auth variables before using the app outside local development.
 
+For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. The Docker web service uses `CONTAINER_DATABASE_URL` so it can reach the same database through the Compose-internal `postgres` hostname.
+
 ## Environment
 
 Required for a real deployment:
 
 ```bash
-DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
+DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
+CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
 AUTH_SECRET=""
 AUTH_URL="https://domek.example.com"
 OIDC_ISSUER="https://login.example.com"

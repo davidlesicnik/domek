@@ -12,25 +12,34 @@ enum HouseholdRole {
   MEMBER
 }
 
+enum CalendarEventCategory {
+  CARE
+  GUESTS
+  HOME
+  SCHOOL
+}
+
 model User {
-  id            String              @id @default(cuid())
-  name          String?
-  email         String?             @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  memberships   HouseholdMember[]
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id             String            @id @default(cuid())
+  name           String?
+  email          String?           @unique
+  emailVerified  DateTime?
+  image          String?
+  accounts       Account[]
+  sessions       Session[]
+  memberships    HouseholdMember[]
+  calendarEvents CalendarEvent[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 }
 
 model Household {
-  id        String            @id @default(cuid())
-  name      String
-  members   HouseholdMember[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id             String            @id @default(cuid())
+  name           String
+  members        HouseholdMember[]
+  calendarEvents CalendarEvent[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 }
 
 model HouseholdMember {
@@ -44,6 +53,26 @@ model HouseholdMember {
 
   @@unique([userId, householdId])
   @@index([householdId])
+}
+
+model CalendarEvent {
+  id              String                @id @default(cuid())
+  dateKey         String                @db.VarChar(10)
+  name            String                @db.VarChar(200)
+  category        CalendarEventCategory
+  allDay          Boolean               @default(true)
+  time            String?               @db.VarChar(5)
+  people          String[]              @default([])
+  householdId     String?
+  createdByUserId String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  household       Household?            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy       User?                 @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([dateKey])
+  @@index([householdId, dateKey])
+  @@index([createdByUserId, dateKey])
 }
 
 model Account {

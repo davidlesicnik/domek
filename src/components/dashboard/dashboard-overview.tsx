@@ -1,26 +1,4 @@
 import { FeatureCard } from "@/components/dashboard/feature-card";
-import { StatCard } from "@/components/dashboard/stat-card";
-
-const stats = [
-  {
-    accent: "sage",
-    label: "Today",
-    value: "3",
-    detail: "things to keep an eye on",
-  },
-  {
-    accent: "rose",
-    label: "To sort",
-    value: "8",
-    detail: "jobs waiting for a person",
-  },
-  {
-    accent: "sun",
-    label: "This month",
-    value: "0 EUR",
-    detail: "spending starts here",
-  },
-];
 
 const features = [
   {
@@ -30,7 +8,7 @@ const features = [
     title: "Shared calendar",
     summary:
       "Birthdays, bins, school days, guests, and all the little dates that keep the house moving.",
-    status: "Soon",
+    status: "Open",
   },
   {
     accent: "rose",
@@ -81,11 +59,6 @@ export function DashboardOverview() {
             One shared place for the calendar, the list on the fridge, the chore rhythm,
             and the money bits no one wants to chase later.
           </p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {stats.map((stat) => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
         </div>
       </section>
 

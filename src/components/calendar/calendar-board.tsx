@@ -1,0 +1,676 @@
+"use client";
+
+import type { FormEvent } from "react";
+import { useMemo, useState } from "react";
+
+import {
+  calendarCategoryOptions,
+  type CalendarCategory,
+  type CalendarEventInput,
+  type CalendarEventTime,
+  type CalendarEventView,
+} from "@/lib/calendar-types";
+
+type CalendarBoardProps = Readonly<{
+  initialEvents: CalendarEventView[];
+  todayKey: string;
+}>;
+
+type MonthCursor = Readonly<{
+  year: number;
+  monthIndex: number;
+}>;
+
+type ComposerMode = "dialog" | "panel";
+
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const personPillStyles = [
+  "border-[#d7aaa5] bg-[#f7ecea] text-[#7b4640]",
+  "border-[#b7c8ba] bg-[#edf3ee] text-[#426148]",
+  "border-[#d9c77b] bg-[#faf3d9] text-[#62551b]",
+  "border-[#c7cbdf] bg-[#f0f1f8] text-[#4c5376]",
+];
+
+const categoryStyles: Record<
+  CalendarCategory,
+  Readonly<{
+    label: string;
+    dot: string;
+    chip: string;
+    text: string;
+  }>
+> = {
+  care: {
+    label: "Care",
+    dot: "bg-[#6e9274]",
+    chip: "border-[#b7c8ba] bg-[#e8f1e9] text-[#385d42]",
+    text: "text-[#385d42]",
+  },
+  guests: {
+    label: "Guests",
+    dot: "bg-[#8b91b5]",
+    chip: "border-[#c7cbdf] bg-[#eceef7] text-[#4e557b]",
+    text: "text-[#4e557b]",
+  },
+  home: {
+    label: "Home",
+    dot: "bg-[#c7ad32]",
+    chip: "border-[#ddd084] bg-[#faf2c9] text-[#67591d]",
+    text: "text-[#67591d]",
+  },
+  school: {
+    label: "School",
+    dot: "bg-[#c77d78]",
+    chip: "border-[#dcb0ac] bg-[#f5e5e3] text-[#804a45]",
+    text: "text-[#804a45]",
+  },
+};
+
+const monthFormatter = new Intl.DateTimeFormat("en", {
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
+
+const fullDateFormatter = new Intl.DateTimeFormat("en", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
+
+const weekdayFormatter = new Intl.DateTimeFormat("en", {
+  timeZone: "UTC",
+  weekday: "long",
+});
+
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function parseDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function toDateKey(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function createDate(year: number, monthIndex: number, day: number) {
+  return new Date(Date.UTC(year, monthIndex, day));
+}
+
+function addDays(date: Date, days: number) {
+  return createDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days);
+}
+
+function moveMonth(cursor: MonthCursor, offset: number): MonthCursor {
+  const nextMonth = createDate(cursor.year, cursor.monthIndex + offset, 1);
+
+  return {
+    year: nextMonth.getUTCFullYear(),
+    monthIndex: nextMonth.getUTCMonth(),
+  };
+}
+
+function getIsoWeek(date: Date) {
+  const weekDate = createDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const day = weekDate.getUTCDay() || 7;
+  weekDate.setUTCDate(weekDate.getUTCDate() + 4 - day);
+
+  const yearStart = createDate(weekDate.getUTCFullYear(), 0, 1);
+  const daysSinceYearStart = (weekDate.getTime() - yearStart.getTime()) / 86_400_000 + 1;
+
+  return Math.ceil(daysSinceYearStart / 7);
+}
+
+function getMonthDays({ year, monthIndex }: MonthCursor) {
+  const firstOfMonth = createDate(year, monthIndex, 1);
+  const firstWeekdayOffset = (firstOfMonth.getUTCDay() + 6) % 7;
+  const daysInMonth = createDate(year, monthIndex + 1, 0).getUTCDate();
+  const cellCount = Math.max(35, Math.ceil((firstWeekdayOffset + daysInMonth) / 7) * 7);
+  const firstCell = addDays(firstOfMonth, -firstWeekdayOffset);
+
+  return Array.from({ length: cellCount }, (_, index) => addDays(firstCell, index));
+}
+
+function eventTimeLabel(time: CalendarEventTime) {
+  return time.kind === "all-day" ? "All day" : time.value;
+}
+
+function getPersonPillStyle(name: string) {
+  const hash = Array.from(name).reduce((total, character) => {
+    return total + character.charCodeAt(0);
+  }, 0);
+
+  return personPillStyles[hash % personPillStyles.length];
+}
+
+function splitPeople(peopleText: string) {
+  return Array.from(
+    new Set(
+      peopleText
+        .split(",")
+        .map((person) => person.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function groupEventsByDate(events: CalendarEventView[]) {
+  return events.reduce<Record<string, CalendarEventView[]>>((eventsByDate, calendarEvent) => {
+    return {
+      ...eventsByDate,
+      [calendarEvent.dateKey]: [...(eventsByDate[calendarEvent.dateKey] ?? []), calendarEvent],
+    };
+  }, {});
+}
+
+export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
+  const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
+  const [visibleMonth, setVisibleMonth] = useState<MonthCursor>(() => ({
+    monthIndex: today.getUTCMonth(),
+    year: today.getUTCFullYear(),
+  }));
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
+  const [eventsByDate, setEventsByDate] = useState(() => groupEventsByDate(initialEvents));
+  const [composerMode, setComposerMode] = useState<ComposerMode | null>(null);
+  const [composerDateKey, setComposerDateKey] = useState(todayKey);
+  const [eventName, setEventName] = useState("");
+  const [eventCategory, setEventCategory] = useState<CalendarCategory>("home");
+  const [isAllDay, setIsAllDay] = useState(true);
+  const [eventTime, setEventTime] = useState("");
+  const [peopleText, setPeopleText] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const monthDays = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
+  const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey]);
+  const selectedEvents = eventsByDate[selectedDateKey] ?? [];
+
+  function goToMonth(offset: number) {
+    const nextMonth = moveMonth(visibleMonth, offset);
+
+    setVisibleMonth(nextMonth);
+    setSelectedDateKey(toDateKey(createDate(nextMonth.year, nextMonth.monthIndex, 1)));
+  }
+
+  function goToToday() {
+    setVisibleMonth({
+      monthIndex: today.getUTCMonth(),
+      year: today.getUTCFullYear(),
+    });
+    setSelectedDateKey(todayKey);
+  }
+
+  function openComposer(dateKey: string, mode: ComposerMode) {
+    if (mode === "panel") {
+      setSelectedDateKey(dateKey);
+    }
+
+    setComposerDateKey(dateKey);
+    setFormError(null);
+    setComposerMode(mode);
+  }
+
+  function resetComposer() {
+    setEventName("");
+    setEventCategory("home");
+    setIsAllDay(true);
+    setEventTime("");
+    setPeopleText("");
+    setFormError(null);
+  }
+
+  function closeComposer() {
+    resetComposer();
+    setComposerMode(null);
+  }
+
+  async function addSubmittedEvent(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+
+    const trimmedEventName = eventName.trim();
+
+    if (!trimmedEventName) {
+      return;
+    }
+
+    if (!isAllDay && !eventTime) {
+      setFormError("Add a time or keep the event all day.");
+
+      return;
+    }
+
+    const input: CalendarEventInput = {
+      category: eventCategory,
+      dateKey: composerDateKey,
+      name: trimmedEventName,
+      people: splitPeople(peopleText),
+      time: isAllDay ? { kind: "all-day" } : { kind: "time", value: eventTime },
+    };
+
+    setFormError(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/calendar/events", {
+        body: JSON.stringify(input),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        setFormError("The event was not saved.");
+
+        return;
+      }
+
+      const { event: savedEvent } = (await response.json()) as { event: CalendarEventView };
+
+      setEventsByDate((currentEvents) => ({
+        ...currentEvents,
+        [savedEvent.dateKey]: [...(currentEvents[savedEvent.dateKey] ?? []), savedEvent],
+      }));
+      setSelectedDateKey(savedEvent.dateKey);
+      const savedEventDate = parseDateKey(savedEvent.dateKey);
+      setVisibleMonth({
+        monthIndex: savedEventDate.getUTCMonth(),
+        year: savedEventDate.getUTCFullYear(),
+      });
+      closeComposer();
+    } catch {
+      setFormError("The event was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function renderEventForm(showDateField: boolean, className: string) {
+    return (
+      <form className={className} onSubmit={addSubmittedEvent}>
+        {showDateField ? (
+          <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+            Date
+            <input
+              className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+              onChange={(changeEvent) => setComposerDateKey(changeEvent.target.value)}
+              required
+              type="date"
+              value={composerDateKey}
+            />
+          </label>
+        ) : null}
+
+        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+          Name
+          <input
+            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+            onChange={(changeEvent) => setEventName(changeEvent.target.value)}
+            required
+            type="text"
+            value={eventName}
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+          Category
+          <select
+            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+            onChange={(changeEvent) => setEventCategory(changeEvent.target.value as CalendarCategory)}
+            value={eventCategory}
+          >
+            {calendarCategoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {categoryStyles[category].label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="grid gap-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
+            <input
+              checked={isAllDay}
+              className="h-4 w-4 accent-[#6e9274]"
+              onChange={(changeEvent) => setIsAllDay(changeEvent.target.checked)}
+              type="checkbox"
+            />
+            All day
+          </label>
+          {!isAllDay ? (
+            <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+              Time
+              <input
+                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+                onChange={(changeEvent) => setEventTime(changeEvent.target.value)}
+                required
+                type="time"
+                value={eventTime}
+              />
+            </label>
+          ) : null}
+        </div>
+
+        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+          Who is involved?
+          <input
+            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+            onChange={(changeEvent) => setPeopleText(changeEvent.target.value)}
+            type="text"
+            value={peopleText}
+          />
+          <span className="text-xs font-medium text-[#777f7a]">Separate names with commas.</span>
+        </label>
+
+        <div className="flex flex-wrap gap-2">
+          {formError ? (
+            <p className="w-full text-sm font-semibold text-[#a6543c]">{formError}</p>
+          ) : null}
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSaving}
+            type="submit"
+          >
+            {isSaving ? "Saving" : "Save event"}
+          </button>
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSaving}
+            onClick={closeComposer}
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <section className="grid gap-5">
+      <div className="flex flex-col gap-4 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_12px_28px_rgba(31,35,30,0.07)] lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Previous month"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-xl font-semibold leading-none text-[#45614c] transition hover:bg-[#e2f0e4]"
+              onClick={() => goToMonth(-1)}
+              type="button"
+            >
+              <span aria-hidden>&larr;</span>
+            </button>
+            <div className="min-w-48 px-0 text-center">
+              <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
+              </p>
+            </div>
+            <button
+              aria-label="Next month"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-xl font-semibold leading-none text-[#45614c] transition hover:bg-[#e2f0e4]"
+              onClick={() => goToMonth(1)}
+              type="button"
+            >
+              <span aria-hidden>&rarr;</span>
+            </button>
+          </div>
+          <button
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-4 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5]"
+            onClick={goToToday}
+            type="button"
+          >
+            Today
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {calendarCategoryOptions.map((category) => {
+            const styles = categoryStyles[category];
+
+            return (
+              <span
+                className="inline-flex h-8 items-center gap-2 rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-3 text-xs font-semibold text-[#555d58]"
+                key={category}
+              >
+                <span aria-hidden className={cx("h-2.5 w-2.5 rounded-full", styles.dot)} />
+                {styles.label}
+              </span>
+            );
+          })}
+          <button
+            aria-label="Add event"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#b85f6b] bg-[#f3dfe2] px-4 text-sm font-bold leading-none text-[#843541] transition hover:bg-[#eccfd4]"
+            onClick={() => openComposer(selectedDateKey, "dialog")}
+            type="button"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              +
+            </span>
+            Add
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
+          <div className="grid grid-cols-7 border-b border-[#e6e0d7] bg-[#f7f4ec]">
+            {weekdays.map((weekday) => (
+              <div
+                className="px-2 py-3 text-center text-[11px] font-bold uppercase tracking-normal text-[#626a65]"
+                key={weekday}
+              >
+                {weekday}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {monthDays.map((date, index) => {
+              const dateKey = toDateKey(date);
+              const isToday = dateKey === todayKey;
+              const isSelected = dateKey === selectedDateKey;
+              const isCurrentMonth = date.getUTCMonth() === visibleMonth.monthIndex;
+              const dayEvents = eventsByDate[dateKey] ?? [];
+              const visibleEvents = dayEvents.slice(0, 3);
+              const hiddenEventCount = dayEvents.length - visibleEvents.length;
+
+              return (
+                <div
+                  className={cx(
+                    "relative min-h-36 border-b border-r border-[#e7e1d9] p-2 transition",
+                    index % 7 === 6 && "border-r-0",
+                    index >= monthDays.length - 7 && "border-b-0",
+                    isSelected
+                      ? "bg-[#e1f0e4] shadow-[inset_0_0_0_2px_#6e9274]"
+                      : !isCurrentMonth
+                        ? "bg-[#f8f6f1] text-[#969c98]"
+                        : "bg-[#fffdf8]",
+                  )}
+                  key={dateKey}
+                >
+                  <button
+                    aria-label={`Select ${fullDateFormatter.format(date)}`}
+                    className="absolute inset-0 z-10 cursor-pointer"
+                    onClick={() => setSelectedDateKey(dateKey)}
+                    type="button"
+                  />
+                  <div className="pointer-events-none relative z-20 flex min-h-32 flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        aria-current={isToday ? "date" : undefined}
+                        aria-pressed={isSelected}
+                        className={cx(
+                          "pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold",
+                          isToday
+                            ? "bg-[#202321] text-white"
+                            : isCurrentMonth
+                              ? "text-[#202321]"
+                              : "text-[#929995]",
+                        )}
+                        onClick={() => setSelectedDateKey(dateKey)}
+                        type="button"
+                      >
+                        {date.getUTCDate()}
+                      </button>
+                      {index % 7 === 0 ? (
+                        <span className="pt-1 text-[10px] font-semibold uppercase tracking-normal text-[#a0a7a2]">
+                          W{getIsoWeek(date)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-1">
+                      {visibleEvents.map((calendarEvent) => (
+                        <button
+                          className={cx(
+                            "pointer-events-auto truncate rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-4 transition hover:brightness-95",
+                            categoryStyles[calendarEvent.category].chip,
+                          )}
+                          key={calendarEvent.id}
+                          onClick={() => setSelectedDateKey(dateKey)}
+                          type="button"
+                        >
+                          {calendarEvent.name}
+                        </button>
+                      ))}
+                      {hiddenEventCount > 0 ? (
+                        <button
+                          className="pointer-events-auto text-left text-[11px] font-semibold text-[#68706b] underline decoration-[#b7c8ba] underline-offset-2"
+                          onClick={() => setSelectedDateKey(dateKey)}
+                          type="button"
+                        >
+                          +{hiddenEventCount} more
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <aside className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
+          <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            {weekdayFormatter.format(selectedDate)}
+          </p>
+          <h2 className="mt-2 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
+            {fullDateFormatter.format(selectedDate)}
+          </h2>
+          <p className="mt-2 text-sm font-medium text-[#858c87]">
+            Week {getIsoWeek(selectedDate)}
+          </p>
+
+          <div className="mt-6 grid gap-3">
+            {selectedEvents.length > 0 ? (
+              selectedEvents.map((calendarEvent) => (
+                <article
+                  className="rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4"
+                  key={calendarEvent.id}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={cx(
+                        "text-[11px] font-bold uppercase tracking-normal",
+                        categoryStyles[calendarEvent.category].text,
+                      )}
+                    >
+                      {categoryStyles[calendarEvent.category].label}
+                    </span>
+                    <span className="text-[11px] font-semibold text-[#777f7a]">
+                      {eventTimeLabel(calendarEvent.time)}
+                    </span>
+                  </div>
+                  <h3 className="mt-2 text-base font-semibold text-[#202321]">
+                    {calendarEvent.name}
+                  </h3>
+                  {calendarEvent.people.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {calendarEvent.people.map((person) => (
+                        <span
+                          className={cx(
+                            "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
+                            getPersonPillStyle(person),
+                          )}
+                          key={person}
+                        >
+                          {person}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              ))
+            ) : (
+              <div className="rounded-md border border-dashed border-[#d8d2c8] bg-[#fbfaf6] p-5">
+                <p className="font-serif text-xl font-semibold tracking-normal text-[#202321]">
+                  Nothing on the table.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#68706b]">
+                  A quiet day for the house. Add a note here when something comes up.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {composerMode === "panel" ? (
+            renderEventForm(
+              false,
+              "mt-6 grid gap-4 rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4",
+            )
+          ) : (
+            <button
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4]"
+              onClick={() => openComposer(selectedDateKey, "panel")}
+              type="button"
+            >
+              Add event on this day
+            </button>
+          )}
+        </aside>
+      </div>
+
+      {composerMode === "dialog" ? (
+        <div
+          aria-labelledby="calendar-event-dialog-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#202321]/45 p-4"
+          role="dialog"
+        >
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)]">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+                  Calendar
+                </p>
+                <h2
+                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
+                  id="calendar-event-dialog-title"
+                >
+                  Add event
+                </h2>
+              </div>
+              <button
+                aria-label="Close add event dialog"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                disabled={isSaving}
+                onClick={closeComposer}
+                type="button"
+              >
+                <span aria-hidden>&times;</span>
+              </button>
+            </div>
+            {renderEventForm(true, "grid gap-4")}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}

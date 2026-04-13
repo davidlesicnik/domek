@@ -12,6 +12,8 @@ This project uses current Next.js App Router conventions. Before changing framew
 - Keep changes small and typed. Prefer explicit interfaces and clear module boundaries.
 - Do not commit secrets or local `.env` files.
 - Keep the app container-deployment first.
+- Never pre-create placeholder data, demo records, fake household content, or seeded sample entries. New data should come from user input, migrations, imports, or explicit user requests.
+- Any new user-data feature must be database-backed by default: persist user-created records, load saved data on page render, validate writes server-side, and avoid client-only state as the source of truth unless the user explicitly asks for a temporary prototype.
 
 ## Stack
 
@@ -44,6 +46,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 ```bash
 npm run lint
 npm run build
+npm run db:up
 npm run db:generate
 npm run env:check
 docker compose config
