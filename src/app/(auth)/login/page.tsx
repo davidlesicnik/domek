@@ -57,8 +57,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Domek (doh-mek): a little home for the things you share.
               </p>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                One shared place for the calendar, the list on the fridge, and the
-                money bits no one wants to chase later.
+                One shared place for your calendar, chores, and expenses..
               </p>
             </div>
           </div>
