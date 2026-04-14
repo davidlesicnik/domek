@@ -40,7 +40,8 @@ export async function GET(
   // Cloud Run terminates TLS at the load balancer, so request.url is http://.
   // Prefer APP_URL env var, then x-forwarded-proto, then request.url.
   const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
-  const publicOrigin = appUrl ?? `${proto}://${requestUrl.host}`;
+  const host = request.headers.get("x-forwarded-host") ?? requestUrl.host;
+  const publicOrigin = appUrl ?? `${proto}://${host}`;
   const redirectTo = new URL("/auth/callback", publicOrigin).toString();
   const isSecure = proto === "https";
   const nextPath = safeNextPath(requestUrl.searchParams.get("next"));
