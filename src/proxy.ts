@@ -11,7 +11,7 @@ type CookieUpdate = Readonly<{
   options: CookieOptions;
 }>;
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/auth/signout"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/start", "/api/auth/signout"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -22,7 +22,13 @@ function isOnboardingPath(pathname: string): boolean {
 }
 
 function isAuthFlowPath(pathname: string): boolean {
-  return pathname === "/auth/callback" || pathname.startsWith("/auth/callback/") || pathname === "/api/auth/signout";
+  return (
+    pathname === "/auth/callback" ||
+    pathname.startsWith("/auth/callback/") ||
+    pathname === "/api/auth/signout" ||
+    pathname === "/auth/start" ||
+    pathname.startsWith("/auth/start/")
+  );
 }
 
 function redirectWithCookieUpdates(
@@ -46,8 +52,8 @@ export async function proxy(request: NextRequest) {
   const runtime = getSupabaseRuntimeConfig();
 
   const supabase = createServerClient(
-    runtime.NEXT_PUBLIC_SUPABASE_URL,
-    runtime.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    runtime.supabaseUrl,
+    runtime.supabaseAnonKey,
     {
       cookies: {
         getAll() {

@@ -8,8 +8,8 @@ export async function createSupabaseServerClient() {
   const runtime = getSupabaseRuntimeConfig();
 
   return createServerClient(
-    runtime.NEXT_PUBLIC_SUPABASE_URL,
-    runtime.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    runtime.supabaseUrl,
+    runtime.supabaseAnonKey,
     {
       cookies: {
         getAll() {
