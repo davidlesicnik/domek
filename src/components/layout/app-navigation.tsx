@@ -13,17 +13,17 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { href: "/", icon: Home, label: "Dashboard" },
-  { href: "/calendar", icon: CalendarDays, label: "Calendar" },
-  { href: "/todos", icon: ListTodo, label: "To-do" },
-  { href: "/shopping", icon: ShoppingCart, label: "Shopping" },
-  { href: "/expenses", icon: Banknote, label: "Expenses" },
-  { href: "/notes", icon: NotebookPen, label: "Notes" },
-  { href: "/#chores", icon: BrushCleaning, label: "Chores" },
+  { href: "/app", icon: Home, label: "Dashboard" },
+  { href: "/app/calendar", icon: CalendarDays, label: "Calendar" },
+  { href: "/app/todos", icon: ListTodo, label: "To-do" },
+  { href: "/app/shopping", icon: ShoppingCart, label: "Shopping" },
+  { href: "/app/expenses", icon: Banknote, label: "Expenses" },
+  { href: "/app/notes", icon: NotebookPen, label: "Notes" },
+  { href: "/app#chores", icon: BrushCleaning, label: "Chores" },
 ];
 
 function isActiveNavigationItem(href: string, pathname: string) {
-  return href === "/" ? pathname === "/" : pathname === href;
+  return href === "/app" ? pathname === "/app" : pathname === href;
 }
 
 export function AppNavigation() {
