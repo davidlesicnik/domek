@@ -195,8 +195,17 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
           </div>
 
           <ul className="flex-1 overflow-y-auto">
-            {notes.length === 0 && (
+            {notes.length === 0 && pane.mode !== "new" && (
               <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">No notes yet.</li>
+            )}
+            {pane.mode === "new" && (
+              <li className="flex items-center border-b border-[#e0dcd4] border-l-2 border-l-[#6e9274] bg-[#edf3ee]">
+                <span className="min-w-0 flex-1 px-3 py-3 text-left text-sm font-medium text-[#426148]">
+                  <span className="block truncate">
+                    {editTitle.trim() || <span className="italic text-[#9ab5a0]">New note</span>}
+                  </span>
+                </span>
+              </li>
             )}
             {notes.map((note) => {
               const isSelected = note.id === selectedNoteId;
