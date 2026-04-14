@@ -414,6 +414,7 @@ export function ExpensesBoard({
   const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   const isFirstRender = useRef(true);
+  const fetchAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -424,15 +425,20 @@ export function ExpensesBoard({
   }, [year, month]);
 
   async function fetchMonth(y: number, m: number) {
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/expenses?year=${y}&month=${m}`);
+      const res = await fetch(`/api/expenses?year=${y}&month=${m}`, { signal: controller.signal });
       if (!res.ok) return;
       const data = (await res.json()) as { expenses: ExpenseView[]; stats: MonthStats };
       setAllExpenses(data.expenses);
       setStats(data.stats);
+    } catch (e) {
+      if ((e as DOMException).name !== "AbortError") throw e;
     } finally {
-      setIsLoading(false);
+      if (fetchAbortRef.current === controller) setIsLoading(false);
     }
   }
 
@@ -557,6 +563,12 @@ export function ExpensesBoard({
     setIsSubmitting(true);
 
     try {
+      const amount = parseFloat(form.amount);
+      if (!isFinite(amount) || amount <= 0) {
+        setFormError("Enter a valid positive amount.");
+        return;
+      }
+
       let categoryId: string | null = form.categoryId === "__new__" ? null : (form.categoryId || null);
 
       if (form.categoryId === "__new__") {
@@ -580,12 +592,6 @@ export function ExpensesBoard({
           [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)),
         );
         categoryId = newCat.id;
-      }
-
-      const amount = parseFloat(form.amount);
-      if (!isFinite(amount) || amount <= 0) {
-        setFormError("Enter a valid positive amount.");
-        return;
       }
 
       const res = await fetch(editingId ? `/api/expenses/${editingId}` : "/api/expenses", {

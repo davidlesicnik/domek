@@ -13,8 +13,10 @@ export async function GET(request: Request) {
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const year = Number(searchParams.get("year")) || new Date().getUTCFullYear();
-  const month = Number(searchParams.get("month")) || new Date().getUTCMonth() + 1;
+  const yearParam = searchParams.get("year");
+  const monthParam = searchParams.get("month");
+  const year = yearParam === null ? new Date().getUTCFullYear() : Number(yearParam);
+  const month = monthParam === null ? new Date().getUTCMonth() + 1 : Number(monthParam);
 
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     return Response.json({ error: "Invalid year." }, { status: 400 });
