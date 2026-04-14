@@ -19,7 +19,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 
 - Next.js App Router with TypeScript
 - Tailwind CSS
-- Auth.js with generic OIDC provider configuration
+- Supabase Auth with OAuth provider configuration
 - Prisma with PostgreSQL
 - Docker Compose
 - npm
@@ -30,7 +30,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 - Put reusable UI in `src/components`.
 - Put shared server helpers in `src/lib`.
 - Keep Prisma schema changes in `prisma/schema.prisma`.
-- Do not hardcode provider-specific OIDC secrets or household-specific domains in application code.
+- Do not hardcode provider-specific OAuth secrets or household-specific domains in application code.
 
 ## Product And Visual Direction
 

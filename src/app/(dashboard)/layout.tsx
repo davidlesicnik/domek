@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { requireAppSession } from "@/lib/authz";
+import { requireHouseholdMemberSession } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +10,10 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const { authConfigured, session } = await requireAppSession();
+  const session = await requireHouseholdMemberSession();
 
   return (
-    <AppShell
-      authConfigured={authConfigured}
-      userName={session?.user?.name ?? session?.user?.email ?? null}
-    >
+    <AppShell userName={session.user.name ?? session.user.email ?? null}>
       {children}
     </AppShell>
   );

@@ -1,10 +1,10 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import { getCurrentAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { hasAuthRuntimeConfig } from "@/lib/env";
 import { EXPENSE_CATEGORY_COLOR_OPTIONS } from "@/lib/expense-colors";
+import { getFirstHouseholdMembership } from "@/lib/users";
 
 export type ExpenseView = {
   id: string;
@@ -37,8 +37,8 @@ export type MonthStats = {
 };
 
 export type ExpenseScope = {
-  householdId: string | null;
-  userId: string | null;
+  householdId: string;
+  userId: string;
 };
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -65,43 +65,24 @@ function pickCategoryColor(existingColors: string[]): string {
 }
 
 export async function getCurrentExpenseScope(): Promise<ExpenseScope | null> {
-  if (!hasAuthRuntimeConfig()) {
-    return { householdId: null, userId: null };
-  }
+  const session = await getCurrentAppSession();
+  if (!session) return null;
 
-  const session = await auth();
-  if (!session?.user?.email) return null;
-
-  const user = await prisma.user.findUnique({
-    select: {
-      id: true,
-      memberships: {
-        orderBy: { createdAt: "asc" },
-        select: { householdId: true },
-        take: 1,
-      },
-    },
-    where: { email: session.user.email },
-  });
-
-  if (!user) return null;
+  const membership = await getFirstHouseholdMembership(session.user.id);
+  if (!membership?.householdId) return null;
 
   return {
-    householdId: user.memberships[0]?.householdId ?? null,
-    userId: user.id,
+    householdId: membership.householdId,
+    userId: session.user.id,
   };
 }
 
 function buildExpenseWhere(scope: ExpenseScope): Prisma.ExpenseWhereInput {
-  if (scope.householdId) return { householdId: scope.householdId };
-  if (scope.userId) return { createdByUserId: scope.userId, householdId: null };
-  return { createdByUserId: null, householdId: null };
+  return { householdId: scope.householdId };
 }
 
 function buildCategoryWhere(scope: ExpenseScope): Prisma.ExpenseCategoryWhereInput {
-  if (scope.householdId) return { householdId: scope.householdId };
-  if (scope.userId) return { createdByUserId: scope.userId, householdId: null };
-  return { createdByUserId: null, householdId: null };
+  return { householdId: scope.householdId };
 }
 
 function monthBounds(year: number, month: number) {
@@ -261,8 +242,8 @@ export async function createExpense(
     memberName: data.householdMemberId ? null : (data.memberName ?? null),
     categoryId: data.categoryId ?? null,
     householdMemberId: data.householdMemberId ?? null,
-    ...(scope.householdId ? { householdId: scope.householdId } : {}),
-    ...(scope.userId ? { createdByUserId: scope.userId } : {}),
+    createdByUserId: scope.userId,
+    householdId: scope.householdId,
   };
 
   const expense = await prisma.expense.create({ data: create, select: expenseSelect });
@@ -341,8 +322,8 @@ export async function createCategory(name: string, scope: ExpenseScope): Promise
   const create: Prisma.ExpenseCategoryUncheckedCreateInput = {
     name,
     color: pickCategoryColor(existingCategories.map((category) => category.color)),
-    ...(scope.householdId ? { householdId: scope.householdId } : {}),
-    ...(scope.userId ? { createdByUserId: scope.userId } : {}),
+    createdByUserId: scope.userId,
+    householdId: scope.householdId,
   };
   return prisma.expenseCategory.create({ data: create, select: { id: true, color: true, name: true } });
 }
@@ -367,8 +348,6 @@ export async function updateCategory(
 }
 
 export async function listMembers(scope: ExpenseScope): Promise<MemberView[]> {
-  if (!scope.householdId) return [];
-
   const members = await prisma.householdMember.findMany({
     orderBy: { createdAt: "asc" },
     select: { id: true, user: { select: { name: true, email: true } } },

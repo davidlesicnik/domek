@@ -1,8 +1,7 @@
 import { z } from "zod";
 
-import { auth } from "@/auth";
-import { prisma } from "@/lib/db";
-import { hasAuthRuntimeConfig } from "@/lib/env";
+import { getCurrentAppSession } from "@/lib/authz";
+import { getFirstHouseholdMembership } from "@/lib/users";
 
 export type OwnedListScope<Create extends object, Where extends object> = Readonly<{
   create: Create;
@@ -62,38 +61,21 @@ export function parseOwnedItemInput(input: unknown): { text: string } {
 export async function getCurrentOwnedListScope<Create extends object, Where extends object>(): Promise<
   OwnedListScope<Create, Where> | null
 > {
-  if (!hasAuthRuntimeConfig()) {
-    return {
-      create: {} as Create,
-      where: { createdByUserId: null, householdId: null } as Where,
-    };
-  }
+  const session = await getCurrentAppSession();
 
-  const session = await auth();
-
-  if (!session?.user?.email) {
+  if (!session) {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    select: {
-      id: true,
-      memberships: {
-        orderBy: { createdAt: "asc" },
-        select: { householdId: true },
-        take: 1,
-      },
-    },
-    where: { email: session.user.email },
-  });
+  const membership = await getFirstHouseholdMembership(session.user.id);
+  const householdId = membership?.householdId;
 
-  if (!user) {
+  if (!householdId) {
     return null;
   }
 
-  const householdId = user.memberships[0]?.householdId;
-  const create = { createdByUserId: user.id, ...(householdId ? { householdId } : {}) } as Create;
-  const where = (householdId ? { householdId } : { createdByUserId: user.id, householdId: null }) as Where;
+  const create = { createdByUserId: session.user.id, householdId } as Create;
+  const where = { householdId } as Where;
 
   return { create, where };
 }

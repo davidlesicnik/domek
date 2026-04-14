@@ -1,10 +1,10 @@
 # Domek
 
-Domek is a container-first household planner for shared household coordination. The first implementation is a secure, maintainable scaffold: a responsive dashboard shell, OIDC-ready authentication, Prisma/Postgres persistence, and clear conventions for future feature work.
+Domek is a container-first household planner for shared household coordination. The first implementation is a secure, maintainable scaffold: a responsive dashboard shell, Supabase OAuth authentication, Prisma/Postgres persistence, and clear conventions for future feature work.
 
 ## Roadmap
 
-- Multi-user accounts with OIDC sign-in
+- Multi-user accounts with Supabase OAuth sign-in
 - Shared calendar
 - Shared to-do list
 - Shared notes
@@ -16,7 +16,7 @@ Domek is a container-first household planner for shared household coordination. 
 
 - Next.js App Router, React, and TypeScript
 - Tailwind CSS for responsive styling
-- Auth.js with a generic OIDC provider
+- Supabase Auth with OAuth providers
 - Prisma with PostgreSQL
 - Docker Compose for local and container deployment
 
@@ -33,7 +33,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-OIDC is optional for local scaffold work. When the Auth.js and OIDC variables are missing, the dashboard runs in local setup mode. Configure the auth variables before using the app outside local development.
+Configure a Supabase project and enable the Google and GitHub providers before using sign-in. Add the local callback URL (`http://localhost:3000/auth/callback`) and deployed callback URL to the Supabase redirect allow list.
 
 For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. The Docker web service uses `CONTAINER_DATABASE_URL` so it can reach the same database through the Compose-internal `postgres` hostname.
 
@@ -44,17 +44,8 @@ Required for a real deployment:
 ```bash
 DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
-AUTH_SECRET=""
-AUTH_URL="https://domek.example.com"
-OIDC_ISSUER="https://login.example.com"
-OIDC_CLIENT_ID=""
-OIDC_CLIENT_SECRET=""
-```
-
-Generate `AUTH_SECRET` with:
-
-```bash
-openssl rand -base64 32
+NEXT_PUBLIC_SUPABASE_URL=""
+NEXT_PUBLIC_SUPABASE_ANON_KEY=""
 ```
 
 Validate deployment configuration with:
@@ -77,7 +68,7 @@ Create and apply a development migration after the database is reachable:
 npm run db:migrate
 ```
 
-The initial schema includes users, households, household membership, and the Auth.js adapter tables. Feature-specific tables for calendar, tasks, notes, chores, and expenses should be added with the feature that needs them.
+The initial schema includes users, households, household membership, and feature-specific tables for calendar, tasks, notes, shopping, and expenses. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
 
 ## Containers
 
