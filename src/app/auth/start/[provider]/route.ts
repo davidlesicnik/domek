@@ -30,18 +30,19 @@ export async function GET(
 ) {
   const { provider } = await params;
 
-  if (!allowedProviders.has(provider as Provider)) {
-    return NextResponse.redirect(new URL("/login?error=auth", request.url));
-  }
-
-  const supabase = await createSupabaseServerClient();
   const requestUrl = new URL(request.url);
   const { appUrl } = getAppRuntimeConfig();
   // Cloud Run terminates TLS at the load balancer, so request.url is http://.
-  // Prefer APP_URL env var, then x-forwarded-proto, then request.url.
+  // Prefer APP_URL env var, then x-forwarded-proto + x-forwarded-host.
   const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
   const host = request.headers.get("x-forwarded-host") ?? requestUrl.host;
   const publicOrigin = appUrl ?? `${proto}://${host}`;
+
+  if (!allowedProviders.has(provider as Provider)) {
+    return NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
+  }
+
+  const supabase = await createSupabaseServerClient();
   const redirectTo = new URL("/auth/callback", publicOrigin).toString();
   const isSecure = proto === "https";
   const nextPath = safeNextPath(requestUrl.searchParams.get("next"));
@@ -51,7 +52,7 @@ export async function GET(
   });
 
   if (error || !data.url) {
-    return NextResponse.redirect(new URL("/login?error=auth", request.url));
+    return NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
   }
 
   const response = NextResponse.redirect(data.url);
