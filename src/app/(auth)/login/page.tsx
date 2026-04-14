@@ -15,15 +15,15 @@ function stringParam(value: string | string[] | undefined): string | null {
 
 function safeNextPath(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
+    return "/app";
   }
 
   if (value.startsWith("/login") || value.startsWith("/auth/callback")) {
-    return "/";
+    return "/app";
   }
 
   if (value.includes("code=")) {
-    return "/";
+    return "/app";
   }
 
   return value;

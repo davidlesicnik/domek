@@ -8,11 +8,11 @@ const nextCookieName = "domek_next";
 
 function safeNextPath(value: string | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
+    return "/app";
   }
 
   if (value.startsWith("/login") || value.startsWith("/auth/callback")) {
-    return "/";
+    return "/app";
   }
 
   return value;

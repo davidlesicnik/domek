@@ -26,7 +26,7 @@ export async function requireAppSession(): Promise<AppSession> {
   const session = await getCurrentAppSession();
 
   if (!session) {
-    redirect("/login");
+    redirect("/login?next=/app");
   }
 
   return session;
