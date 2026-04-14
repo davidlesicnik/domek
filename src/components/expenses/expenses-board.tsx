@@ -405,7 +405,20 @@ export function ExpensesBoard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [activeCategoryKey, setActiveCategoryKey] = useState<string | null>(null);
+  const [hoveredCategoryKey, setHoveredCategoryKey] = useState<string | null>(null);
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(null);
+  const activeCategoryKey = hoveredCategoryKey ?? selectedCategoryKey;
+  const donutRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!selectedCategoryKey) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (donutRef.current && !donutRef.current.contains(e.target as Node)) {
+        setSelectedCategoryKey(null);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [selectedCategoryKey]);
   const [hoveredNetPoint, setHoveredNetPoint] = useState<NetPoint | null>(null);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [categoryForm, setCategoryForm] = useState<CategoryFormState>(defaultCategoryForm);
@@ -966,33 +979,33 @@ export function ExpensesBoard({
 
       {/* Stats panel */}
       <div
-        className={`mb-6 grid gap-3 sm:grid-cols-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
+        className={`mb-6 grid grid-cols-3 gap-2 sm:gap-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-xs font-semibold uppercase tracking-normal text-[#6e9274]">Income</p>
-          <p className="mt-1 font-serif text-2xl font-semibold text-[#2d4f34]">
+        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#6e9274]">Income</p>
+          <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#2d4f34] truncate">
             {formatAmount(stats.income)}
           </p>
         </div>
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
             Expenses
           </p>
-          <p className="mt-1 font-serif text-2xl font-semibold text-[#8d3028]">
+          <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#8d3028] truncate">
             {formatAmount(stats.expenses)}
           </p>
         </div>
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-            Net balance
+        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+            Net
           </p>
           <p
-            className={`mt-1 font-serif text-2xl font-semibold ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
+            className={`mt-1 font-serif text-lg sm:text-2xl font-semibold truncate ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
           >
             {netSign}
             {formatAmount(stats.net)}
           </p>
-          <p className="mt-1 text-xs text-[#686e6a]">
+          <p className="mt-1 text-[10px] sm:text-xs text-[#686e6a] truncate">
             {stats.carryover >= 0 ? "+" : ""}
             {formatAmount(stats.carryover)} carried in
           </p>
@@ -1003,31 +1016,16 @@ export function ExpensesBoard({
         aria-label={`Statistics for ${monthLabel}`}
         className={`mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.85fr)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                Net balance
-              </p>
-              <h2 className="mt-1 font-serif text-xl font-semibold text-[#171a18]">
-                Month line
-              </h2>
-            </div>
-            <div className="text-right text-xs text-[#686e6a]">
-              <p>
-                Carried in {netChart.start >= 0 ? "+" : ""}
-                {formatAmount(netChart.start)}
-              </p>
-              <p>
-                Ends {netChart.end >= 0 ? "+" : ""}
-                {formatAmount(netChart.end)}
-              </p>
-            </div>
+        <div className="hidden sm:flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+          <div className="mb-4">
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+              Net balance
+            </p>
           </div>
-          <div className="relative">
+          <div className="relative grow">
             <svg
               aria-label={`Daily net balance line for ${monthLabel}`}
-              className="h-48 w-full overflow-visible"
+              className="h-full min-h-48 w-full overflow-visible"
               onPointerLeave={() => setHoveredNetPoint(null)}
               onPointerMove={handleNetChartPointerMove}
               preserveAspectRatio="none"
@@ -1132,99 +1130,90 @@ export function ExpensesBoard({
           </div>
         </div>
 
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+        <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <div className="mb-4">
             <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
               Expense mix
             </p>
-            <h2 className="mt-1 font-serif text-xl font-semibold text-[#171a18]">
-              Category ratios
-            </h2>
           </div>
           {categorySlices.length === 0 ? (
-            <div className="flex min-h-48 items-center justify-center rounded-md border border-dashed border-[#dfddd6] px-4 text-center text-sm text-[#9da39f]">
+            <div className="flex grow min-h-48 items-center justify-center rounded-md border border-dashed border-[#dfddd6] px-4 text-center text-sm text-[#9da39f]">
               No expenses to break down for {monthLabel}.
             </div>
           ) : (
-            <div className="grid items-center justify-items-center gap-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:justify-items-stretch lg:grid-cols-1 lg:justify-items-center xl:grid-cols-[150px_minmax(0,1fr)] xl:justify-items-stretch">
-              <svg
-                aria-label={`Expense category ratios for ${monthLabel}`}
-                className="h-36 w-36 justify-self-center"
-                role="img"
-                viewBox="0 0 120 120"
-              >
-                <circle cx="60" cy="60" fill="none" r="42" stroke="#ece8df" strokeWidth="18" />
-                {categorySlices.map((slice) => (
-                  <circle
-                    cx="60"
-                    cy="60"
-                    fill="none"
-                    key={slice.key}
-                    onBlur={() => setActiveCategoryKey(null)}
-                    onFocus={() => setActiveCategoryKey(slice.key)}
-                    onMouseEnter={() => setActiveCategoryKey(slice.key)}
-                    onMouseLeave={() => setActiveCategoryKey(null)}
-                    opacity={activeCategoryKey && activeCategoryKey !== slice.key ? 0.22 : 1}
-                    r="42"
-                    stroke={slice.color}
-                    strokeDasharray={slice.dash}
-                    strokeDashoffset={-slice.offset}
-                    strokeLinecap="butt"
-                    strokeWidth={activeCategoryKey === slice.key ? 20 : 18}
-                    className="cursor-pointer transition-[opacity,stroke-width] duration-150"
-                    tabIndex={0}
-                    transform="rotate(-90 60 60)"
-                  />
-                ))}
-                <text
-                  fill="#171a18"
-                  fontFamily="serif"
-                  fontSize="15"
-                  fontWeight="600"
-                  textAnchor="middle"
-                  x="60"
-                  y="58"
+            <div className="flex grow items-center justify-center p-3">
+              <div className="relative w-full max-w-[180px] sm:max-w-[320px] aspect-square" ref={donutRef}>
+                <svg
+                  aria-label={`Expense category ratios for ${monthLabel}`}
+                  className="h-full w-full"
+                  onMouseLeave={() => setHoveredCategoryKey(null)}
+                  role="img"
+                  viewBox="0 0 120 120"
                 >
-                  {formatAmount(stats.expenses)}
-                </text>
-                <text fill="#686e6a" fontSize="9" textAnchor="middle" x="60" y="72">
-                  total
-                </text>
-              </svg>
-              <div className="grid w-full content-center gap-2">
-                {categorySlices.map((slice) => {
-                  const isDimmed = Boolean(activeCategoryKey && activeCategoryKey !== slice.key);
-
-                  return (
-                    <div
-                      className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-0.5 rounded-md px-1 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c85b45]/40"
+                  <rect
+                    fill="transparent"
+                    height="120"
+                    onClick={() => setSelectedCategoryKey(null)}
+                    width="120"
+                    x="0"
+                    y="0"
+                  />
+                  <circle cx="60" cy="60" fill="none" r="42" stroke="#ece8df" strokeWidth="18" />
+                  {categorySlices.map((slice) => (
+                    <circle
+                      cx="60"
+                      cy="60"
+                      fill="none"
                       key={slice.key}
-                      onBlur={() => setActiveCategoryKey(null)}
-                      onFocus={() => setActiveCategoryKey(slice.key)}
-                      onMouseEnter={() => setActiveCategoryKey(slice.key)}
-                      onMouseLeave={() => setActiveCategoryKey(null)}
-                      tabIndex={0}
-                    >
-                      <span
-                        aria-hidden
-                        className="mt-1.5 h-2.5 w-2.5 rounded-sm transition-opacity duration-150"
-                        style={{ backgroundColor: slice.color, opacity: isDimmed ? 0.28 : 1 }}
-                      />
-                      <span
-                        className="min-w-0 break-words text-sm font-medium leading-snug text-[#4d5451] transition-opacity duration-150"
-                        style={{ opacity: isDimmed ? 0.35 : 1 }}
-                      >
-                        {slice.label}
-                      </span>
-                      <span
-                        className="col-start-2 text-xs tabular-nums text-[#686e6a] transition-opacity duration-150"
-                        style={{ opacity: isDimmed ? 0.32 : 1 }}
-                      >
-                        {slice.percent.toFixed(0)}% · {formatAmount(slice.amount)}
-                      </span>
+                      onMouseEnter={() => setHoveredCategoryKey(slice.key)}
+                      onClick={() => setSelectedCategoryKey(slice.key)}
+                      opacity={activeCategoryKey && activeCategoryKey !== slice.key ? 0.22 : 1}
+                      r="42"
+                      stroke={slice.color}
+                      strokeDasharray={slice.dash}
+                      strokeDashoffset={-slice.offset}
+                      strokeLinecap="butt"
+                      strokeWidth={activeCategoryKey === slice.key ? 20 : 18}
+                      className="cursor-pointer transition-[opacity,stroke-width] duration-150"
+                      transform="rotate(-90 60 60)"
+                    />
+                  ))}
+                  <text
+                    fill="#171a18"
+                    fontFamily="serif"
+                    fontSize="15"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    x="60"
+                    y="58"
+                  >
+                    {formatAmount(stats.expenses)}
+                  </text>
+                  <text fill="#686e6a" fontSize="9" textAnchor="middle" x="60" y="72">
+                    total
+                  </text>
+                </svg>
+                {(() => {
+                  const activeSlice = activeCategoryKey ? categorySlices.find((s) => s.key === activeCategoryKey) : null;
+                  if (!activeSlice) return null;
+                  return (
+                    <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2 z-20 w-44 rounded-md border border-[#d8d2c8] bg-[#fffdf8] px-3 py-2 shadow-[0_8px_24px_rgba(31,35,30,0.15)]">
+                      <div className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                          style={{ backgroundColor: activeSlice.color }}
+                        />
+                        <span className="min-w-0 truncate text-sm font-medium text-[#4d5451]">
+                          {activeSlice.label}
+                        </span>
+                      </div>
+                      <p className="mt-1 tabular-nums text-xs text-[#686e6a]">
+                        {activeSlice.percent.toFixed(0)}% · {formatAmount(activeSlice.amount)}
+                      </p>
                     </div>
                   );
-                })}
+                })()}
               </div>
             </div>
           )}
@@ -1504,7 +1493,7 @@ export function ExpensesBoard({
                   {displayedExpenses.map((expense) => (
                     <tr key={expense.id} className="transition-colors hover:bg-[#f7f5f0]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {expense.date.slice(0, 10)}
+                        {expense.date.slice(8, 10)}.{expense.date.slice(5, 7)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{expense.name}</span>
@@ -1603,7 +1592,7 @@ export function ExpensesBoard({
                   {showCarryoverRow ? (
                     <tr className="bg-[#fbfaf6]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {monthValue(year, month)}-01
+                        01.{String(month).padStart(2, "0")}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">Starting balance</span>
