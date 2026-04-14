@@ -40,7 +40,7 @@ const features = [
     marker: "EUR",
     title: "Expense tracker",
     summary: "Simple totals for shared costs, repairs, supplies, and the odd surprise bill.",
-    status: "Soon",
+    status: "Open",
   },
 ];
 
