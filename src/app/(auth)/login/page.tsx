@@ -50,18 +50,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <section className="grid w-full gap-8 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
           <div className="flex flex-col justify-between gap-10">
             <div>
-              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-                Home board
-              </p>
               <h1 className="mt-3 font-serif text-5xl font-semibold tracking-normal text-[#171a18] sm:text-6xl">
                 Domek
               </h1>
               <p className="mt-2 text-sm font-semibold leading-6 text-[#526c56]">
-                DOH-mek: a little home for the things you share.
+                Domek (doh-mek) - a little home for the things you share.
               </p>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                One shared place for the calendar, the list on the fridge, and the
-                money bits no one wants to chase later.
+                A shared place for your calendar, chores, and expenses.
               </p>
             </div>
           </div>
@@ -70,7 +66,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               Sign in
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#686e6a]">
-              Use the account that feels easiest for you and the people at home.
+              Use an account you already have.
             </p>
             {hasAuthError ? (
               <p className="mt-4 rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-3 py-2 text-sm font-medium text-[#a6543c]">

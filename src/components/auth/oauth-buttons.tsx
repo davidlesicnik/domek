@@ -52,18 +52,23 @@ function authStartHref(provider: Provider, nextPath: string) {
 }
 
 export function OAuthButtons({ nextPath }: OAuthButtonsProps) {
+  const [google, github] = providers;
   return (
     <div className="grid gap-3">
-      {providers.map((provider) => (
-        <a
-          className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
-          href={authStartHref(provider.id, nextPath)}
-          key={provider.id}
-        >
-          {provider.icon}
-          {provider.label}
-        </a>
-      ))}
+      <a
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#202321] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3a3d39]"
+        href={authStartHref(google.id, nextPath)}
+      >
+        {google.icon}
+        {google.label}
+      </a>
+      <a
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-medium text-[#4a4f4c] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+        href={authStartHref(github.id, nextPath)}
+      >
+        {github.icon}
+        {github.label}
+      </a>
     </div>
   );
 }
