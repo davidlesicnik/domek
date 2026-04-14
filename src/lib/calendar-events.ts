@@ -1,7 +1,7 @@
 import type { CalendarEventCategory, Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { auth } from "@/auth";
+import { getCurrentAppSession } from "@/lib/authz";
 import {
   calendarCategoryOptions,
   type CalendarCategory,
@@ -9,7 +9,7 @@ import {
   type CalendarEventView,
 } from "@/lib/calendar-types";
 import { prisma } from "@/lib/db";
-import { hasAuthRuntimeConfig } from "@/lib/env";
+import { getFirstHouseholdMembership } from "@/lib/users";
 
 type CalendarScope = Readonly<{
   create: Pick<Prisma.CalendarEventUncheckedCreateInput, "createdByUserId" | "householdId">;
@@ -86,65 +86,26 @@ export function parseCalendarEventInput(input: unknown): CalendarEventInput {
 }
 
 export async function getCurrentCalendarScope(): Promise<CalendarScope | null> {
-  if (!hasAuthRuntimeConfig()) {
-    return {
-      create: {},
-      where: {
-        createdByUserId: null,
-        householdId: null,
-      },
-    };
-  }
+  const session = await getCurrentAppSession();
 
-  const session = await auth();
-
-  if (!session?.user?.email) {
+  if (!session) {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    select: {
-      id: true,
-      memberships: {
-        orderBy: {
-          createdAt: "asc",
-        },
-        select: {
-          householdId: true,
-        },
-        take: 1,
-      },
-    },
-    where: {
-      email: session.user.email,
-    },
-  });
+  const membership = await getFirstHouseholdMembership(session.user.id);
+  const householdId = membership?.householdId;
 
-  if (!user) {
+  if (!householdId) {
     return null;
-  }
-
-  const householdId = user.memberships[0]?.householdId;
-
-  if (householdId) {
-    return {
-      create: {
-        createdByUserId: user.id,
-        householdId,
-      },
-      where: {
-        householdId,
-      },
-    };
   }
 
   return {
     create: {
-      createdByUserId: user.id,
+      createdByUserId: session.user.id,
+      householdId,
     },
     where: {
-      createdByUserId: user.id,
-      householdId: null,
+      householdId,
     },
   };
 }

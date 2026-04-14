@@ -1,18 +1,43 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
-import { hasAuthRuntimeConfig } from "@/lib/env";
+import { createSupabaseServerClient } from "@/lib/supabase";
+import { hasHouseholdMembership, upsertSupabaseUser, type AppUser } from "@/lib/users";
 
-export async function requireAppSession() {
-  const authConfigured = hasAuthRuntimeConfig();
-  const session = authConfigured ? await auth() : null;
+export type AppSession = Readonly<{
+  user: AppUser;
+}>;
 
-  if (authConfigured && !session?.user) {
-    redirect("/api/auth/signin");
+export async function getCurrentAppSession(): Promise<AppSession | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
   }
 
   return {
-    authConfigured,
-    session,
+    user: await upsertSupabaseUser(user),
   };
+}
+
+export async function requireAppSession(): Promise<AppSession> {
+  const session = await getCurrentAppSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return session;
+}
+
+export async function requireHouseholdMemberSession(): Promise<AppSession> {
+  const session = await requireAppSession();
+
+  if (!(await hasHouseholdMembership(session.user.id))) {
+    redirect("/onboarding/household");
+  }
+
+  return session;
 }
