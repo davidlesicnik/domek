@@ -44,8 +44,8 @@ Required for a real deployment:
 ```bash
 DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
-NEXT_PUBLIC_SUPABASE_URL=""
-NEXT_PUBLIC_SUPABASE_ANON_KEY=""
+SUPABASE_URL=""
+SUPABASE_ANON_KEY=""
 ```
 
 Validate deployment configuration with:
