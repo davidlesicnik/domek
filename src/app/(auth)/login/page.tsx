@@ -54,10 +54,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Domek
               </h1>
               <p className="mt-2 text-sm font-semibold leading-6 text-[#526c56]">
-                Domek (doh-mek): a little home for the things you share.
+                Domek (doh-mek) - a little home for the things you share.
               </p>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                One shared place for your calendar, chores, and expenses..
+                A shared place for your calendar, chores, and expenses.
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               Sign in
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#686e6a]">
-              Use the account that feels easiest for you and the people at home.
+              Use an account you already have.
             </p>
             {hasAuthError ? (
               <p className="mt-4 rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-3 py-2 text-sm font-medium text-[#a6543c]">

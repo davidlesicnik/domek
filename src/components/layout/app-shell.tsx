@@ -13,10 +13,7 @@ export function AppShell({ userName, children }: AppShellProps) {
       <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
         <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-              Home board
-            </p>
-            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+            <h1 className="font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
               Domek
             </h1>
           </div>
