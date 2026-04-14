@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "Note" (
     "id" TEXT NOT NULL,
-    "title" VARCHAR(200) NOT NULL,
+    "title" VARCHAR(200) NOT NULL, -- NOSONAR: PostgreSQL uses VARCHAR; VARCHAR2 is Oracle-specific.
     "body" TEXT NOT NULL,
     "householdId" TEXT,
     "createdByUserId" TEXT,

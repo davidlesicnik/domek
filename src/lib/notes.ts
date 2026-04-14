@@ -2,11 +2,19 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getCurrentUserScope, type UserScope } from "@/lib/scope";
+import { getCurrentOwnedListScope, type OwnedListScope } from "@/lib/owned-lists";
 
 export type NoteView = { id: string; title: string; body: string };
 
-export { getCurrentUserScope as getCurrentNoteScope };
+type NoteScope = OwnedListScope<
+  Pick<Prisma.NoteUncheckedCreateInput, "createdByUserId" | "householdId">,
+  Prisma.NoteWhereInput
+>;
+
+export const getCurrentNoteScope = getCurrentOwnedListScope<
+  Pick<Prisma.NoteUncheckedCreateInput, "createdByUserId" | "householdId">,
+  Prisma.NoteWhereInput
+>;
 
 const noteSelect = {
   id: true,
@@ -22,7 +30,7 @@ export function parseNoteInput(input: unknown): { title: string; body: string } 
   return noteInputSchema.parse(input);
 }
 
-export async function listAllNotes(scope: UserScope): Promise<NoteView[]> {
+export async function listAllNotes(scope: NoteScope): Promise<NoteView[]> {
   return prisma.note.findMany({
     orderBy: { createdAt: "asc" },
     select: noteSelect,
@@ -33,7 +41,7 @@ export async function listAllNotes(scope: UserScope): Promise<NoteView[]> {
 export async function createNote(
   title: string,
   body: string,
-  scope: UserScope,
+  scope: NoteScope,
 ): Promise<NoteView> {
   return prisma.note.create({
     data: { ...scope.create, title, body },
@@ -45,7 +53,7 @@ export async function updateNote(
   id: string,
   title: string,
   body: string,
-  scope: UserScope,
+  scope: NoteScope,
 ): Promise<NoteView | null> {
   const result = await prisma.note.updateMany({
     data: { title, body },
@@ -57,7 +65,7 @@ export async function updateNote(
   return prisma.note.findUnique({ select: noteSelect, where: { id } });
 }
 
-export async function deleteNote(id: string, scope: UserScope): Promise<boolean> {
+export async function deleteNote(id: string, scope: NoteScope): Promise<boolean> {
   const result = await prisma.note.deleteMany({ where: { id, ...scope.where } });
 
   return result.count > 0;

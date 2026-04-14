@@ -115,7 +115,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     if (pane.mode === "idle" || !editTitle.trim()) return;
 
     const timer = setTimeout(() => {
-      void saveRef.current();
+      saveRef.current().catch(() => undefined);
     }, 800);
 
     return () => clearTimeout(timer);
