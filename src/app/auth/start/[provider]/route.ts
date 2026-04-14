@@ -1,6 +1,7 @@
 import type { Provider } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getAppRuntimeConfig } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 const nextCookieName = "domek_next";
@@ -30,7 +31,9 @@ export async function GET(
 
   const supabase = await createSupabaseServerClient();
   const requestUrl = new URL(request.url);
-  const redirectTo = new URL("/auth/callback", request.url).toString();
+  const { appUrl } = getAppRuntimeConfig();
+  const baseUrl = appUrl ?? request.url;
+  const redirectTo = new URL("/auth/callback", baseUrl).toString();
   const nextPath = safeNextPath(requestUrl.searchParams.get("next"));
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider as Provider,

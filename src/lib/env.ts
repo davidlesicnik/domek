@@ -5,6 +5,10 @@ const supabaseRuntimeSchema = z.object({
   supabaseUrl: z.string().url(),
 });
 
+const appRuntimeSchema = z.object({
+  appUrl: z.string().url().optional(),
+});
+
 const databaseSchema = z.object({
   DATABASE_URL: z.string().min(1),
 });
@@ -30,6 +34,10 @@ function getSupabaseEnv() {
 
 export function getSupabaseRuntimeConfig() {
   return supabaseRuntimeSchema.parse(getSupabaseEnv());
+}
+
+export function getAppRuntimeConfig() {
+  return appRuntimeSchema.parse({ appUrl: readEnv("APP_URL") });
 }
 
 export function assertRuntimeEnv() {
