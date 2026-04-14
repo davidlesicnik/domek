@@ -121,7 +121,8 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     return () => clearTimeout(timer);
   }, [editTitle, editBody, pane.mode]);
 
-  function openNote(note: NoteView) {
+  // Switches the editor to a note without flushing — used internally and in rollback paths.
+  function switchToNote(note: NoteView) {
     setPane({ mode: "edit", noteId: note.id });
     setEditTitle(note.title);
     setEditBody(note.body);
@@ -130,7 +131,16 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     setIsMobileDetailOpen(true);
   }
 
+  // P1: flush any pending draft before replacing editor state.
+  // saveRef.current captures pre-switch title/body/pane from the current render closure,
+  // so calling it here — before the setState calls below — saves the correct (old) note.
+  function openNote(note: NoteView) {
+    saveRef.current().catch(() => undefined);
+    switchToNote(note);
+  }
+
   function openNewNote() {
+    saveRef.current().catch(() => undefined);
     setPane({ mode: "new" });
     setEditTitle("");
     setEditBody("");
@@ -141,16 +151,18 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
   async function handleDelete(noteId: string) {
     setConfirmDeleteId(null);
-    const prev = notes;
-    const remaining = notes.filter((n) => n.id !== noteId);
-    setNotes(remaining);
+    const deletedNote = notes.find((n) => n.id === noteId);
+    const deletedIndex = notes.findIndex((n) => n.id === noteId);
+    setNotes((current) => current.filter((n) => n.id !== noteId));
 
     const isCurrentlyOpen = pane.mode === "edit" && pane.noteId === noteId;
 
     if (isCurrentlyOpen) {
+      // Switch without flushing — we're in the middle of a delete, not a user navigation.
+      const remaining = notes.filter((n) => n.id !== noteId);
       const fallback = remaining[0];
       if (fallback) {
-        openNote(fallback);
+        switchToNote(fallback);
       } else {
         setPane({ mode: "idle" });
       }
@@ -161,10 +173,15 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
       const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete note");
     } catch {
-      setNotes(prev);
-      if (isCurrentlyOpen) {
-        const restored = prev.find((n) => n.id === noteId);
-        if (restored) openNote(restored);
+      // P2: re-insert only the deleted note at its original position rather than
+      // replacing the entire list, so concurrent edits to other notes are not lost.
+      if (deletedNote) {
+        setNotes((current) => {
+          const restored = [...current];
+          restored.splice(deletedIndex, 0, deletedNote);
+          return restored;
+        });
+        if (isCurrentlyOpen) switchToNote(deletedNote);
       }
     }
   }
