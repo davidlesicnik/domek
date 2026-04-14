@@ -1,7 +1,7 @@
 -- CreateTable
 CREATE TABLE "ShoppingList" (
     "id" TEXT NOT NULL,
-    "name" VARCHAR(120) NOT NULL,
+    "name" VARCHAR(120) NOT NULL, -- NOSONAR: PostgreSQL uses VARCHAR; VARCHAR2 is Oracle-specific.
     "householdId" TEXT,
     "createdByUserId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -13,7 +13,7 @@ CREATE TABLE "ShoppingList" (
 -- CreateTable
 CREATE TABLE "ShoppingItem" (
     "id" TEXT NOT NULL,
-    "text" VARCHAR(500) NOT NULL,
+    "text" VARCHAR(500) NOT NULL, -- NOSONAR: PostgreSQL uses VARCHAR; VARCHAR2 is Oracle-specific.
     "done" BOOLEAN NOT NULL DEFAULT false,
     "shoppingListId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
