@@ -691,10 +691,12 @@ export function ExpensesBoard({
   function handleNetChartPointerMove(event: React.PointerEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const pointerX = ((event.clientX - rect.left) / rect.width) * 360;
-    const nearestPoint = netChart.points.reduce((nearest, point) =>
-      Math.abs(point.x - pointerX) < Math.abs(nearest.x - pointerX) ? point : nearest,
+    const nearestPoint = netChart.points.reduce<NetPoint | null>((nearest, point) =>
+      !nearest || Math.abs(point.x - pointerX) < Math.abs(nearest.x - pointerX) ? point : nearest,
+      null,
     );
 
+    if (!nearestPoint) return;
     setHoveredNetPoint(nearestPoint);
   }
 

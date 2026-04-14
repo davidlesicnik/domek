@@ -60,6 +60,7 @@ function pickCategoryColor(existingColors: string[]): string {
     (usageCounts[color.toLowerCase()] ?? 0) < (usageCounts[leastUsedColor.toLowerCase()] ?? 0)
       ? color
       : leastUsedColor,
+    EXPENSE_CATEGORY_COLOR_OPTIONS[0],
   );
 }
 
