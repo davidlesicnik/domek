@@ -1,3 +1,4 @@
+import { Banknote, BrushCleaning, CalendarDays, ListTodo, NotebookPen, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 import { FeatureCard } from "@/components/dashboard/feature-card";
@@ -10,50 +11,49 @@ const features = [
     accent: "sage",
     id: "calendar",
     marker: "CAL",
-    title: "Shared calendar",
-    summary:
-      "Birthdays, bins, school days, guests, and all the little dates that keep the house moving.",
-    status: "Open",
+    icon: <CalendarDays aria-hidden className="h-5 w-5" />,
+    title: "Dates that matter",
+    summary: "Birthdays, bins, school days, guests, and all the little dates that keep the house moving.",
   },
   {
     accent: "rose",
     id: "to-do",
     marker: "DO",
-    title: "Shared to-do list",
-    summary: "A place for the small jobs that otherwise live on scraps of paper and kitchen counters.",
-    status: "Open",
+    icon: <ListTodo aria-hidden className="h-5 w-5" />,
+    title: "Things to do",
+    summary: "The small jobs that used to live on scraps of paper and kitchen counters.",
   },
   {
     accent: "sun",
     id: "shopping",
     marker: "SHOP",
+    icon: <ShoppingCart aria-hidden className="h-5 w-5" />,
     title: "Shopping lists",
     summary: "Shared lists for the weekly shop, top-ups, and the things you always forget.",
-    status: "Open",
   },
   {
     accent: "sun",
     id: "notes",
     marker: "NOTE",
-    title: "Shared notes",
+    icon: <NotebookPen aria-hidden className="h-5 w-5" />,
+    title: "Notes for the house",
     summary: "Wi-Fi notes, trip lists, pet care, and anything worth being able to find again.",
-    status: "Open",
   },
   {
     accent: "rose",
     id: "expenses",
     marker: "EUR",
-    title: "Expense tracker",
-    summary: "Simple totals for shared costs, repairs, supplies, and the odd surprise bill.",
-    status: "Open",
+    icon: <Banknote aria-hidden className="h-5 w-5" />,
+    title: "Money to keep track of",
+    summary: "Shared costs, repairs, supplies, and the odd surprise bill - all in one place.",
   },
   {
     accent: "moss",
     id: "chores",
     marker: "JOB",
-    title: "Chore list",
-    summary: "Recurring work without the weekly detective game of who did what last time.",
-    status: "Soon",
+    icon: <BrushCleaning aria-hidden className="h-5 w-5" />,
+    title: "Chores around the house",
+    summary: "Recurring jobs, without the weekly “who did what” debate.",
   },
 ];
 
@@ -77,24 +77,21 @@ export default async function LandingPage() {
       </header>
 
       <main className="mx-auto w-full max-w-[1120px] px-4 pb-20 pt-12 sm:px-6 sm:pt-16">
-        <section className="mx-auto grid w-full max-w-[940px] gap-8 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:p-10">
-          <div className="max-w-2xl">
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              Everything in one place
-            </p>
-            <h2 className="mt-3 font-serif text-4xl font-semibold tracking-normal text-[#171a18] sm:text-5xl">
+        <section className="mx-auto w-full max-w-[940px] rounded-md bg-[#fffdf8] px-8 pb-10 pt-12 shadow-[0_8px_40px_rgba(31,35,30,0.06)] sm:px-14 sm:pb-12 sm:pt-16">
+          <div className="max-w-lg">
+            <h2 className="font-serif text-4xl font-semibold tracking-normal text-[#171a18] sm:text-5xl">
               Your home,<br />organised.
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-[#686e6a]">
-              One shared place for the calendar, the list on the fridge, the chore rhythm,
-              and the money bits no one wants to chase later.
+            <p className="mt-5 text-base leading-7 text-[#686e6a]">
+              One shared place for your calendar, chores, lists, and expenses.<br/>
+              Like the list on the fridge, but for everything.
             </p>
-            <div className="mt-8">
+            <div className="mt-6">
               <Link
                 className="inline-flex h-10 items-center justify-center rounded-md border border-[#b9cdbc] bg-[#eef7ef] px-6 text-sm font-semibold text-[#526c56] transition hover:bg-[#e1f0e3]"
                 href={session ? "/app" : "/login"}
               >
-                {session ? "Open Domek" : "Sign in to get started"}
+                {session ? "Open Domek" : "Get started"}
               </Link>
             </div>
           </div>
