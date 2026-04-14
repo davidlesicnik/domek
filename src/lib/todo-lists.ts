@@ -49,10 +49,6 @@ export const getCurrentTodoScope = getCurrentOwnedListScope<
 export const listAllTodoListsWithItems: (scope: TodoScope) => Promise<TodoListView[]> = todoLists.listAll;
 export const createTodoList: (name: string, scope: TodoScope) => Promise<TodoListView> = todoLists.createList;
 export const deleteTodoList: (id: string, scope: TodoScope) => Promise<boolean> = todoLists.deleteList;
-export const createTodoItem: (
-  listId: string,
-  text: string,
-  scope: TodoScope,
-) => Promise<TodoItemView | null> = todoLists.createItem;
+export const createTodoItem: (listId: string, text: string, scope: TodoScope) => Promise<TodoItemView | null> = todoLists.createItem;
 export const toggleTodoItem: (itemId: string, scope: TodoScope) => Promise<TodoItemView | null> = todoLists.toggleItem;
 export const deleteTodoItem: (itemId: string, scope: TodoScope) => Promise<boolean> = todoLists.deleteItem;

@@ -18,7 +18,7 @@ const navigation = [
   { href: "/todos", icon: ListTodo, label: "To-do" },
   { href: "/shopping", icon: ShoppingCart, label: "Shopping" },
   { href: "/expenses", icon: Banknote, label: "Expenses" },
-  { href: "/#notes", icon: NotebookPen, label: "Notes" },
+  { href: "/notes", icon: NotebookPen, label: "Notes" },
   { href: "/#chores", icon: BrushCleaning, label: "Chores" },
 ];
 
