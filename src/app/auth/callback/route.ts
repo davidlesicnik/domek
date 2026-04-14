@@ -20,11 +20,15 @@ function safeNextPath(value: string | undefined): string {
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
+  const host = request.headers.get("x-forwarded-host") ?? requestUrl.host;
+  const publicOrigin = `${proto}://${host}`;
+
   const code = requestUrl.searchParams.get("code");
   const next = safeNextPath(request.cookies.get(nextCookieName)?.value);
 
   if (!code) {
-    const response = NextResponse.redirect(new URL("/login?error=auth", request.url));
+    const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
     return response;
   }
@@ -33,7 +37,7 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    const response = NextResponse.redirect(new URL("/login?error=auth", request.url));
+    const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
     return response;
   }
@@ -43,7 +47,7 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const response = NextResponse.redirect(new URL("/login?error=auth", request.url));
+    const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
     return response;
   }
@@ -54,7 +58,7 @@ export async function GET(request: NextRequest) {
     where: { userId: appUser.id },
   });
 
-  const response = NextResponse.redirect(new URL(membership ? next : "/onboarding/household", request.url));
+  const response = NextResponse.redirect(new URL(membership ? next : "/onboarding/household", publicOrigin));
   response.cookies.delete(nextCookieName);
   return response;
 }
