@@ -1,10 +1,5 @@
-"use client";
-
 import type { Provider } from "@supabase/supabase-js";
-import { useState } from "react";
 import type { ReactNode } from "react";
-
-import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type OAuthButtonsProps = Readonly<{
   nextPath: string;
@@ -51,55 +46,24 @@ function GitHubIcon() {
   );
 }
 
-const nextCookieName = "domek_next";
-
-function callbackUrl(): string {
-  return new URL("/auth/callback", window.location.origin).toString();
-}
-
-function storeNextPath(nextPath: string) {
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${nextCookieName}=${encodeURIComponent(nextPath)}; Max-Age=600; Path=/; SameSite=Lax${secure}`;
+function authStartHref(provider: Provider, nextPath: string) {
+  const params = new URLSearchParams({ next: nextPath });
+  return `/auth/start/${provider}?${params.toString()}`;
 }
 
 export function OAuthButtons({ nextPath }: OAuthButtonsProps) {
-  const [pendingProvider, setPendingProvider] = useState<Provider | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function signIn(provider: Provider) {
-    setError(null);
-    setPendingProvider(provider);
-    storeNextPath(nextPath);
-
-    const supabase = createSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: callbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setError("Could not start sign-in. Try again in a moment.");
-      setPendingProvider(null);
-    }
-  }
-
   return (
     <div className="grid gap-3">
       {providers.map((provider) => (
-        <button
-          className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef] disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={pendingProvider !== null}
+        <a
+          className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+          href={authStartHref(provider.id, nextPath)}
           key={provider.id}
-          onClick={() => void signIn(provider.id)}
-          type="button"
         >
           {provider.icon}
-          {pendingProvider === provider.id ? "Opening..." : provider.label}
-        </button>
+          {provider.label}
+        </a>
       ))}
-      {error ? <p className="text-sm font-medium text-[#a6543c]">{error}</p> : null}
     </div>
   );
 }
