@@ -22,6 +22,10 @@ function safeNextPath(value: string | null): string {
     return "/";
   }
 
+  if (value.includes("code=")) {
+    return "/";
+  }
+
   return value;
 }
 

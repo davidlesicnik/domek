@@ -16,6 +16,11 @@ function safeNextPath(value: string | null): string {
     return "/";
   }
 
+  // Strip paths carrying an OAuth code — they can't be completed after a redirect
+  if (value.includes("code=")) {
+    return "/";
+  }
+
   return value;
 }
 
@@ -32,8 +37,12 @@ export async function GET(
   const supabase = await createSupabaseServerClient();
   const requestUrl = new URL(request.url);
   const { appUrl } = getAppRuntimeConfig();
-  const baseUrl = appUrl ?? request.url;
-  const redirectTo = new URL("/auth/callback", baseUrl).toString();
+  // Cloud Run terminates TLS at the load balancer, so request.url is http://.
+  // Prefer APP_URL env var, then x-forwarded-proto, then request.url.
+  const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
+  const publicOrigin = appUrl ?? `${proto}://${requestUrl.host}`;
+  const redirectTo = new URL("/auth/callback", publicOrigin).toString();
+  const isSecure = proto === "https";
   const nextPath = safeNextPath(requestUrl.searchParams.get("next"));
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider as Provider,
@@ -50,7 +59,7 @@ export async function GET(
     maxAge: 600,
     path: "/",
     sameSite: "lax",
-    secure: requestUrl.protocol === "https:",
+    secure: isSecure,
   });
 
   return response;
