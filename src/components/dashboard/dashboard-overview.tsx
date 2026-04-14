@@ -24,7 +24,7 @@ const features = [
     marker: "NOTE",
     title: "Shared notes",
     summary: "Wi-Fi notes, shopping ideas, pet care, trip lists, and anything worth finding again.",
-    status: "Soon",
+    status: "Open",
   },
   {
     accent: "moss",
