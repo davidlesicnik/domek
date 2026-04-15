@@ -21,6 +21,10 @@ function isOnboardingPath(pathname: string): boolean {
   return pathname === "/onboarding/household" || pathname.startsWith("/onboarding/household/");
 }
 
+function isInvitePath(pathname: string): boolean {
+  return pathname === "/invite" || pathname.startsWith("/invite/");
+}
+
 function isAuthFlowPath(pathname: string): boolean {
   return (
     pathname === "/auth/callback" ||
@@ -100,7 +104,13 @@ export async function proxy(request: NextRequest) {
     where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
-  if (!membership && !isPublicPath(pathname) && !isOnboardingPath(pathname) && !isAuthFlowPath(pathname)) {
+  if (
+    !membership &&
+    !isPublicPath(pathname) &&
+    !isOnboardingPath(pathname) &&
+    !isInvitePath(pathname) &&
+    !isAuthFlowPath(pathname)
+  ) {
     return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
   }
 
