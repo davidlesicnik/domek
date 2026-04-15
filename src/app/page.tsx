@@ -2,6 +2,7 @@ import { Banknote, BrushCleaning, CalendarDays, ListTodo, NotebookPen, ShoppingC
 import Link from "next/link";
 
 import { FeatureCard } from "@/components/dashboard/feature-card";
+import { Footer } from "@/components/layout/footer";
 import { getCurrentAppSession } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
@@ -109,13 +110,7 @@ export default async function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-[#dfddd6] bg-[#fdfcf8] px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-[1280px]">
-          <p className="text-xs text-[#9ea49f]">
-            Domek — a household planner for the people who live there.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

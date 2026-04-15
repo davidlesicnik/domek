@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { AccountDropdown } from "@/components/layout/account-dropdown";
 import { AppNavigation } from "@/components/layout/app-navigation";
+import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
 
 type AppShellProps = Readonly<{
@@ -30,6 +31,7 @@ export function AppShell({ userName, userId, children }: AppShellProps) {
       <main className="mx-auto w-full max-w-[1120px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
