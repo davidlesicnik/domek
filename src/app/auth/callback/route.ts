@@ -55,10 +55,12 @@ export async function GET(request: NextRequest) {
   const appUser = await upsertSupabaseUser(user);
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId: appUser.id },
+    where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
-  const response = NextResponse.redirect(new URL(membership ? next : "/onboarding/household", publicOrigin));
+  const isInviteNext = next.startsWith("/invite/");
+  const destination = membership ? next : isInviteNext ? next : "/onboarding/household";
+  const response = NextResponse.redirect(new URL(destination, publicOrigin));
   response.cookies.delete(nextCookieName);
   return response;
 }

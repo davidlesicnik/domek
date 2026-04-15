@@ -35,7 +35,7 @@ function userImage(user: SupabaseAuthUser): string | null {
   return stringMetadata(user, "avatar_url") ?? stringMetadata(user, "picture");
 }
 
-export async function upsertSupabaseUser(user: SupabaseAuthUser): Promise<AppUser> {
+export async function upsertSupabaseUser(user: SupabaseAuthUser) {
   const data = {
     email: user.email ?? null,
     id: user.id,
@@ -45,8 +45,9 @@ export async function upsertSupabaseUser(user: SupabaseAuthUser): Promise<AppUse
 
   return prisma.user.upsert({
     create: data,
-    select: userSelect,
+    select: { ...userSelect, deletedAt: true },
     update: {
+      deletedAt: null,
       email: data.email,
       image: data.image,
       name: data.name,
@@ -56,20 +57,20 @@ export async function upsertSupabaseUser(user: SupabaseAuthUser): Promise<AppUse
 }
 
 export async function getFirstHouseholdMembership(userId: string) {
-  return prisma.householdMember.findUnique({
+  return prisma.householdMember.findFirst({
     select: {
       householdId: true,
       id: true,
       role: true,
     },
-    where: { userId },
+    where: { userId, household: { deletedAt: null } },
   });
 }
 
 export async function hasHouseholdMembership(userId: string): Promise<boolean> {
-  const membership = await prisma.householdMember.findUnique({
+  const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId },
+    where: { userId, household: { deletedAt: null } },
   });
 
   return Boolean(membership);

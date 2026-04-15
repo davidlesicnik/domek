@@ -21,6 +21,10 @@ function isOnboardingPath(pathname: string): boolean {
   return pathname === "/onboarding/household" || pathname.startsWith("/onboarding/household/");
 }
 
+function isInvitePath(pathname: string): boolean {
+  return pathname === "/invite" || pathname.startsWith("/invite/");
+}
+
 function isAuthFlowPath(pathname: string): boolean {
   return (
     pathname === "/auth/callback" ||
@@ -88,13 +92,25 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookieUpdates(request, `${loginUrl.pathname}${loginUrl.search}`, cookieUpdates, headerUpdates);
   }
 
-  const appUser = await upsertSupabaseUser(user);
+  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+
+  if (deletedAt) {
+    if (isPublicPath(pathname)) return response;
+    return redirectWithCookieUpdates(request, "/login", cookieUpdates, headerUpdates);
+  }
+
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId: appUser.id },
+    where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
-  if (!membership && !isOnboardingPath(pathname) && !isAuthFlowPath(pathname)) {
+  if (
+    !membership &&
+    !isPublicPath(pathname) &&
+    !isOnboardingPath(pathname) &&
+    !isInvitePath(pathname) &&
+    !isAuthFlowPath(pathname)
+  ) {
     return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
   }
 

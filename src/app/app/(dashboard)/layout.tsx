@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   const session = await requireHouseholdMemberSession();
 
   return (
-    <AppShell userName={session.user.name ?? session.user.email ?? null}>
+    <AppShell userName={session.user.name ?? session.user.email ?? null} userId={session.user.id}>
       {children}
     </AppShell>
   );

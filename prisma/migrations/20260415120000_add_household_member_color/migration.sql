@@ -1,0 +1,2 @@
+ALTER TABLE "HouseholdMember"
+ADD COLUMN "color" VARCHAR(24) NOT NULL DEFAULT 'sage';
