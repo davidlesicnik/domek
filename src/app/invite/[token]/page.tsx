@@ -208,14 +208,16 @@ function InviteErrorPage({
         {heading}
       </h1>
       <p className="mt-3 text-sm leading-6 text-[#686e6a]">{body}</p>
-      <div className="mt-6">
-        <a
-          className="text-sm font-medium text-[#3c413e] underline underline-offset-2 hover:text-[#171a18]"
-          href="/app"
-        >
-          Go to your home board
-        </a>
-      </div>
+      {reason === "already_member" ? (
+        <div className="mt-6">
+          <a
+            className="text-sm font-medium text-[#3c413e] underline underline-offset-2 hover:text-[#171a18]"
+            href="/app"
+          >
+            Go to your home board
+          </a>
+        </div>
+      ) : null}
     </PageShell>
   );
 }

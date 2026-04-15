@@ -19,12 +19,14 @@ export type ExpenseView = {
   categoryName: string | null;
   householdMemberId: string | null;
   householdMemberName: string | null;
+  householdMemberColor: string | null;
 };
 
 export type CategoryView = { id: string; color: string; name: string };
 
 export type MemberView = {
   id: string;
+  color: string;
   name: string | null;
   email: string | null;
 };
@@ -111,7 +113,7 @@ const expenseSelect = {
   category: { select: { color: true, name: true } },
   householdMemberId: true,
   householdMember: {
-    select: { user: { select: { name: true, email: true } } },
+    select: { color: true, user: { select: { name: true, email: true } } },
   },
 } satisfies Prisma.ExpenseSelect;
 
@@ -126,7 +128,7 @@ type RawExpense = {
   categoryId: string | null;
   category: { color: string; name: string } | null;
   householdMemberId: string | null;
-  householdMember: { user: { name: string | null; email: string | null } } | null;
+  householdMember: { color: string; user: { name: string | null; email: string | null } } | null;
 };
 
 function toExpenseView(e: RawExpense): ExpenseView {
@@ -143,6 +145,7 @@ function toExpenseView(e: RawExpense): ExpenseView {
     categoryName: e.category?.name ?? null,
     householdMemberId: e.householdMemberId,
     householdMemberName: e.householdMember?.user.name ?? e.householdMember?.user.email ?? e.memberName,
+    householdMemberColor: e.householdMember?.color ?? null,
   };
 }
 
@@ -350,9 +353,9 @@ export async function updateCategory(
 export async function listMembers(scope: ExpenseScope): Promise<MemberView[]> {
   const members = await prisma.householdMember.findMany({
     orderBy: { createdAt: "asc" },
-    select: { id: true, user: { select: { name: true, email: true } } },
+    select: { id: true, color: true, user: { select: { name: true, email: true } } },
     where: { householdId: scope.householdId },
   });
 
-  return members.map((m) => ({ id: m.id, name: m.user.name, email: m.user.email }));
+  return members.map((m) => ({ id: m.id, color: m.color, name: m.user.name, email: m.user.email }));
 }

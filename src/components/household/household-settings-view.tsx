@@ -1,8 +1,11 @@
 import type { HouseholdRole } from "@prisma/client";
 
+import { HouseholdMemberRow } from "@/components/household/household-member-row";
+
 type Member = {
   id: string;
   role: HouseholdRole;
+  color: string;
   createdAt: Date;
   user: { name: string | null; email: string | null; image: string | null };
 };
@@ -18,9 +21,13 @@ type HouseholdSettingsViewProps = Readonly<{
   householdName: string;
   members: Member[];
   pendingInvites: PendingInvite[];
+  currentMemberId: string;
   isOwner: boolean;
   sendInviteAction: (formData: FormData) => Promise<void>;
   revokeInviteAction: (formData: FormData) => Promise<void>;
+  removeMemberAction: (formData: FormData) => Promise<void>;
+  transferOwnershipAction: (formData: FormData) => Promise<void>;
+  updateMemberColorAction: (formData: FormData) => Promise<void>;
   deleteHouseholdAction: (formData: FormData) => Promise<void>;
   leaveHouseholdAction: () => Promise<void>;
   successMessage: string | null;
@@ -35,37 +42,17 @@ function formatExpiry(date: Date): string {
   return `Expires in ${days} days`;
 }
 
-function MemberInitials({ name, email }: { name: string | null; email: string | null }) {
-  const letter = (name ?? email ?? "?").slice(0, 1).toUpperCase();
-  return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#ebe7df] font-serif text-sm text-[#b94e3f]">
-      {letter}
-    </span>
-  );
-}
-
-function RolePill({ role }: { role: HouseholdRole }) {
-  if (role === "OWNER") {
-    return (
-      <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-[#232323] text-[#fdfcf8]">
-        Owner
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-[#d9ede0] text-[#2e6641]">
-      Member
-    </span>
-  );
-}
-
 export function HouseholdSettingsView({
   householdName,
   members,
   pendingInvites,
+  currentMemberId,
   isOwner,
   sendInviteAction,
   revokeInviteAction,
+  removeMemberAction,
+  transferOwnershipAction,
+  updateMemberColorAction,
   deleteHouseholdAction,
   leaveHouseholdAction,
   successMessage,
@@ -84,21 +71,18 @@ export function HouseholdSettingsView({
 
       {/* Members */}
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
-        <h2 className="text-sm font-semibold text-[#3c413e]">Members</h2>
-        <ul className="mt-3 grid gap-2">
+        <h2 className="text-sm font-semibold text-[#3c413e]">People in your home</h2>
+        <ul className="mt-3 divide-y divide-[#eee9df]">
           {members.map((m) => (
-            <li key={m.id} className="flex items-center gap-3">
-              <MemberInitials name={m.user.name} email={m.user.email} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#202321]">
-                  {m.user.name ?? m.user.email ?? "Unknown"}
-                </p>
-                {m.user.name && m.user.email ? (
-                  <p className="truncate text-xs text-[#686e6a]">{m.user.email}</p>
-                ) : null}
-              </div>
-              <RolePill role={m.role} />
-            </li>
+            <HouseholdMemberRow
+              currentMemberId={currentMemberId}
+              isOwner={isOwner}
+              key={m.id}
+              member={m}
+              removeMemberAction={removeMemberAction}
+              transferOwnershipAction={transferOwnershipAction}
+              updateMemberColorAction={updateMemberColorAction}
+            />
           ))}
         </ul>
       </section>

@@ -4,6 +4,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2
 import { useEffect, useRef, useState } from "react";
 
 import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
+import { getMemberColor } from "@/lib/member-colors";
 
 type ExpenseView = {
   id: string;
@@ -18,10 +19,11 @@ type ExpenseView = {
   categoryName: string | null;
   householdMemberId: string | null;
   householdMemberName: string | null;
+  householdMemberColor: string | null;
 };
 
 type CategoryView = { id: string; color: string; name: string };
-type MemberView = { id: string; name: string | null; email: string | null };
+type MemberView = { id: string; color: string; name: string | null; email: string | null };
 type MonthStats = { carryover: number; income: number; expenses: number; net: number };
 type NetPointEntry = { amount: number; id: string; name: string; type: "INCOME" | "EXPENSE" };
 type NetPoint = { day: number; entries: NetPointEntry[]; value: number; x: number; y: number };
@@ -1527,8 +1529,24 @@ export function ExpensesBoard({
                         )}
                       </td>
                       <td className="hidden px-4 py-3 text-[#686e6a] md:table-cell">
-                        {expense.householdMemberName ?? (
-                          <span className="text-[#c8c4bb]">—</span>
+                        {expense.householdMemberName ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
+                            style={{
+                              backgroundColor: getMemberColor(expense.householdMemberColor).tint,
+                              borderColor: getMemberColor(expense.householdMemberColor).border,
+                              color: getMemberColor(expense.householdMemberColor).avatarText,
+                            }}
+                          >
+                            <span
+                              aria-hidden
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{ backgroundColor: getMemberColor(expense.householdMemberColor).dot }}
+                            />
+                            {expense.householdMemberName}
+                          </span>
+                        ) : (
+                          <span className="text-[#c8c4bb]">-</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
