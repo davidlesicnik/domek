@@ -54,7 +54,7 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
 
   const errorParam = stringParam(sp.error);
 
-  if (!preview || preview.status === "REVOKED") {
+  if (!preview || preview.status === "REVOKED" || preview.household.deletedAt) {
     return <InviteErrorPage reason="not_found" />;
   }
 

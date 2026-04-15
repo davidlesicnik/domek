@@ -85,6 +85,39 @@ async function revokeInviteAction(formData: FormData) {
   redirect("/app/household");
 }
 
+async function deleteHouseholdAction(formData: FormData) {
+  "use server";
+
+  const confirm = formData.get("confirm");
+  if (confirm !== "yes") redirect("/app/household?error=confirm");
+
+  const session = await requireHouseholdMemberSession();
+  const membership = await getFirstHouseholdMembership(session.user.id);
+
+  if (!membership || membership.role !== "OWNER") redirect("/app/household");
+
+  await prisma.$transaction([
+    prisma.householdMember.deleteMany({ where: { householdId: membership.householdId } }),
+    prisma.household.update({
+      where: { id: membership.householdId },
+      data: { deletedAt: new Date() },
+    }),
+  ]);
+  redirect("/onboarding/household");
+}
+
+async function leaveHouseholdAction() {
+  "use server";
+
+  const session = await requireHouseholdMemberSession();
+  const membership = await getFirstHouseholdMembership(session.user.id);
+
+  if (!membership || membership.role === "OWNER") redirect("/app/household");
+
+  await prisma.householdMember.delete({ where: { id: membership.id } });
+  redirect("/onboarding/household");
+}
+
 type HouseholdPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
@@ -125,7 +158,9 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       ? "Enter a valid email address."
       : errorParam === "forbidden"
         ? "Only the household owner can invite people."
-        : null;
+        : errorParam === "confirm"
+          ? "Please check the confirmation box."
+          : null;
 
   return (
     <HouseholdSettingsView
@@ -135,6 +170,8 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       isOwner={membership.role === "OWNER"}
       sendInviteAction={sendInviteAction}
       revokeInviteAction={revokeInviteAction}
+      deleteHouseholdAction={deleteHouseholdAction}
+      leaveHouseholdAction={leaveHouseholdAction}
       successMessage={successMessage}
       errorMessage={errorMessage}
     />

@@ -88,13 +88,19 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookieUpdates(request, `${loginUrl.pathname}${loginUrl.search}`, cookieUpdates, headerUpdates);
   }
 
-  const appUser = await upsertSupabaseUser(user);
+  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+
+  if (deletedAt) {
+    if (isPublicPath(pathname)) return response;
+    return redirectWithCookieUpdates(request, "/login", cookieUpdates, headerUpdates);
+  }
+
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId: appUser.id },
+    where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
-  if (!membership && !isOnboardingPath(pathname) && !isAuthFlowPath(pathname)) {
+  if (!membership && !isPublicPath(pathname) && !isOnboardingPath(pathname) && !isAuthFlowPath(pathname)) {
     return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
   }
 

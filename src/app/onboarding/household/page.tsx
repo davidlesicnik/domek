@@ -32,9 +32,15 @@ async function createHouseholdAction(formData: FormData) {
 
   try {
     created = await prisma.$transaction(async (tx) => {
-      const existingMembership = await tx.householdMember.findUnique({
+      // Remove any stale memberships pointing to soft-deleted households so the
+      // @@unique([userId]) DB constraint doesn't block the new insert.
+      await tx.householdMember.deleteMany({
+        where: { userId: session.user.id, household: { deletedAt: { not: null } } },
+      });
+
+      const existingMembership = await tx.householdMember.findFirst({
         select: { id: true },
-        where: { userId: session.user.id },
+        where: { userId: session.user.id, household: { deletedAt: null } },
       });
 
       if (existingMembership) {
@@ -65,10 +71,10 @@ async function createHouseholdAction(formData: FormData) {
   }
 
   if (!created) {
-    redirect("/");
+    redirect("/app");
   }
 
-  redirect("/");
+  redirect("/app");
 }
 
 export default async function HouseholdOnboardingPage({
@@ -78,7 +84,7 @@ export default async function HouseholdOnboardingPage({
   const existingMembership = await getFirstHouseholdMembership(session.user.id);
 
   if (existingMembership) {
-    redirect("/");
+    redirect("/app");
   }
 
   const params = (await searchParams) ?? {};

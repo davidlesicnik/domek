@@ -17,9 +17,14 @@ export async function getCurrentAppSession(): Promise<AppSession | null> {
     return null;
   }
 
-  return {
-    user: await upsertSupabaseUser(user),
-  };
+  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+
+  if (deletedAt) {
+    await supabase.auth.signOut();
+    return null;
+  }
+
+  return { user: appUser };
 }
 
 export async function requireAppSession(): Promise<AppSession> {

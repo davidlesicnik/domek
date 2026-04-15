@@ -36,7 +36,14 @@ export function AccountDropdown({ userName }: { userName: string | null }) {
               {userName ?? "Household member"}
             </p>
             <a
-              className="mt-3 flex h-9 items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
+              className="mt-3 flex h-9 items-center justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-xs font-semibold text-[#202321] transition hover:bg-[#eef7ef]"
+              href="/app/account"
+              onClick={() => setIsOpen(false)}
+            >
+              Account settings
+            </a>
+            <a
+              className="mt-2 flex h-9 items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
               href="/api/auth/signout"
             >
               Sign out

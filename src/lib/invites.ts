@@ -62,7 +62,7 @@ export async function getInvitePreview(token: string) {
       status: true,
       expiresAt: true,
       email: true,
-      household: { select: { name: true } },
+      household: { select: { name: true, deletedAt: true } },
       invitedBy: { select: { name: true } },
     },
   });
@@ -89,9 +89,16 @@ export async function redeemInvite({
     if (invite.status !== "PENDING") return { ok: false, reason: "already_used" };
     if (invite.expiresAt < new Date()) return { ok: false, reason: "expired" };
 
-    const existingMembership = await tx.householdMember.findUnique({
+    const household = await tx.household.findUnique({
+      select: { deletedAt: true },
+      where: { id: invite.householdId },
+    });
+
+    if (!household || household.deletedAt) return { ok: false, reason: "not_found" };
+
+    const existingMembership = await tx.householdMember.findFirst({
       select: { id: true },
-      where: { userId },
+      where: { userId, household: { deletedAt: null } },
     });
 
     if (existingMembership) return { ok: false, reason: "already_member" };

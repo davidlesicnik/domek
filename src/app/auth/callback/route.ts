@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   const appUser = await upsertSupabaseUser(user);
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId: appUser.id },
+    where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
   const isInviteNext = next.startsWith("/invite/");

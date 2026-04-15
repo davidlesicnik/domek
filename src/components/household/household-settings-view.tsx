@@ -21,6 +21,8 @@ type HouseholdSettingsViewProps = Readonly<{
   isOwner: boolean;
   sendInviteAction: (formData: FormData) => Promise<void>;
   revokeInviteAction: (formData: FormData) => Promise<void>;
+  deleteHouseholdAction: (formData: FormData) => Promise<void>;
+  leaveHouseholdAction: () => Promise<void>;
   successMessage: string | null;
   errorMessage: string | null;
 }>;
@@ -64,6 +66,8 @@ export function HouseholdSettingsView({
   isOwner,
   sendInviteAction,
   revokeInviteAction,
+  deleteHouseholdAction,
+  leaveHouseholdAction,
   successMessage,
   errorMessage,
 }: HouseholdSettingsViewProps) {
@@ -162,6 +166,55 @@ export function HouseholdSettingsView({
           </ul>
         </section>
       ) : null}
+
+      {/* Danger zone */}
+      {isOwner ? (
+        <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
+          <h2 className="text-sm font-semibold text-[#a6543c]">Delete household</h2>
+          <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
+            This will permanently delete all household data including todos, shopping lists, notes,
+            calendar events, and expenses. All members will lose access.
+          </p>
+          {errorMessage ? (
+            <p className="mt-3 text-xs font-medium text-[#a6543c]">{errorMessage}</p>
+          ) : null}
+          <form action={deleteHouseholdAction} className="mt-4 grid gap-3">
+            <label className="flex cursor-pointer items-start gap-2 text-xs text-[#6b3a2d]">
+              <input
+                className="mt-0.5 shrink-0"
+                name="confirm"
+                required
+                type="checkbox"
+                value="yes"
+              />
+              I understand this will permanently delete the household and all its data
+            </label>
+            <div>
+              <button
+                className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
+                type="submit"
+              >
+                Delete household
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : (
+        <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
+          <h2 className="text-sm font-semibold text-[#a6543c]">Leave household</h2>
+          <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
+            You will be removed from this household and lose access to all shared data.
+          </p>
+          <form action={leaveHouseholdAction} className="mt-4">
+            <button
+              className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
+              type="submit"
+            >
+              Leave household
+            </button>
+          </form>
+        </section>
+      )}
     </div>
   );
 }
