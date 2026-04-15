@@ -13,7 +13,7 @@ export default function TermsPage() {
         <div className="mx-auto flex w-full max-w-[1280px] items-center px-4 py-4 sm:px-6">
           <Link
             href="/"
-            className="font-serif text-2xl font-semibold tracking-normal text-[#171a18] hover:opacity-80 transition"
+            className="font-serif text-3xl font-semibold tracking-normal text-[#171a18] hover:opacity-80 transition"
           >
             Domek
           </Link>
