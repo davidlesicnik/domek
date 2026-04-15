@@ -40,11 +40,27 @@ export function getAppRuntimeConfig() {
   return appRuntimeSchema.parse({ appUrl: readEnv("APP_URL") });
 }
 
+const emailSchema = z.object({
+  resendApiKey: z.string().min(1),
+  fromEmail: z.string().min(1).default("Domek <onboarding@resend.dev>"),
+});
+
+export function getEmailConfig() {
+  return emailSchema.parse({
+    resendApiKey: readEnv("RESEND_API_KEY"),
+    fromEmail: readEnv("FROM_EMAIL"),
+  });
+}
+
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
     database: databaseSchema.parse({
       DATABASE_URL: process.env.DATABASE_URL,
+    }),
+    email: emailSchema.parse({
+      resendApiKey: readEnv("RESEND_API_KEY"),
+      fromEmail: readEnv("FROM_EMAIL"),
     }),
   };
 }

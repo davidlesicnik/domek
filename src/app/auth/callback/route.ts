@@ -58,7 +58,9 @@ export async function GET(request: NextRequest) {
     where: { userId: appUser.id },
   });
 
-  const response = NextResponse.redirect(new URL(membership ? next : "/onboarding/household", publicOrigin));
+  const isInviteNext = next.startsWith("/invite/");
+  const destination = membership ? next : isInviteNext ? next : "/onboarding/household";
+  const response = NextResponse.redirect(new URL(destination, publicOrigin));
   response.cookies.delete(nextCookieName);
   return response;
 }

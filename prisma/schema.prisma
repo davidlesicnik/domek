@@ -12,6 +12,12 @@ enum HouseholdRole {
   MEMBER
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
 enum ExpenseType {
   INCOME
   EXPENSE
@@ -30,6 +36,7 @@ model User {
   email             String?           @unique
   image             String?
   memberships       HouseholdMember[]
+  invitesSent       HouseholdInvite[] @relation("InvitesSent")
   calendarEvents    CalendarEvent[]
   todoLists         TodoList[]
   shoppingLists     ShoppingList[]
@@ -44,6 +51,7 @@ model Household {
   id                String            @id @default(cuid())
   name              String
   members           HouseholdMember[]
+  invites           HouseholdInvite[]
   calendarEvents    CalendarEvent[]
   todoLists         TodoList[]
   shoppingLists     ShoppingList[]
@@ -197,4 +205,22 @@ model Expense {
   @@index([householdId, date])
   @@index([categoryId])
   @@index([createdByUserId])
+}
+
+model HouseholdInvite {
+  id          String       @id @default(cuid())
+  token       String       @unique
+  email       String
+  householdId String
+  invitedById String
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  household   Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invitedBy   User         @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([householdId])
+  @@index([email])
 }
