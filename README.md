@@ -54,6 +54,102 @@ Validate deployment configuration with:
 npm run env:check
 ```
 
+Do not commit `.env` files or paste server secrets into public tools, tickets, or chat logs. `SUPABASE_ANON_KEY` / Supabase publishable keys are designed to be browser-visible, but `RESEND_API_KEY`, Supabase service-role keys, and database passwords are server secrets. Rotate any server secret that has been exposed.
+
+## Hosting Options
+
+For a small personal deployment, the simplest path is usually Vercel plus Supabase:
+
+- Vercel hosts the Next.js app with Git-based deploys, HTTPS, previews, and CDN.
+- Supabase provides Postgres and Auth.
+- Vercel Hobby can be enough for personal, non-commercial use.
+- If the app is monetized or used commercially, budget for Vercel Pro instead of Hobby.
+
+For a cheaper monetization-safe start, Railway plus Supabase is the current preferred path:
+
+- Railway hosts the containerized Next.js app.
+- Supabase remains the database and auth provider.
+- Railway's starter/trial tier is useful while validating the app.
+- Railway Hobby is a low-cost next step when the app needs more breathing room.
+
+Other viable options:
+
+- DigitalOcean App Platform plus Supabase for a simple paid platform setup.
+- Fly.io plus Supabase for lower-cost hosting with more operational detail.
+- Hetzner VPS plus Supabase for the cheapest serious setup, with server maintenance handled manually.
+
+Cloudflare Pages is not the cleanest fit for this app as-is because Domek is a server-rendered Next.js app using Prisma/Postgres and Supabase Auth, not a static site.
+
+## Railway Deployment
+
+Create the Railway service from the GitHub repository. Do not use a starter template, Railway database, Docker image import, or empty project for the first deployment.
+
+This repo has a `Dockerfile`, so Railway should deploy it as a Docker-backed service. The production image uses Next.js standalone output and starts with:
+
+```bash
+node server.js
+```
+
+Use these Railway service settings:
+
+```bash
+PORT=3000
+HOSTNAME=0.0.0.0
+```
+
+Set the public Railway domain target port to:
+
+```text
+3000
+```
+
+If Railway injects or suggests `PORT=8080`, the app may start on `8080` while the Dockerfile/domain routing still expects `3000`, causing 502 responses. Keep `PORT`, `HOSTNAME`, and the domain target port aligned.
+
+Railway variables should be raw values, not quoted `.env` syntax. Use `PORT=3000`, not `PORT="3000"`.
+
+Recommended Railway variables:
+
+```bash
+PORT=3000
+HOSTNAME=0.0.0.0
+DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?schema=public"
+SUPABASE_URL="https://PROJECT_REF.supabase.co"
+SUPABASE_ANON_KEY="sb_publishable_or_anon_key"
+RESEND_API_KEY="re_your_server_secret"
+FROM_EMAIL="Domek <noreply@yourdomain.com>"
+APP_URL="https://your-service.up.railway.app"
+```
+
+Do not use the local database URL in Railway:
+
+```bash
+DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
+```
+
+Inside a Railway container, `localhost` means the app container itself, not Supabase and not a separate Postgres service.
+
+Local Docker/Compose-only variables are not needed in Railway when Supabase hosts Postgres:
+
+```bash
+CONTAINER_DATABASE_URL
+POSTGRES_DB
+POSTGRES_PASSWORD
+POSTGRES_PORT
+POSTGRES_USER
+```
+
+### Railway 502 Checklist
+
+If the Railway app shows 502s:
+
+- Confirm the service is using the Dockerfile and the start command is `node server.js`, or leave the start command blank so Docker's `CMD` is used.
+- Confirm `PORT=3000`.
+- Confirm `HOSTNAME=0.0.0.0`.
+- Confirm the Railway public domain target port is `3000`.
+- Check logs for the Next.js startup line and verify it reports port `3000`.
+- Confirm `DATABASE_URL` points to Supabase Postgres, not `localhost`.
+- URL-encode special characters in the database password, especially `@`, `#`, `%`, `/`, `:`, `?`, and `&`.
+
 ## Database
 
 Generate the Prisma client:
