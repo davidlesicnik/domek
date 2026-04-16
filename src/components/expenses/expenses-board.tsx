@@ -4,6 +4,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2
 import { useEffect, useRef, useState } from "react";
 
 import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { getMemberColor } from "@/lib/member-colors";
 
 type ExpenseView = {
@@ -632,6 +633,13 @@ export function ExpensesBoard({
 
       const data = (await res.json()) as { expense: ExpenseView };
       applyExpenseChange(data.expense);
+      if (!editingId) {
+        trackAnalyticsEvent("expense_added", {
+          has_category: Boolean(data.expense.categoryId),
+          has_member: Boolean(data.expense.householdMemberId),
+          type: data.expense.type.toLowerCase(),
+        });
+      }
       resetForm();
     } finally {
       setIsSubmitting(false);

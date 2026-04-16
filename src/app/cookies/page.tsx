@@ -24,8 +24,21 @@ export default function CookiesPage() {
         <h1 className="font-serif text-3xl font-semibold tracking-normal text-[#171a18] sm:text-4xl">
           Cookie policy
         </h1>
-        <div className="mt-8 text-sm leading-7 text-[#686e6a]">
-          {/* Write your cookie policy content here */}
+        <div className="mt-8 space-y-5 text-sm leading-7 text-[#686e6a]">
+          <p>
+            Domek uses essential cookies to keep you signed in and protect your session.
+            These cookies are required for the home board to work.
+          </p>
+          <p>
+            If analytics is enabled, Domek may also use Google Analytics cookies to
+            understand aggregate page views and product events. Analytics should not
+            include household names, invite tokens, note text, list item text, expense
+            amounts, or other household content.
+          </p>
+          <p>
+            You can limit or block cookies in your browser settings. Blocking essential
+            cookies may prevent sign-in and shared household features from working.
+          </p>
         </div>
       </main>
 

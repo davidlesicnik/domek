@@ -10,6 +10,7 @@ type ShoppingBoardProps = Readonly<{
 export function ShoppingBoard({ initialLists }: ShoppingBoardProps) {
   return (
     <ListBoard
+      analyticsArea="shopping"
       initialLists={initialLists}
       itemsPath="/api/shopping/items"
       listsPath="/api/shopping/lists"

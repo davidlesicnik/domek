@@ -1,5 +1,9 @@
+"use client";
+
 import type { Provider } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
+
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 type OAuthButtonsProps = Readonly<{
   nextPath: string;
@@ -58,6 +62,7 @@ export function OAuthButtons({ nextPath }: OAuthButtonsProps) {
       <a
         className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md bg-[#202321] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#3a3d39]"
         href={authStartHref(google.id, nextPath)}
+        onClick={() => trackAnalyticsEvent("login_started", { provider: google.id })}
       >
         {google.icon}
         {google.label}
@@ -65,6 +70,7 @@ export function OAuthButtons({ nextPath }: OAuthButtonsProps) {
       <a
         className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-medium text-[#4a4f4c] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
         href={authStartHref(github.id, nextPath)}
+        onClick={() => trackAnalyticsEvent("login_started", { provider: github.id })}
       >
         {github.icon}
         {github.label}
