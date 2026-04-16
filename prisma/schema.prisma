@@ -31,21 +31,22 @@ enum CalendarEventCategory {
 }
 
 model User {
-  id                String            @id
-  name              String?
-  email             String?           @unique
-  image             String?
-  deletedAt         DateTime?
-  memberships       HouseholdMember[]
-  invitesSent       HouseholdInvite[] @relation("InvitesSent")
-  calendarEvents    CalendarEvent[]
-  todoLists         TodoList[]
-  shoppingLists     ShoppingList[]
-  notes             Note[]
-  expenseCategories ExpenseCategory[]
-  expenses          Expense[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                         String            @id
+  name                       String?
+  email                      String?           @unique
+  image                      String?
+  deletedAt                  DateTime?
+  developmentAccessGrantedAt DateTime?
+  memberships                HouseholdMember[]
+  invitesSent                HouseholdInvite[] @relation("InvitesSent")
+  calendarEvents             CalendarEvent[]
+  todoLists                  TodoList[]
+  shoppingLists              ShoppingList[]
+  notes                      Note[]
+  expenseCategories          ExpenseCategory[]
+  expenses                   Expense[]
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
 }
 
 model Household {

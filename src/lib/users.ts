@@ -3,6 +3,7 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { prisma } from "@/lib/db";
 
 export type AppUser = Readonly<{
+  developmentAccessGrantedAt: Date | null;
   id: string;
   name: string | null;
   email: string | null;
@@ -10,6 +11,7 @@ export type AppUser = Readonly<{
 }>;
 
 const userSelect = {
+  developmentAccessGrantedAt: true,
   email: true,
   id: true,
   image: true,

@@ -41,7 +41,7 @@ export async function requireHouseholdMemberSession(): Promise<AppSession> {
   const session = await requireAppSession();
 
   if (!(await hasHouseholdMembership(session.user.id))) {
-    redirect("/onboarding/household");
+    redirect(session.user.developmentAccessGrantedAt ? "/onboarding/household" : "/onboarding/payment");
   }
 
   return session;

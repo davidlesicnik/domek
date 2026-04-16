@@ -59,7 +59,13 @@ export async function GET(request: NextRequest) {
   });
 
   const isInviteNext = next.startsWith("/invite/");
-  const destination = membership ? next : isInviteNext ? next : "/onboarding/household";
+  const destination = membership
+    ? next
+    : isInviteNext
+      ? next
+      : appUser.developmentAccessGrantedAt
+        ? "/onboarding/household"
+        : "/onboarding/payment";
   const response = NextResponse.redirect(new URL(destination, publicOrigin));
   response.cookies.delete(nextCookieName);
   return response;
