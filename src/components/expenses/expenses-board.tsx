@@ -620,7 +620,7 @@ export function ExpensesBoard({
           notes: form.notes.trim() || null,
           categoryId,
           householdMemberId: form.householdMemberId || null,
-          memberName: members.length === 0 ? form.memberName.trim() || null : null,
+          memberName: null,
         }),
       });
 
@@ -1353,72 +1353,54 @@ export function ExpensesBoard({
               >
                 Category
               </label>
-              <CustomSelect
-                buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
-                id="exp-category"
-                onChange={(value) => updateForm({ categoryId: value, newCategoryName: "" })}
-                options={expenseCategoryOptions}
-                value={form.categoryId}
-              />
-            </div>
-
-            {/* New category name input */}
-            {form.categoryId === "__new__" && (
-              <div>
-                <label
-                  className="mb-1 block text-xs font-medium text-[#545b57]"
-                  htmlFor="exp-new-cat"
-                >
-                  New category name
-                </label>
-                <input
-                  className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
-                  id="exp-new-cat"
-                  onChange={(e) => updateForm({ newCategoryName: e.target.value })}
-                  placeholder="e.g. Groceries"
-                  required
-                  type="text"
-                  value={form.newCategoryName}
-                />
-              </div>
-            )}
-
-            {/* Household member */}
-            {members.length > 0 ? (
-              <div>
-                <label
-                  className="mb-1 block text-xs font-medium text-[#545b57]"
-                  htmlFor="exp-member"
-                >
-                  Household member
-                </label>
+              {form.categoryId === "__new__" ? (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    className="min-w-0 flex-1 rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                    id="exp-category"
+                    onChange={(e) => updateForm({ newCategoryName: e.target.value })}
+                    placeholder="New category name"
+                    required
+                    type="text"
+                    value={form.newCategoryName}
+                  />
+                  <button
+                    aria-label="Cancel new category"
+                    className="shrink-0 rounded-md border border-[#dfddd6] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+                    onClick={() => updateForm({ categoryId: "", newCategoryName: "" })}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
                 <CustomSelect
                   buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
-                  id="exp-member"
-                  onChange={(value) => updateForm({ householdMemberId: value })}
-                  options={memberOptions}
-                  value={form.householdMemberId}
+                  id="exp-category"
+                  onChange={(value) => updateForm({ categoryId: value, newCategoryName: "" })}
+                  options={expenseCategoryOptions}
+                  value={form.categoryId}
                 />
-              </div>
-            ) : (
-              <div>
-                <label
-                  className="mb-1 block text-xs font-medium text-[#545b57]"
-                  htmlFor="exp-member-name"
-                >
-                  Member <span className="font-normal text-[#9da39f]">(optional)</span>
-                </label>
-                <input
-                  className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
-                  id="exp-member-name"
-                  maxLength={120}
-                  onChange={(e) => updateForm({ memberName: e.target.value })}
-                  placeholder="e.g. David"
-                  type="text"
-                  value={form.memberName}
-                />
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Household member */}
+            <div>
+              <label
+                className="mb-1 block text-xs font-medium text-[#545b57]"
+                htmlFor="exp-member"
+              >
+                Household member
+              </label>
+              <CustomSelect
+                buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
+                id="exp-member"
+                onChange={(value) => updateForm({ householdMemberId: value })}
+                options={memberOptions}
+                value={form.householdMemberId}
+              />
+            </div>
 
             {/* Notes */}
             <div className="sm:col-span-2">
