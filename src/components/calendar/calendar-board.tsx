@@ -11,6 +11,7 @@ import {
   type CalendarEventView,
   type CalendarMemberOption,
 } from "@/lib/calendar-types";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { getMemberColor } from "@/lib/member-colors";
 
 type CalendarBoardProps = Readonly<{
@@ -417,6 +418,11 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
       setVisibleMonth({
         monthIndex: savedEventDate.getUTCMonth(),
         year: savedEventDate.getUTCFullYear(),
+      });
+      trackAnalyticsEvent("calendar_plan_added", {
+        category: savedEvent.category,
+        has_assigned_members: savedEvent.householdMemberIds.length > 0,
+        time_kind: savedEvent.time.kind,
       });
       closeComposer();
     } catch {

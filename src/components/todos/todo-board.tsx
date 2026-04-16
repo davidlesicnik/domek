@@ -10,6 +10,7 @@ type TodoBoardProps = Readonly<{
 export function TodoBoard({ initialLists }: TodoBoardProps) {
   return (
     <ListBoard
+      analyticsArea="todo"
       initialLists={initialLists}
       itemsPath="/api/todos/items"
       listsPath="/api/todos/lists"

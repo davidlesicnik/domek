@@ -53,11 +53,14 @@ POSTGRES_PASSWORD="domek"
 POSTGRES_PORT="5432"
 SUPABASE_URL=""
 SUPABASE_ANON_KEY=""
+NEXT_PUBLIC_GA_MEASUREMENT_ID=""
 RESEND_API_KEY=""
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
 ```
 
 `APP_URL` is optional locally (defaults to `http://localhost:3000`) but required in production so invite links resolve to the correct origin.
+
+`NEXT_PUBLIC_GA_MEASUREMENT_ID` is optional. When set, Domek loads Google Analytics in the browser for aggregate page views and product events. Do not send household names, member details, invite tokens, note text, list item text, expense amounts, or other user-entered household content to analytics.
 
 Validate deployment configuration with:
 
@@ -104,6 +107,7 @@ SUPABASE_URL="https://PROJECT_REF.supabase.co"
 SUPABASE_ANON_KEY="sb_publishable_or_anon_key"
 RESEND_API_KEY="re_your_server_secret"
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
 APP_URL="https://your-service.up.railway.app"
 ```
 

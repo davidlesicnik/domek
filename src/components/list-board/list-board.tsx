@@ -3,14 +3,18 @@
 import type { SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { trackAnalyticsEvent } from "@/lib/analytics";
+
 export type ListItemView = { id: string; text: string; done: boolean };
 export type ListView = { id: string; name: string; items: ListItemView[] };
+export type ListBoardAnalyticsArea = "shopping" | "todo";
 
 type ListBoardProps = Readonly<{
   title: string;
   listsPath: string;
   itemsPath: string;
   initialLists: ListView[];
+  analyticsArea: ListBoardAnalyticsArea;
 }>;
 
 // Pure helpers — extracted to avoid deep nesting inside state updaters
@@ -71,7 +75,13 @@ function ChevronLeftIcon(props: IconProps) {
   );
 }
 
-export function ListBoard({ title, listsPath, itemsPath, initialLists }: ListBoardProps) {
+export function ListBoard({
+  title,
+  listsPath,
+  itemsPath,
+  initialLists,
+  analyticsArea,
+}: ListBoardProps) {
   const [lists, setLists] = useState<ListView[]>(initialLists);
   const [selectedListId, setSelectedListId] = useState<string | null>(
     initialLists[0]?.id ?? null,
@@ -130,6 +140,7 @@ export function ListBoard({ title, listsPath, itemsPath, initialLists }: ListBoa
       setLists((prev) => [...prev, list]);
       setSelectedListId(list.id);
       setIsMobileListOpen(true);
+      trackAnalyticsEvent("list_created", { area: analyticsArea });
     } catch {
       setNewListName(name);
     } finally {
@@ -181,6 +192,7 @@ export function ListBoard({ title, listsPath, itemsPath, initialLists }: ListBoa
 
       const { item } = (await res.json()) as { item: ListItemView };
       setLists((prev) => withItemReplaced(prev, selectedList.id, optimisticId, item));
+      trackAnalyticsEvent("list_item_added", { area: analyticsArea });
     } catch {
       setNewItemText(text);
       setLists((prev) => withItemRemoved(prev, selectedList.id, optimisticId));
@@ -195,6 +207,9 @@ export function ListBoard({ title, listsPath, itemsPath, initialLists }: ListBoa
     try {
       const res = await fetch(`${itemsPath}/${itemId}`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to toggle item");
+      if (!currentDone) {
+        trackAnalyticsEvent("list_item_checked", { area: analyticsArea });
+      }
     } catch {
       setLists((prev) => withItemToggled(prev, listId, itemId, currentDone));
     }

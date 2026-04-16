@@ -3,6 +3,7 @@
 import type { SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import type { NoteView } from "@/lib/notes";
 
 type NotesBoardProps = Readonly<{
@@ -88,6 +89,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
         const { note } = (await res.json()) as { note: NoteView };
         setNotes((prev) => [...prev, note]);
         setPane({ mode: "edit", noteId: note.id });
+        trackAnalyticsEvent("note_created");
       } else if (pane.mode === "edit") {
         const res = await fetch(`/api/notes/${pane.noteId}`, {
           body: JSON.stringify({ title, body: editBody.trim() }),

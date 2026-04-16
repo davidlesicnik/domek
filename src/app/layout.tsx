@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+      </body>
     </html>
   );
 }
