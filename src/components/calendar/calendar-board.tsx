@@ -9,10 +9,13 @@ import {
   type CalendarEventInput,
   type CalendarEventTime,
   type CalendarEventView,
+  type CalendarMemberOption,
 } from "@/lib/calendar-types";
+import { getMemberColor } from "@/lib/member-colors";
 
 type CalendarBoardProps = Readonly<{
   initialEvents: CalendarEventView[];
+  members: CalendarMemberOption[];
   todayKey: string;
 }>;
 
@@ -25,12 +28,6 @@ type ComposerMode = "dialog" | "panel";
 type CalendarIconProps = SVGProps<SVGSVGElement>;
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const personPillStyles = [
-  "border-[#d7aaa5] bg-[#f7ecea] text-[#7b4640]",
-  "border-[#b7c8ba] bg-[#edf3ee] text-[#426148]",
-  "border-[#d9c77b] bg-[#faf3d9] text-[#62551b]",
-  "border-[#c7cbdf] bg-[#f0f1f8] text-[#4c5376]",
-];
 
 const categoryStyles: Record<
   CalendarCategory,
@@ -177,25 +174,6 @@ function eventTimeLabel(time: CalendarEventTime) {
   return time.kind === "all-day" ? "All day" : time.value;
 }
 
-function getPersonPillStyle(name: string) {
-  const hash = Array.from(name).reduce((total, character) => {
-    return total + character.charCodeAt(0);
-  }, 0);
-
-  return personPillStyles[hash % personPillStyles.length];
-}
-
-function splitPeople(peopleText: string) {
-  return Array.from(
-    new Set(
-      peopleText
-        .split(",")
-        .map((person) => person.trim())
-        .filter(Boolean),
-    ),
-  );
-}
-
 function groupEventsByDate(events: CalendarEventView[]) {
   return events.reduce<Record<string, CalendarEventView[]>>((eventsByDate, calendarEvent) => {
     return {
@@ -208,10 +186,16 @@ function groupEventsByDate(events: CalendarEventView[]) {
 function CalendarEventCard({
   calendarEvent,
   className = "rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4",
+  membersById,
 }: Readonly<{
   calendarEvent: CalendarEventView;
   className?: string;
+  membersById: Map<string, CalendarMemberOption>;
 }>) {
+  const assignedMembers = calendarEvent.householdMemberIds
+    .map((memberId) => membersById.get(memberId))
+    .filter((member): member is CalendarMemberOption => Boolean(member));
+
   return (
     <article className={className}>
       <div className="flex flex-wrap items-center gap-2">
@@ -230,26 +214,62 @@ function CalendarEventCard({
       <h3 className="mt-2 text-base font-semibold text-[#202321]">
         {calendarEvent.name}
       </h3>
-      {calendarEvent.people.length > 0 ? (
+      {assignedMembers.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {calendarEvent.people.map((person) => (
-            <span
-              className={cx(
-                "inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold",
-                getPersonPillStyle(person),
-              )}
-              key={person}
-            >
-              {person}
-            </span>
-          ))}
+          {assignedMembers.map((member) => {
+            const color = getMemberColor(member.color);
+
+            return (
+              <span
+                className="inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold"
+                key={member.id}
+                style={{
+                  backgroundColor: color.tint,
+                  borderColor: color.border,
+                  color: color.avatarText,
+                }}
+              >
+                {memberLabel(member)}
+              </span>
+            );
+          })}
         </div>
       ) : null}
     </article>
   );
 }
 
-export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
+function memberLabel(member: CalendarMemberOption) {
+  return member.name ?? member.email ?? "Household member";
+}
+
+function SelectedMemberPill({
+  member,
+  onRemove,
+}: Readonly<{
+  member: CalendarMemberOption;
+  onRemove: () => void;
+}>) {
+  const color = getMemberColor(member.color);
+
+  return (
+    <button
+      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold"
+      onClick={onRemove}
+      style={{
+        backgroundColor: color.tint,
+        borderColor: color.border,
+        color: color.avatarText,
+      }}
+      type="button"
+    >
+      {memberLabel(member)}
+      <span aria-hidden>x</span>
+    </button>
+  );
+}
+
+export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoardProps) {
   const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
   const [visibleMonth, setVisibleMonth] = useState<MonthCursor>(() => ({
     monthIndex: today.getUTCMonth(),
@@ -263,7 +283,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
   const [eventCategory, setEventCategory] = useState<CalendarCategory>("home");
   const [isAllDay, setIsAllDay] = useState(true);
   const [eventTime, setEventTime] = useState("");
-  const [peopleText, setPeopleText] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -289,6 +309,10 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
   );
   const selectedDate = useMemo(() => parseDateKey(selectedDateKey), [selectedDateKey]);
   const selectedEvents = eventsByDate[selectedDateKey] ?? [];
+  const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+  const selectedMembers = selectedMemberIds
+    .map((memberId) => membersById.get(memberId))
+    .filter((member): member is CalendarMemberOption => Boolean(member));
   const isCurrentMonthVisible =
     visibleMonth.monthIndex === today.getUTCMonth() && visibleMonth.year === today.getUTCFullYear();
 
@@ -332,7 +356,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
     setEventCategory("home");
     setIsAllDay(true);
     setEventTime("");
-    setPeopleText("");
+    setSelectedMemberIds([]);
     setFormError(null);
   }
 
@@ -359,8 +383,8 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
     const input: CalendarEventInput = {
       category: eventCategory,
       dateKey: composerDateKey,
+      householdMemberIds: selectedMemberIds,
       name: trimmedEventName,
-      people: splitPeople(peopleText),
       time: isAllDay ? { kind: "all-day" } : { kind: "time", value: eventTime },
     };
 
@@ -468,16 +492,55 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
           ) : null}
         </div>
 
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+        <div className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           Who is involved?
-          <input
+          <select
             className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            onChange={(changeEvent) => setPeopleText(changeEvent.target.value)}
-            type="text"
-            value={peopleText}
-          />
-          <span className="text-xs font-medium text-[#777f7a]">Separate names with commas.</span>
-        </label>
+            disabled={members.length === 0}
+            onChange={(changeEvent) => {
+              const memberId = changeEvent.target.value;
+              if (!memberId) return;
+              setSelectedMemberIds((currentIds) =>
+                currentIds.includes(memberId) ? currentIds : [...currentIds, memberId],
+              );
+              changeEvent.target.value = "";
+            }}
+            value=""
+          >
+            <option value="">
+              {members.length > 0 ? "Add household member" : "No household members yet"}
+            </option>
+            {members.map((member) => (
+              <option
+                disabled={selectedMemberIds.includes(member.id)}
+                key={member.id}
+                value={member.id}
+              >
+                {memberLabel(member)}
+              </option>
+            ))}
+          </select>
+          {selectedMembers.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedMembers.map((member) => (
+                <SelectedMemberPill
+                  key={member.id}
+                  member={member}
+                  onRemove={() =>
+                    setSelectedMemberIds((currentIds) =>
+                      currentIds.filter((memberId) => memberId !== member.id),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+          {members.length === 0 ? (
+            <span className="text-xs font-medium text-[#777f7a]">
+              Add household members in household settings first.
+            </span>
+          ) : null}
+        </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {formError ? (
@@ -617,6 +680,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                         calendarEvent={calendarEvent}
                         className="p-4"
                         key={calendarEvent.id}
+                        membersById={membersById}
                       />
                     ))}
                   </div>
@@ -749,6 +813,7 @@ export function CalendarBoard({ initialEvents, todayKey }: CalendarBoardProps) {
                 <CalendarEventCard
                   calendarEvent={calendarEvent}
                   key={calendarEvent.id}
+                  membersById={membersById}
                 />
               ))
             ) : (

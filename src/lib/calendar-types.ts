@@ -12,7 +12,7 @@ export type CalendarEventView = Readonly<{
   name: string;
   category: CalendarCategory;
   time: CalendarEventTime;
-  people: string[];
+  householdMemberIds: string[];
 }>;
 
 export type CalendarEventInput = Readonly<{
@@ -20,5 +20,12 @@ export type CalendarEventInput = Readonly<{
   name: string;
   category: CalendarCategory;
   time: CalendarEventTime;
-  people: string[];
+  householdMemberIds: string[];
+}>;
+
+export type CalendarMemberOption = Readonly<{
+  id: string;
+  name: string | null;
+  email: string | null;
+  color: string;
 }>;

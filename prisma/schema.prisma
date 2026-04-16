@@ -83,19 +83,19 @@ model HouseholdMember {
 }
 
 model CalendarEvent {
-  id              String                @id @default(cuid())
-  dateKey         String                @db.VarChar(10)
-  name            String                @db.VarChar(200)
-  category        CalendarEventCategory
-  allDay          Boolean               @default(true)
-  time            String?               @db.VarChar(5)
-  people          String[]              @default([])
-  householdId     String?
-  createdByUserId String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  household       Household?            @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  createdBy       User?                 @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  id                 String                @id @default(cuid())
+  dateKey            String                @db.VarChar(10)
+  name               String                @db.VarChar(200)
+  category           CalendarEventCategory
+  allDay             Boolean               @default(true)
+  time               String?               @db.VarChar(5)
+  householdMemberIds String[]              @default([])
+  householdId        String?
+  createdByUserId    String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  household          Household?            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy          User?                 @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([dateKey])
   @@index([householdId, dateKey])

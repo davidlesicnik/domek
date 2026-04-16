@@ -7,12 +7,14 @@ import {
   type CalendarCategory,
   type CalendarEventInput,
   type CalendarEventView,
+  type CalendarMemberOption,
 } from "@/lib/calendar-types";
 import { prisma } from "@/lib/db";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 type CalendarScope = Readonly<{
   create: Pick<Prisma.CalendarEventUncheckedCreateInput, "createdByUserId" | "householdId">;
+  householdId: string;
   where: Prisma.CalendarEventWhereInput;
 }>;
 
@@ -37,9 +39,9 @@ const calendarEventSelect = {
   allDay: true,
   category: true,
   dateKey: true,
+  householdMemberIds: true,
   id: true,
   name: true,
-  people: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -47,11 +49,11 @@ const calendarEventInputSchema = z
   .object({
     category: z.enum(calendarCategoryOptions),
     dateKey: z.string().regex(dateKeyPattern).refine(isValidDateKey, "Use a valid date."),
-    name: z.string().trim().min(1).max(200),
-    people: z
-      .array(z.string().trim().min(1).max(80))
+    householdMemberIds: z
+      .array(z.string().cuid())
       .max(30)
-      .transform((people) => Array.from(new Set(people))),
+      .transform((memberIds) => Array.from(new Set(memberIds))),
+    name: z.string().trim().min(1).max(200),
     time: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("all-day") }),
       z.object({ kind: z.literal("time"), value: z.string().regex(timePattern) }),
@@ -72,9 +74,9 @@ function toCalendarEventView(
   return {
     category: dbCategoryToCalendar[calendarEvent.category],
     dateKey: calendarEvent.dateKey,
+    householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
-    people: calendarEvent.people,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },
@@ -104,10 +106,32 @@ export async function getCurrentCalendarScope(): Promise<CalendarScope | null> {
       createdByUserId: session.user.id,
       householdId,
     },
+    householdId,
     where: {
       householdId,
     },
   };
+}
+
+export async function listCalendarEventMembers(): Promise<CalendarMemberOption[]> {
+  const scope = await getCurrentCalendarScope();
+
+  if (!scope) {
+    return [];
+  }
+
+  const members = await prisma.householdMember.findMany({
+    orderBy: { createdAt: "asc" },
+    select: { id: true, color: true, user: { select: { email: true, name: true } } },
+    where: { householdId: scope.householdId },
+  });
+
+  return members.map((member) => ({
+    color: member.color,
+    email: member.user.email,
+    id: member.id,
+    name: member.user.name,
+  }));
 }
 
 export async function listCalendarEvents() {
@@ -127,14 +151,26 @@ export async function listCalendarEvents() {
 }
 
 export async function createCalendarEvent(input: CalendarEventInput, scope: CalendarScope) {
+  const members =
+    input.householdMemberIds.length > 0
+      ? await prisma.householdMember.findMany({
+          select: { id: true },
+          where: { householdId: scope.householdId, id: { in: input.householdMemberIds } },
+        })
+      : [];
+
+  if (members.length !== input.householdMemberIds.length) {
+    return null;
+  }
+
   const calendarEvent = await prisma.calendarEvent.create({
     data: {
       ...scope.create,
       allDay: input.time.kind === "all-day",
       category: calendarCategoryToDb[input.category],
       dateKey: input.dateKey,
+      householdMemberIds: input.householdMemberIds,
       name: input.name,
-      people: input.people,
       time: input.time.kind === "time" ? input.time.value : null,
     },
     select: calendarEventSelect,

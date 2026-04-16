@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { CalendarBoard } from "@/components/calendar/calendar-board";
-import { listCalendarEvents } from "@/lib/calendar-events";
+import { listCalendarEventMembers, listCalendarEvents } from "@/lib/calendar-events";
 
 export const metadata: Metadata = {
   title: "Calendar | Domek",
@@ -13,7 +13,10 @@ function todayKey() {
 }
 
 export default async function CalendarPage() {
-  const initialEvents = await listCalendarEvents();
+  const [initialEvents, members] = await Promise.all([
+    listCalendarEvents(),
+    listCalendarEventMembers(),
+  ]);
 
-  return <CalendarBoard initialEvents={initialEvents} todayKey={todayKey()} />;
+  return <CalendarBoard initialEvents={initialEvents} members={members} todayKey={todayKey()} />;
 }
