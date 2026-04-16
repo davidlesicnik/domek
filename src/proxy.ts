@@ -11,7 +11,17 @@ type CookieUpdate = Readonly<{
   options: CookieOptions;
 }>;
 
-const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/auth/start", "/api/auth/signout"];
+const PUBLIC_PATHS = [
+  "/",
+  "/contact",
+  "/cookies",
+  "/login",
+  "/privacy",
+  "/terms",
+  "/auth/callback",
+  "/auth/start",
+  "/api/auth/signout",
+];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
