@@ -26,6 +26,19 @@ declare global {
   }
 }
 
+export function hasCookieConsent() {
+  return readCookieConsent() === "accepted";
+}
+
+export function disableAnalytics() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.gtag = undefined;
+  window.dataLayer = [];
+}
+
 export function readCookieConsent(): CookieConsentValue | null {
   if (typeof document === "undefined") {
     return null;
@@ -46,6 +59,9 @@ export function writeCookieConsent(value: CookieConsentValue) {
 
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `${cookieConsentName}=${value}; Path=/; Max-Age=${cookieConsentMaxAgeSeconds}; SameSite=Lax${secure}`;
+  if (value === "rejected") {
+    disableAnalytics();
+  }
   window.dispatchEvent(new Event(cookieConsentChangedEvent));
 }
 
@@ -53,7 +69,11 @@ export function trackAnalyticsEvent(
   eventName: AnalyticsEventName,
   eventParams: AnalyticsEventParams = {},
 ) {
-  if (typeof window === "undefined" || typeof window.gtag !== "function") {
+  if (
+    typeof window === "undefined" ||
+    !hasCookieConsent() ||
+    typeof window.gtag !== "function"
+  ) {
     return;
   }
 

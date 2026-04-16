@@ -4,7 +4,11 @@ import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { cookieConsentChangedEvent, readCookieConsent } from "@/lib/analytics";
+import {
+  cookieConsentChangedEvent,
+  disableAnalytics,
+  hasCookieConsent as hasStoredCookieConsent,
+} from "@/lib/analytics";
 
 type GoogleAnalyticsProps = Readonly<{
   measurementId?: string;
@@ -47,7 +51,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamSnapshot = searchParams.toString();
-  const [hasCookieConsent, setHasCookieConsent] = useState(false);
+  const [isCookieConsentAccepted, setIsCookieConsentAccepted] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const pagePath = useMemo(() => {
     const stableSearchParams = new URLSearchParams(searchParamSnapshot);
@@ -57,7 +61,13 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
 
   useEffect(() => {
     function syncConsent() {
-      setHasCookieConsent(readCookieConsent() === "accepted");
+      const isAccepted = hasStoredCookieConsent();
+      setIsCookieConsentAccepted(isAccepted);
+
+      if (!isAccepted) {
+        setIsReady(false);
+        disableAnalytics();
+      }
     }
 
     syncConsent();
@@ -67,7 +77,13 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   }, []);
 
   useEffect(() => {
-    if (!measurementId || !hasCookieConsent || !isReady || typeof window.gtag !== "function") {
+    if (
+      !measurementId ||
+      !isCookieConsentAccepted ||
+      !isReady ||
+      !hasStoredCookieConsent() ||
+      typeof window.gtag !== "function"
+    ) {
       return;
     }
 
@@ -75,9 +91,9 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       page_path: pagePath,
       page_title: document.title,
     });
-  }, [hasCookieConsent, isReady, measurementId, pagePath]);
+  }, [isCookieConsentAccepted, isReady, measurementId, pagePath]);
 
-  if (!measurementId || !hasCookieConsent) {
+  if (!measurementId || !isCookieConsentAccepted) {
     return null;
   }
 
