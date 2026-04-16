@@ -1,16 +1,56 @@
 "use client";
 
 import Script from "next/script";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type GoogleAnalyticsProps = Readonly<{
   measurementId?: string;
 }>;
 
+const trackedQueryParams = ["error", "success"] as const;
+const safeQueryValuePattern = /^[a-z0-9_-]{1,64}$/i;
+
+function sanitizePathname(pathname: string) {
+  if (pathname.startsWith("/invite/")) {
+    return "/invite/[token]";
+  }
+
+  if (pathname.startsWith("/auth/start/")) {
+    return "/auth/start/[provider]";
+  }
+
+  return pathname;
+}
+
+function sanitizeSearchParams(searchParams: URLSearchParams) {
+  const sanitizedParams = new URLSearchParams();
+
+  for (const key of trackedQueryParams) {
+    const value = searchParams.get(key);
+
+    if (!value) {
+      continue;
+    }
+
+    sanitizedParams.set(key, safeQueryValuePattern.test(value) ? value : "present");
+  }
+
+  const queryString = sanitizedParams.toString();
+
+  return queryString ? `?${queryString}` : "";
+}
+
 export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamSnapshot = searchParams.toString();
   const [isReady, setIsReady] = useState(false);
+  const pagePath = useMemo(() => {
+    const stableSearchParams = new URLSearchParams(searchParamSnapshot);
+
+    return `${sanitizePathname(pathname)}${sanitizeSearchParams(stableSearchParams)}`;
+  }, [pathname, searchParamSnapshot]);
 
   useEffect(() => {
     if (!measurementId || !isReady || typeof window.gtag !== "function") {
@@ -18,11 +58,10 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
     }
 
     window.gtag("event", "page_view", {
-      page_location: window.location.href,
-      page_path: `${pathname}${window.location.search}`,
+      page_path: pagePath,
       page_title: document.title,
     });
-  }, [isReady, measurementId, pathname]);
+  }, [isReady, measurementId, pagePath]);
 
   if (!measurementId) {
     return null;
