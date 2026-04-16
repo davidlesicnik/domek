@@ -1,16 +1,18 @@
 # Domek
 
-Domek is a container-first household planner for shared household coordination. The first implementation is a secure, maintainable scaffold: a responsive dashboard shell, Supabase OAuth authentication, Prisma/Postgres persistence, and clear conventions for future feature work.
+Domek is a container-first household planner for shared household coordination.
 
-## Roadmap
+## Features
 
-- Multi-user accounts with Supabase OAuth sign-in
-- Shared calendar
-- Shared to-do list
-- Shared notes
-- Chore list
-- Basic household expense tracker
-- Dashboard overview
+- **Dashboard** — home board with feature navigation
+- **Household management** — invite members by email, assign roles (owner/member), set member colors, transfer ownership, leave or delete a household
+- **Calendar** — shared household calendar with per-event member assignment
+- **To-do lists** — shared task lists with item completion tracking
+- **Shopping lists** — shared shopping lists with item check-off
+- **Notes** — shared freeform notes
+- **Expenses** — basic expense tracker with categories
+- **Authentication** — Supabase OAuth (Google and GitHub)
+- **Email invites** — invite links sent via Resend
 
 ## Stack
 
@@ -19,6 +21,7 @@ Domek is a container-first household planner for shared household coordination. 
 - Supabase Auth with OAuth providers
 - Prisma with PostgreSQL
 - Docker Compose for local and container deployment
+- Resend for transactional email
 
 ## Local Development
 
@@ -39,14 +42,22 @@ For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. 
 
 ## Environment
 
-Required for a real deployment:
+Required for local development (see `.env.example`):
 
 ```bash
 DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
+POSTGRES_DB="domek"
+POSTGRES_USER="domek"
+POSTGRES_PASSWORD="domek"
+POSTGRES_PORT="5432"
 SUPABASE_URL=""
 SUPABASE_ANON_KEY=""
+RESEND_API_KEY=""
+FROM_EMAIL="Domek <noreply@yourdomain.com>"
 ```
+
+`APP_URL` is optional locally (defaults to `http://localhost:3000`) but required in production so invite links resolve to the correct origin.
 
 Validate deployment configuration with:
 
@@ -140,7 +151,7 @@ Create and apply a development migration after the database is reachable:
 npm run db:migrate
 ```
 
-The initial schema includes users, households, household membership, and feature-specific tables for calendar, tasks, notes, shopping, and expenses. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
+The schema includes users, households, household membership, and feature-specific tables for calendar events, to-do lists, notes, shopping lists, and expenses. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
 
 ## Containers
 
