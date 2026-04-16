@@ -58,14 +58,20 @@ export default async function PaymentOnboardingPage({
           <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
             Domek access
           </p>
-          <div className="mt-3 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-start">
-            <div>
+          <div className="mt-3 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-stretch">
+            <div className="flex flex-col">
               <h1 className="font-serif text-4xl font-semibold tracking-normal text-[#171a18]">
                 Set up your household plan
               </h1>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
                 Add payment details to continue to your home board setup.
               </p>
+              <a
+                className="mt-6 inline-flex h-12 w-fit items-center justify-center rounded-md border border-[#d9d6ce] bg-[#fffdf8] px-5 text-sm font-semibold text-[#3c413e] transition hover:border-[#bfc9bd] hover:bg-[#f8f6f1] lg:mt-auto"
+                href="/api/auth/signout"
+              >
+                Nevermind, log out
+              </a>
             </div>
             <form action={unlockDevelopmentAccessAction} className="grid gap-4">
               <div className="grid gap-3 sm:grid-cols-2">
