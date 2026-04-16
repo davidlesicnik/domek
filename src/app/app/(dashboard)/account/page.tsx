@@ -37,7 +37,10 @@ async function deleteAccountAction(formData: FormData) {
   // Soft-delete the user
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { deletedAt: new Date() },
+    data: {
+      deletedAt: new Date(),
+      developmentAccessGrantedAt: null,
+    },
   });
 
   // Sign out

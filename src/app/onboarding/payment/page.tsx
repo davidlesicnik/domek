@@ -56,16 +56,15 @@ export default async function PaymentOnboardingPage({
       <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[900px] items-center">
         <section className="w-full rounded-md border border-[#dedbd2] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:p-8">
           <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-            Development pass
+            Domek access
           </p>
           <div className="mt-3 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-start">
             <div>
               <h1 className="font-serif text-4xl font-semibold tracking-normal text-[#171a18]">
-                Finish the early access step
+                Set up your household plan
               </h1>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                Domek is still being built. Use the development code to continue
-                to the home board setup.
+                Add payment details to continue to your home board setup.
               </p>
             </div>
             <form action={unlockDevelopmentAccessAction} className="grid gap-4">
@@ -122,7 +121,7 @@ export default async function PaymentOnboardingPage({
               </label>
               {hasCodeError ? (
                 <p className="text-sm font-medium text-[#a6543c]">
-                  This mock checkout only opens with the development code.
+                  That code could not be applied.
                 </p>
               ) : null}
               <button
