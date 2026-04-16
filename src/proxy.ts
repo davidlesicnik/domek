@@ -21,6 +21,10 @@ function isOnboardingPath(pathname: string): boolean {
   return pathname === "/onboarding/household" || pathname.startsWith("/onboarding/household/");
 }
 
+function isPaymentPath(pathname: string): boolean {
+  return pathname === "/onboarding/payment" || pathname.startsWith("/onboarding/payment/");
+}
+
 function isInvitePath(pathname: string): boolean {
   return pathname === "/invite" || pathname.startsWith("/invite/");
 }
@@ -104,17 +108,21 @@ export async function proxy(request: NextRequest) {
     where: { userId: appUser.id, household: { deletedAt: null } },
   });
 
-  if (
-    !membership &&
-    !isPublicPath(pathname) &&
-    !isOnboardingPath(pathname) &&
-    !isInvitePath(pathname) &&
-    !isAuthFlowPath(pathname)
-  ) {
-    return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+  if (!membership && !isPublicPath(pathname) && !isInvitePath(pathname) && !isAuthFlowPath(pathname)) {
+    if (!appUser.developmentAccessGrantedAt && !isPaymentPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+    }
+
+    if (appUser.developmentAccessGrantedAt && isPaymentPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+    }
+
+    if (appUser.developmentAccessGrantedAt && !isOnboardingPath(pathname) && !isPaymentPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+    }
   }
 
-  if (membership && (pathname === "/login" || isOnboardingPath(pathname))) {
+  if (membership && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
     return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
   }
 
