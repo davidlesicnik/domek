@@ -56,33 +56,9 @@ npm run env:check
 
 Do not commit `.env` files or paste server secrets into public tools, tickets, or chat logs. `SUPABASE_ANON_KEY` / Supabase publishable keys are designed to be browser-visible, but `RESEND_API_KEY`, Supabase service-role keys, and database passwords are server secrets. Rotate any server secret that has been exposed.
 
-## Hosting Options
-
-For a small personal deployment, the simplest path is usually Vercel plus Supabase:
-
-- Vercel hosts the Next.js app with Git-based deploys, HTTPS, previews, and CDN.
-- Supabase provides Postgres and Auth.
-- Vercel Hobby can be enough for personal, non-commercial use.
-- If the app is monetized or used commercially, budget for Vercel Pro instead of Hobby.
-
-For a cheaper monetization-safe start, Railway plus Supabase is the current preferred path:
-
-- Railway hosts the containerized Next.js app.
-- Supabase remains the database and auth provider.
-- Railway's starter/trial tier is useful while validating the app.
-- Railway Hobby is a low-cost next step when the app needs more breathing room.
-
-Other viable options:
-
-- DigitalOcean App Platform plus Supabase for a simple paid platform setup.
-- Fly.io plus Supabase for lower-cost hosting with more operational detail.
-- Hetzner VPS plus Supabase for the cheapest serious setup, with server maintenance handled manually.
-
-Cloudflare Pages is not the cleanest fit for this app as-is because Domek is a server-rendered Next.js app using Prisma/Postgres and Supabase Auth, not a static site.
-
 ## Railway Deployment
 
-Create the Railway service from the GitHub repository. Do not use a starter template, Railway database, Docker image import, or empty project for the first deployment.
+Domek is deployed on Railway from the GitHub repository. Railway hosts the containerized Next.js app, while Supabase provides Postgres and Auth.
 
 This repo has a `Dockerfile`, so Railway should deploy it as a Docker-backed service. The production image uses Next.js standalone output and starts with:
 
