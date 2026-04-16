@@ -4,6 +4,8 @@ import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { cookieConsentChangedEvent, readCookieConsent } from "@/lib/analytics";
+
 type GoogleAnalyticsProps = Readonly<{
   measurementId?: string;
 }>;
@@ -45,6 +47,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamSnapshot = searchParams.toString();
+  const [hasCookieConsent, setHasCookieConsent] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const pagePath = useMemo(() => {
     const stableSearchParams = new URLSearchParams(searchParamSnapshot);
@@ -53,7 +56,18 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   }, [pathname, searchParamSnapshot]);
 
   useEffect(() => {
-    if (!measurementId || !isReady || typeof window.gtag !== "function") {
+    function syncConsent() {
+      setHasCookieConsent(readCookieConsent() === "accepted");
+    }
+
+    syncConsent();
+    window.addEventListener(cookieConsentChangedEvent, syncConsent);
+
+    return () => window.removeEventListener(cookieConsentChangedEvent, syncConsent);
+  }, []);
+
+  useEffect(() => {
+    if (!measurementId || !hasCookieConsent || !isReady || typeof window.gtag !== "function") {
       return;
     }
 
@@ -61,9 +75,9 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       page_path: pagePath,
       page_title: document.title,
     });
-  }, [isReady, measurementId, pagePath]);
+  }, [hasCookieConsent, isReady, measurementId, pagePath]);
 
-  if (!measurementId) {
+  if (!measurementId || !hasCookieConsent) {
     return null;
   }
 

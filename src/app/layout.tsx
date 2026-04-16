@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 
+import { CookieBanner } from "@/components/analytics/cookie-banner";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 import "./globals.css";
@@ -20,6 +21,7 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         {children}
+        <CookieBanner enabled={Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID)} />
         <Suspense fallback={null}>
           <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         </Suspense>
