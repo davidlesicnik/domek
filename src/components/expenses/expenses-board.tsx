@@ -26,7 +26,7 @@ type ExpenseView = {
 type CategoryView = { id: string; color: string; name: string };
 type MemberView = { id: string; color: string; name: string | null; email: string | null };
 type MonthStats = { carryover: number; income: number; expenses: number; net: number };
-type NetPointEntry = { amount: number; id: string; name: string; type: "INCOME" | "EXPENSE" };
+type NetPointEntry = { amount: number; id: string; memberColor: string | null; memberName: string | null; name: string; type: "INCOME" | "EXPENSE" };
 type NetPoint = { day: number; entries: NetPointEntry[]; value: number; x: number; y: number };
 type NetChart = {
   end: number;
@@ -105,6 +105,8 @@ function buildNetChart(expenses: ExpenseView[], year: number, month: number, car
     dailyEntries[day - 1].push({
       amount: expense.amount,
       id: expense.id,
+      memberColor: expense.householdMemberColor ?? null,
+      memberName: expense.householdMemberName ?? null,
       name: expense.name,
       type: expense.type,
     });
@@ -423,6 +425,7 @@ export function ExpensesBoard({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [selectedCategoryKey]);
   const [hoveredNetPoint, setHoveredNetPoint] = useState<NetPoint | null>(null);
+  const [memberTooltip, setMemberTooltip] = useState<{ name: string; x: number; y: number } | null>(null);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [categoryForm, setCategoryForm] = useState<CategoryFormState>(defaultCategoryForm);
   const [selectedColorGroupName, setSelectedColorGroupName] = useState<string>(EXPENSE_CATEGORY_COLOR_GROUPS[0].name);
@@ -1103,7 +1106,7 @@ export function ExpensesBoard({
             </svg>
             {hoveredNetPoint ? (
               <div
-                className="pointer-events-none absolute z-20 w-48 rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-2 text-xs text-[#4d5451] shadow-[0_14px_30px_rgba(31,35,30,0.18)]"
+                className="pointer-events-none absolute z-20 w-56 rounded-lg border border-[#d8d2c8] bg-[#fffdf8] p-3 text-xs text-[#4d5451] shadow-[0_14px_30px_rgba(31,35,30,0.18)]"
                 style={{
                   left: `${(hoveredNetPoint.x / 360) * 100}%`,
                   top: `${Math.min(84, Math.max(16, (hoveredNetPoint.y / 170) * 100))}%`,
@@ -1112,28 +1115,57 @@ export function ExpensesBoard({
                     : "translate(0.75rem, -50%)",
                 }}
               >
-                <p className="font-medium text-[#171a18]">
-                  {MONTH_NAMES[month - 1].slice(0, 3)} {hoveredNetPoint.day}:{" "}
-                  {hoveredNetPoint.value >= 0 ? "+" : ""}
-                  {formatAmount(hoveredNetPoint.value)}
-                </p>
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <p className="font-medium text-[#171a18]">
+                    {MONTH_NAMES[month - 1].slice(0, 3)} {hoveredNetPoint.day}
+                  </p>
+                  <p className={`font-semibold tabular-nums ${hoveredNetPoint.value >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
+                    {hoveredNetPoint.value >= 0 ? "+" : ""}
+                    {formatAmount(hoveredNetPoint.value)}
+                  </p>
+                </div>
                 {hoveredNetPoint.entries.length > 0 ? (
-                  <div className="mt-1 grid gap-0.5">
-                    {hoveredNetPoint.entries.slice(0, 3).map((entry) => (
-                      <p className="truncate" key={entry.id}>
-                        <span className={entry.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"}>
-                          {entry.type === "INCOME" ? "+" : "-"}
-                          {formatAmount(entry.amount)}
-                        </span>{" "}
-                        {entry.name}
-                      </p>
-                    ))}
+                  <div className="grid gap-1.5">
+                    {hoveredNetPoint.entries.slice(0, 3).map((entry) => {
+                      const memberColor = entry.memberName ? getMemberColor(entry.memberColor) : null;
+                      return (
+                        <div
+                          className="flex items-center gap-2 rounded-md border border-[#e8e4dc] bg-[#f5f2ec] px-2 py-1.5"
+                          key={entry.id}
+                        >
+                          {memberColor && entry.memberName ? (
+                            <span
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border font-serif text-[10px] font-semibold"
+                              style={{
+                                backgroundColor: memberColor.avatarBg,
+                                borderColor: memberColor.border,
+                                color: memberColor.avatarText,
+                              }}
+                              title={entry.memberName}
+                            >
+                              {entry.memberName.slice(0, 1).toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-[#ece8e0] text-[10px] text-[#9da39f]">
+                              ?
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-[#2a2e2b]">{entry.name}</p>
+                            <p className={`tabular-nums ${entry.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
+                              {entry.type === "INCOME" ? "+" : "−"}
+                              {formatAmount(entry.amount)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                     {hoveredNetPoint.entries.length > 3 ? (
-                      <p className="text-[#686e6a]">+{hoveredNetPoint.entries.length - 3} more</p>
+                      <p className="pl-1 text-[#9da39f]">+{hoveredNetPoint.entries.length - 3} more</p>
                     ) : null}
                   </div>
                 ) : (
-                  <p className="mt-1 text-[#686e6a]">No change recorded.</p>
+                  <p className="text-[#9da39f]">No change recorded.</p>
                 )}
               </div>
             ) : null}
@@ -1473,7 +1505,7 @@ export function ExpensesBoard({
                       Category
                     </th>
                     <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] md:table-cell">
-                      Member
+                      Paid by
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-[#545b57]">
                       Amount
@@ -1518,25 +1550,25 @@ export function ExpensesBoard({
                           <span className="text-[#c8c4bb]">—</span>
                         )}
                       </td>
-                      <td className="hidden px-4 py-3 text-[#686e6a] md:table-cell">
+                      <td className="hidden px-4 py-3 md:table-cell">
                         {expense.householdMemberName ? (
                           <span
-                            className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
+                            className="flex h-7 w-7 cursor-default items-center justify-center rounded-md border font-serif text-xs font-semibold"
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMemberTooltip({ name: expense.householdMemberName!, x: rect.left + rect.width / 2, y: rect.bottom });
+                            }}
+                            onMouseLeave={() => setMemberTooltip(null)}
                             style={{
-                              backgroundColor: getMemberColor(expense.householdMemberColor).tint,
+                              backgroundColor: getMemberColor(expense.householdMemberColor).avatarBg,
                               borderColor: getMemberColor(expense.householdMemberColor).border,
                               color: getMemberColor(expense.householdMemberColor).avatarText,
                             }}
                           >
-                            <span
-                              aria-hidden
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={{ backgroundColor: getMemberColor(expense.householdMemberColor).dot }}
-                            />
-                            {expense.householdMemberName}
+                            {expense.householdMemberName.slice(0, 1).toUpperCase()}
                           </span>
                         ) : (
-                          <span className="text-[#c8c4bb]">-</span>
+                          <span className="text-[#c8c4bb]">—</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
@@ -1635,6 +1667,14 @@ export function ExpensesBoard({
           </div>
         )}
       </div>
+      {memberTooltip ? (
+        <div
+          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[#d8d2c8] bg-[#fffdf8] px-2 py-1 text-xs text-[#2a2e2b] shadow-sm"
+          style={{ left: memberTooltip.x, top: memberTooltip.y + 6 }}
+        >
+          {memberTooltip.name}
+        </div>
+      ) : null}
     </div>
   );
 }
