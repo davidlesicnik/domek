@@ -5,9 +5,6 @@ import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { sendInviteEmail } from "@/lib/email";
-import { getAppRuntimeConfig } from "@/lib/env";
-import { createInvite, listPendingInvites, revokeInvite } from "@/lib/invites";
 import { MEMBER_COLOR_KEYS } from "@/lib/member-colors";
 import { getFirstHouseholdMembership } from "@/lib/users";
 import { HouseholdSettingsView } from "@/components/household/household-settings-view";
@@ -17,75 +14,11 @@ export const metadata: Metadata = {
   description: "Manage your household members and invites.",
 };
 
-const inviteEmailSchema = z.string().trim().email().max(320);
 const memberColorSchema = z.enum(MEMBER_COLOR_KEYS);
 
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
-}
-
-async function sendInviteAction(formData: FormData) {
-  "use server";
-
-  const session = await requireHouseholdMemberSession();
-  const membership = await getFirstHouseholdMembership(session.user.id);
-
-  if (!membership || membership.role !== "OWNER") {
-    redirect("/app/household?error=forbidden");
-  }
-
-  const raw = formData.get("email");
-  const parsed = inviteEmailSchema.safeParse(typeof raw === "string" ? raw : "");
-
-  if (!parsed.success) {
-    redirect("/app/household?error=email");
-  }
-
-  const household = await prisma.household.findUnique({
-    where: { id: membership.householdId },
-    select: { name: true },
-  });
-
-  if (!household) redirect("/app/household");
-
-  const invite = await createInvite({
-    householdId: membership.householdId,
-    invitedById: session.user.id,
-    email: parsed.data,
-  });
-
-  const { appUrl } = getAppRuntimeConfig();
-  const origin = appUrl ?? "http://localhost:3000";
-  const inviteUrl = `${origin}/invite/${invite.token}`;
-
-  await sendInviteEmail({
-    toEmail: invite.email,
-    inviterName: session.user.name,
-    householdName: household.name,
-    inviteUrl,
-  });
-
-  redirect("/app/household?success=invited");
-}
-
-async function revokeInviteAction(formData: FormData) {
-  "use server";
-
-  const session = await requireHouseholdMemberSession();
-  const membership = await getFirstHouseholdMembership(session.user.id);
-
-  if (!membership || membership.role !== "OWNER") {
-    redirect("/app/household");
-  }
-
-  const inviteId = formData.get("inviteId");
-  if (typeof inviteId !== "string" || !inviteId) {
-    redirect("/app/household");
-  }
-
-  await revokeInvite({ inviteId, householdId: membership.householdId });
-  redirect("/app/household");
 }
 
 async function removeMemberAction(formData: FormData) {
@@ -236,7 +169,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
 
   if (!membership) redirect("/onboarding/household");
 
-  const [household, members, pendingInvites] = await Promise.all([
+  const [household, members] = await Promise.all([
     prisma.household.findUnique({
       where: { id: membership.householdId },
       select: { name: true },
@@ -252,9 +185,6 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       },
       orderBy: { createdAt: "asc" },
     }),
-    membership.role === "OWNER"
-      ? listPendingInvites(membership.householdId)
-      : Promise.resolve([]),
   ]);
 
   const params = (await searchParams) ?? {};
@@ -262,35 +192,28 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
   const errorParam = stringParam(params.error);
 
   const successMessage =
-    successParam === "invited"
-      ? "Invite sent."
-      : successParam === "removed"
-        ? "Member removed."
-        : successParam === "owner"
-          ? "Owner reassigned."
-          : successParam === "color"
-            ? "Color updated."
-            : null;
+    successParam === "removed"
+      ? "Member removed."
+      : successParam === "owner"
+        ? "Owner reassigned."
+        : successParam === "color"
+          ? "Color updated."
+          : null;
   const errorMessage =
-    errorParam === "email"
-      ? "Enter a valid email address."
-      : errorParam === "forbidden"
-        ? "Only the household owner can manage people."
-        : errorParam === "confirm"
-          ? "Please check the confirmation box."
-          : errorParam === "color"
-            ? "Choose one of the household colors."
-            : null;
+    errorParam === "forbidden"
+      ? "Only the household owner can manage people."
+      : errorParam === "confirm"
+        ? "Please check the confirmation box."
+        : errorParam === "color"
+          ? "Choose one of the household colors."
+          : null;
 
   return (
     <HouseholdSettingsView
       householdName={household?.name ?? ""}
       members={members}
-      pendingInvites={pendingInvites}
       currentMemberId={membership.id}
       isOwner={membership.role === "OWNER"}
-      sendInviteAction={sendInviteAction}
-      revokeInviteAction={revokeInviteAction}
       removeMemberAction={removeMemberAction}
       transferOwnershipAction={transferOwnershipAction}
       updateMemberColorAction={updateMemberColorAction}
