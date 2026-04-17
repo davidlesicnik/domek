@@ -87,6 +87,38 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function PencilIcon(props: CalendarIconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    </svg>
+  );
+}
+
+function TrashIcon(props: CalendarIconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+    </svg>
+  );
+}
+
 function ChevronLeftIcon(props: CalendarIconProps) {
   return (
     <svg
@@ -187,11 +219,17 @@ function groupEventsByDate(events: CalendarEventView[]) {
 function CalendarEventCard({
   calendarEvent,
   className = "rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4",
+  isDeleting = false,
   membersById,
+  onDelete,
+  onEdit,
 }: Readonly<{
   calendarEvent: CalendarEventView;
   className?: string;
+  isDeleting?: boolean;
   membersById: Map<string, CalendarMemberOption>;
+  onDelete?: () => void;
+  onEdit?: () => void;
 }>) {
   const assignedMembers = calendarEvent.householdMemberIds
     .map((memberId) => membersById.get(memberId))
@@ -199,18 +237,50 @@ function CalendarEventCard({
 
   return (
     <article className={className}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span
-          className={cx(
-            "text-[11px] font-bold uppercase tracking-normal",
-            categoryStyles[calendarEvent.category].text,
-          )}
-        >
-          {categoryStyles[calendarEvent.category].label}
-        </span>
-        <span className="text-[11px] font-semibold text-[#777f7a]">
-          {eventTimeLabel(calendarEvent.time)}
-        </span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cx(
+              "text-[11px] font-bold uppercase tracking-normal",
+              categoryStyles[calendarEvent.category].text,
+            )}
+          >
+            {categoryStyles[calendarEvent.category].label}
+          </span>
+          <span className="text-[11px] font-semibold text-[#777f7a]">
+            {eventTimeLabel(calendarEvent.time)}
+          </span>
+        </div>
+        {(onEdit || onDelete) ? (
+          <div className="flex shrink-0 items-center gap-1">
+            {onEdit ? (
+              <button
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50"
+                disabled={isDeleting}
+                onClick={onEdit}
+                title="Edit event"
+                type="button"
+              >
+                <PencilIcon aria-hidden className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+                disabled={isDeleting}
+                onClick={onDelete}
+                title="Delete event"
+                type="button"
+              >
+                {isDeleting ? (
+                  <span className="text-[10px] font-bold">…</span>
+                ) : (
+                  <TrashIcon aria-hidden className="h-3.5 w-3.5" />
+                )}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <h3 className="mt-2 text-base font-semibold text-[#202321]">
         {calendarEvent.name}
@@ -287,6 +357,8 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [isDeletingEventId, setIsDeletingEventId] = useState<string | null>(null);
 
   const monthDays = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
   const currentMonthDays = useMemo(
@@ -362,8 +434,22 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
   }
 
   function closeComposer() {
+    setEditingEventId(null);
     resetComposer();
     setComposerMode(null);
+  }
+
+  function openEditor(calendarEvent: CalendarEventView) {
+    setEditingEventId(calendarEvent.id);
+    setComposerDateKey(calendarEvent.dateKey);
+    setEventName(calendarEvent.name);
+    setEventCategory(calendarEvent.category);
+    setIsAllDay(calendarEvent.time.kind === "all-day");
+    setEventTime(calendarEvent.time.kind === "time" ? calendarEvent.time.value : "");
+    setSelectedMemberIds([...calendarEvent.householdMemberIds]);
+    setFormError(null);
+    setComposerMode("panel");
+    selectDate(calendarEvent.dateKey);
   }
 
   async function addSubmittedEvent(formEvent: FormEvent<HTMLFormElement>) {
@@ -432,9 +518,100 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
     }
   }
 
+  async function saveEditedEvent(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+
+    if (!editingEventId) return;
+
+    const trimmedEventName = eventName.trim();
+
+    if (!trimmedEventName) return;
+
+    if (!isAllDay && !eventTime) {
+      setFormError("Add a time or keep the event all day.");
+      return;
+    }
+
+    const input: CalendarEventInput = {
+      category: eventCategory,
+      dateKey: composerDateKey,
+      householdMemberIds: selectedMemberIds,
+      name: trimmedEventName,
+      time: isAllDay ? { kind: "all-day" } : { kind: "time", value: eventTime },
+    };
+
+    setFormError(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/calendar/events/${editingEventId}`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+
+      if (!response.ok) {
+        setFormError("The event was not saved.");
+        return;
+      }
+
+      const { event: updatedEvent } = (await response.json()) as { event: CalendarEventView };
+      const idToRemove = editingEventId;
+
+      setEventsByDate((currentEvents) => {
+        const result: Record<string, CalendarEventView[]> = {};
+
+        for (const [key, events] of Object.entries(currentEvents)) {
+          const filtered = events.filter((e) => e.id !== idToRemove);
+
+          if (filtered.length > 0) result[key] = filtered;
+        }
+
+        return {
+          ...result,
+          [updatedEvent.dateKey]: [...(result[updatedEvent.dateKey] ?? []), updatedEvent],
+        };
+      });
+
+      closeComposer();
+    } catch {
+      setFormError("The event was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteEvent(id: string) {
+    setIsDeletingEventId(id);
+
+    try {
+      const response = await fetch(`/api/calendar/events/${id}`, { method: "DELETE" });
+
+      if (!response.ok) return;
+
+      setEventsByDate((currentEvents) => {
+        const result: Record<string, CalendarEventView[]> = {};
+
+        for (const [key, events] of Object.entries(currentEvents)) {
+          const filtered = events.filter((e) => e.id !== id);
+
+          if (filtered.length > 0) result[key] = filtered;
+        }
+
+        return result;
+      });
+
+      if (editingEventId === id) closeComposer();
+    } finally {
+      setIsDeletingEventId(null);
+    }
+  }
+
   function renderEventForm(showDateField: boolean, className: string) {
+    const isEditing = editingEventId !== null;
+
     return (
-      <form className={className} onSubmit={addSubmittedEvent}>
+      <form className={className} onSubmit={isEditing ? saveEditedEvent : addSubmittedEvent}>
         {showDateField ? (
           <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
             Date
@@ -557,7 +734,7 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
             disabled={isSaving}
             type="submit"
           >
-            {isSaving ? "Saving" : "Save event"}
+            {isSaving ? "Saving" : isEditing ? "Update event" : "Save event"}
           </button>
           <button
             className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
@@ -723,13 +900,13 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
               const isSelected = dateKey === selectedDateKey;
               const isCurrentMonth = date.getUTCMonth() === visibleMonth.monthIndex;
               const dayEvents = eventsByDate[dateKey] ?? [];
-              const visibleEvents = dayEvents.slice(0, 3);
+              const visibleEvents = dayEvents.slice(0, 2);
               const hiddenEventCount = dayEvents.length - visibleEvents.length;
 
               return (
                 <div
                   className={cx(
-                    "relative min-h-36 border-b border-r border-[#e7e1d9] p-2 transition",
+                    "relative border-b border-r border-[#e7e1d9] p-2 transition",
                     index % 7 === 6 && "border-r-0",
                     index >= monthDays.length - 7 && "border-b-0",
                     isSelected
@@ -746,7 +923,7 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
                     onClick={() => selectDate(dateKey)}
                     type="button"
                   />
-                  <div className="pointer-events-none relative z-20 flex min-h-32 flex-col gap-2">
+                  <div className="pointer-events-none relative z-20 flex flex-col gap-2">
                     <div className="flex items-start justify-between gap-2">
                       <button
                         aria-current={isToday ? "date" : undefined}
@@ -772,19 +949,48 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
                     </div>
 
                     <div className="grid gap-1">
-                      {visibleEvents.map((calendarEvent) => (
-                        <button
-                          className={cx(
-                            "pointer-events-auto truncate rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-4 transition hover:brightness-95",
-                            categoryStyles[calendarEvent.category].chip,
-                          )}
-                          key={calendarEvent.id}
-                          onClick={() => selectDate(dateKey)}
-                          type="button"
-                        >
-                          {calendarEvent.name}
-                        </button>
-                      ))}
+                      {visibleEvents.map((calendarEvent) => {
+                        const eventMembers = calendarEvent.householdMemberIds
+                          .map((id) => membersById.get(id))
+                          .filter((m): m is CalendarMemberOption => Boolean(m));
+
+                        return (
+                          <button
+                            className={cx(
+                              "pointer-events-auto w-full min-w-0 rounded-md border px-2 py-1 text-left text-[11px] font-semibold leading-4 transition hover:brightness-95",
+                              categoryStyles[calendarEvent.category].chip,
+                            )}
+                            key={calendarEvent.id}
+                            onClick={() => selectDate(dateKey)}
+                            type="button"
+                          >
+                            <span className="block truncate">{calendarEvent.name}</span>
+                            {eventMembers.length > 0 ? (
+                              <span className="mt-1 flex flex-wrap gap-0.5">
+                                {eventMembers.map((member) => {
+                                  const color = getMemberColor(member.color);
+                                  const letter = memberLabel(member).slice(0, 1).toUpperCase();
+
+                                  return (
+                                    <span
+                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border font-serif text-[8px] font-semibold"
+                                      key={member.id}
+                                      style={{
+                                        backgroundColor: color.avatarBg,
+                                        borderColor: color.border,
+                                        color: color.avatarText,
+                                      }}
+                                      title={memberLabel(member)}
+                                    >
+                                      {letter}
+                                    </span>
+                                  );
+                                })}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
                       {hiddenEventCount > 0 ? (
                         <button
                           className="pointer-events-auto text-left text-[11px] font-semibold text-[#68706b] underline decoration-[#b7c8ba] underline-offset-2"
@@ -818,8 +1024,11 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
               selectedEvents.map((calendarEvent) => (
                 <CalendarEventCard
                   calendarEvent={calendarEvent}
+                  isDeleting={isDeletingEventId === calendarEvent.id}
                   key={calendarEvent.id}
                   membersById={membersById}
+                  onDelete={() => deleteEvent(calendarEvent.id)}
+                  onEdit={() => openEditor(calendarEvent)}
                 />
               ))
             ) : (
@@ -877,7 +1086,7 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
                   className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
                   id="calendar-event-dialog-title"
                 >
-                  Add event
+                  {editingEventId ? "Edit event" : "Add event"}
                 </h2>
               </div>
               <button
