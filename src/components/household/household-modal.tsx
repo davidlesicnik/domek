@@ -34,19 +34,34 @@ function MemberAvatar({ member }: { member: Member }) {
   const palette = getMemberColor(member.color);
   const letter = (member.user.name ?? member.user.email ?? "?").slice(0, 1).toUpperCase();
   const title = member.user.name ?? member.user.email ?? "Member";
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
 
   return (
-    <span
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border font-serif text-sm font-semibold"
-      style={{
-        backgroundColor: palette.avatarBg,
-        borderColor: palette.border,
-        color: palette.avatarText,
-      }}
-      title={title}
-    >
-      {letter}
-    </span>
+    <>
+      <span
+        className="flex h-8 w-8 shrink-0 cursor-default items-center justify-center rounded-md border font-serif text-sm font-semibold"
+        onMouseEnter={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setTooltip({ x: rect.left + rect.width / 2, y: rect.bottom });
+        }}
+        onMouseLeave={() => setTooltip(null)}
+        style={{
+          backgroundColor: palette.avatarBg,
+          borderColor: palette.border,
+          color: palette.avatarText,
+        }}
+      >
+        {letter}
+      </span>
+      {tooltip ? (
+        <div
+          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[#d8d2c8] bg-[#fffdf8] px-2 py-1 text-xs text-[#2a2e2b] shadow-sm"
+          style={{ left: tooltip.x, top: tooltip.y + 6 }}
+        >
+          {title}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -116,7 +131,7 @@ function InvitePopover({
               <div>
                 <p className="text-sm font-semibold text-[#2e6641]">Invite sent!</p>
                 <p className="mt-1 text-xs text-[#686e6a]">
-                  They'll receive an email with a join link.
+                  They&apos;ll receive an email with a join link.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button
@@ -139,7 +154,7 @@ function InvitePopover({
               <form action={formAction} key={formKey}>
                 <p className="text-xs font-semibold text-[#3c413e]">Invite someone</p>
                 <p className="mt-1 text-xs leading-5 text-[#686e6a]">
-                  They'll receive an email link to join. Expires in 7 days.
+                  They&apos;ll receive an email link to join. Expires in 7 days.
                 </p>
                 {state.error ? (
                   <p className="mt-2 text-xs font-medium text-[#a6543c]">{state.error}</p>
