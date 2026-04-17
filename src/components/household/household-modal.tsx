@@ -1,7 +1,8 @@
 "use client";
 
 import { UserPlus } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { getMemberColor } from "@/lib/member-colors";
 import type { InviteActionState } from "@/lib/actions/household-invite";
@@ -66,12 +67,18 @@ function InvitePopover({
   sendInviteAction: HouseholdHeaderControlsProps["sendInviteAction"];
   revokeInviteAction: HouseholdHeaderControlsProps["revokeInviteAction"];
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [state, formAction, pending] = useActionState(sendInviteAction, {
     success: false,
     error: null,
   });
+  const [, startRevokeTransition] = useTransition();
+
+  useEffect(() => {
+    if (state.success) router.refresh();
+  }, [state.success, router]);
 
   function close() {
     setOpen(false);
@@ -80,6 +87,13 @@ function InvitePopover({
   function openFresh() {
     if (state.success) setFormKey((k) => k + 1);
     setOpen(true);
+  }
+
+  function handleRevoke(formData: FormData) {
+    startRevokeTransition(async () => {
+      await revokeInviteAction(formData);
+      router.refresh();
+    });
   }
 
   return (
@@ -167,7 +181,7 @@ function InvitePopover({
                         </p>
                         <p className="text-xs text-[#9a9e9b]">{formatExpiry(invite.expiresAt)}</p>
                       </div>
-                      <form action={revokeInviteAction}>
+                      <form action={handleRevoke}>
                         <input name="inviteId" type="hidden" value={invite.id} />
                         <button
                           className="h-7 rounded-md border border-[#dfb4a8] px-2.5 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fff5f1]"

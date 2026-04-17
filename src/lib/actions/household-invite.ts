@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
@@ -55,6 +56,7 @@ export async function sendTopBarInviteAction(
     inviteUrl,
   });
 
+  revalidatePath("/app", "layout");
   return { success: true, error: null };
 }
 
@@ -68,4 +70,5 @@ export async function revokeTopBarInviteAction(formData: FormData): Promise<void
   if (typeof inviteId !== "string" || !inviteId) return;
 
   await revokeInvite({ inviteId, householdId: membership.householdId });
+  revalidatePath("/app", "layout");
 }
