@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/contact",
   "/cookies",
   "/login",
+  "/pricing",
   "/privacy",
   "/terms",
   "/auth/callback",

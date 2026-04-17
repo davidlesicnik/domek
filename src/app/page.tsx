@@ -65,15 +65,23 @@ export default async function LandingPage() {
     <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
       <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 py-4 sm:px-6">
-          <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+          <h1 className="font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
             Domek
           </h1>
-          <Link
-            className="inline-flex h-8 items-center justify-center rounded-full border border-[#b9cdbc] bg-[#eef7ef] px-5 text-xs font-semibold text-[#526c56] transition hover:bg-[#e1f0e3]"
-            href={session ? "/app" : "/login"}
-          >
-            {session ? "Open app →" : "Login"}
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              className="inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-[#686e6a] transition hover:text-[#202321]"
+              href="/pricing"
+            >
+              See pricing
+            </Link>
+            <Link
+              className="inline-flex h-8 items-center justify-center rounded-full border border-[#b9cdbc] bg-[#eef7ef] px-5 text-xs font-semibold text-[#526c56] transition hover:bg-[#e1f0e3]"
+              href={session ? "/app" : "/login"}
+            >
+              {session ? "Open app →" : "Login"}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -87,12 +95,18 @@ export default async function LandingPage() {
               One shared place for your calendar, chores, lists, and expenses.<br/>
               Like the list on the fridge, but for everything.
             </p>
-            <div className="mt-6">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 className="inline-flex h-10 items-center justify-center rounded-md border border-[#b9cdbc] bg-[#eef7ef] px-6 text-sm font-semibold text-[#526c56] transition hover:bg-[#e1f0e3]"
                 href={session ? "/app" : "/login"}
               >
-                {session ? "Open Domek" : "Get started"}
+                {session ? "Open Domek" : "Start your household"}
+              </Link>
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium text-[#686e6a] transition hover:text-[#202321]"
+                href="/pricing"
+              >
+                See pricing →
               </Link>
             </div>
           </div>

@@ -53,6 +53,14 @@ docker compose config
 docker compose build
 ```
 
+## Routing and Auth Middleware
+
+All requests pass through `src/proxy.ts` before reaching any page. It checks the Supabase session and redirects unauthenticated users to `/login?next=<path>` for any path not in `PUBLIC_PATHS`.
+
+**Any new public page (marketing, legal, etc.) must be added to `PUBLIC_PATHS` in `src/proxy.ts` or it will redirect unauthenticated visitors to login.**
+
+Current public paths are listed at the top of `src/proxy.ts`. When debugging unexpected redirects to `/login`, check `PUBLIC_PATHS` first.
+
 ## Security Notes
 
 - Protected app areas should use server-side session checks.
