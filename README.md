@@ -141,6 +141,28 @@ If the Railway app shows 502s:
 - Confirm `DATABASE_URL` points to Supabase Postgres, not `localhost`.
 - URL-encode special characters in the database password, especially `@`, `#`, `%`, `/`, `:`, `?`, and `&`.
 
+## Trial and Access
+
+Domek uses a 30-day free trial. The trial clock starts when the household is created (`Household.createdAt`). After 30 days without payment, users are redirected to `/trial-ended` and cannot access the app until the household is activated.
+
+**Trial states** (defined in `src/lib/trial.ts`):
+
+| State | Condition | Effect |
+|---|---|---|
+| `active` | `paidAt` set, or dev access granted | Full access, no banner |
+| `trial` | < 27 days elapsed | No banner (nudge shown after 14 days if 2+ members) |
+| `expiring` | 1–3 days remaining | Warning banner shown in the app |
+| `expired` | > 30 days elapsed, unpaid | Redirected to `/trial-ended` |
+
+Activation is tracked via `Household.paidAt`. The `/trial-ended` page has a mock "Continue with Domek" action that sets this directly — replace the server action with a Paddle checkout redirect when payment is wired up.
+
+**Development access codes** (entered on the household creation screen):
+
+- `domekappdevelopment` — grants permanent dev access (`User.developmentAccessGrantedAt`), bypasses the trial entirely
+- `domekbeta` — allows household creation as a regular trial user, so the 30-day clock starts normally (useful for testing trial banners and the paywall)
+
+The access code field is hidden automatically once a user already has dev access, so recreating households during development does not require re-entering the code.
+
 ## Database
 
 Generate the Prisma client:
