@@ -17,6 +17,7 @@ export default async function DashboardLayout({
 
   const membership = await prisma.householdMember.findFirst({
     select: {
+      color: true,
       householdId: true,
       household: { select: { createdAt: true, paidAt: true } },
     },
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
   return (
     <AppShell
       banner={banner}
+      memberColor={membership?.color ?? null}
       userName={session.user.name ?? session.user.email ?? null}
       userId={session.user.id}
     >
