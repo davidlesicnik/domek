@@ -178,3 +178,60 @@ export async function createCalendarEvent(input: CalendarEventInput, scope: Cale
 
   return toCalendarEventView(calendarEvent);
 }
+
+export async function updateCalendarEvent(
+  id: string,
+  input: CalendarEventInput,
+  scope: CalendarScope,
+): Promise<CalendarEventView | null> {
+  const existing = await prisma.calendarEvent.findFirst({
+    select: { id: true },
+    where: { id, ...scope.where },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  const members =
+    input.householdMemberIds.length > 0
+      ? await prisma.householdMember.findMany({
+          select: { id: true },
+          where: { householdId: scope.householdId, id: { in: input.householdMemberIds } },
+        })
+      : [];
+
+  if (members.length !== input.householdMemberIds.length) {
+    return null;
+  }
+
+  const calendarEvent = await prisma.calendarEvent.update({
+    data: {
+      allDay: input.time.kind === "all-day",
+      category: calendarCategoryToDb[input.category],
+      dateKey: input.dateKey,
+      householdMemberIds: input.householdMemberIds,
+      name: input.name,
+      time: input.time.kind === "time" ? input.time.value : null,
+    },
+    select: calendarEventSelect,
+    where: { id },
+  });
+
+  return toCalendarEventView(calendarEvent);
+}
+
+export async function deleteCalendarEvent(id: string, scope: CalendarScope): Promise<boolean> {
+  const existing = await prisma.calendarEvent.findFirst({
+    select: { id: true },
+    where: { id, ...scope.where },
+  });
+
+  if (!existing) {
+    return false;
+  }
+
+  await prisma.calendarEvent.delete({ where: { id } });
+
+  return true;
+}
