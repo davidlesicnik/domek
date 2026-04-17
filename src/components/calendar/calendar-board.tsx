@@ -415,12 +415,13 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
   }
 
   function openComposer(dateKey: string, mode: ComposerMode) {
+    setEditingEventId(null);
+    resetComposer();
     if (mode === "panel") {
       selectDate(dateKey);
     }
 
     setComposerDateKey(dateKey);
-    setFormError(null);
     setComposerMode(mode);
   }
 
@@ -862,8 +863,11 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
                       <CalendarEventCard
                         calendarEvent={calendarEvent}
                         className="p-4"
+                        isDeleting={isDeletingEventId === calendarEvent.id}
                         key={calendarEvent.id}
                         membersById={membersById}
+                        onDelete={() => deleteEvent(calendarEvent.id)}
+                        onEdit={() => openEditor(calendarEvent)}
                       />
                     ))}
                   </div>
@@ -906,7 +910,7 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
               return (
                 <div
                   className={cx(
-                    "relative border-b border-r border-[#e7e1d9] p-2 transition",
+                    "relative min-h-[130px] border-b border-r border-[#e7e1d9] p-2 transition",
                     index % 7 === 6 && "border-r-0",
                     index >= monthDays.length - 7 && "border-b-0",
                     isSelected
