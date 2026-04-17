@@ -6,12 +6,13 @@ import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
 
 type AppShellProps = Readonly<{
+  banner?: ReactNode;
   userName: string | null;
   userId: string;
   children: ReactNode;
 }>;
 
-export function AppShell({ userName, userId, children }: AppShellProps) {
+export function AppShell({ banner, userName, userId, children }: AppShellProps) {
   return (
     <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
       <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
@@ -28,6 +29,7 @@ export function AppShell({ userName, userId, children }: AppShellProps) {
         </div>
         <AppNavigation />
       </header>
+      {banner}
       <main className="mx-auto w-full max-w-[1120px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
         {children}
       </main>
