@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 
 import { prisma } from "@/lib/db";
 
@@ -6,6 +6,10 @@ const INVITE_EXPIRY_DAYS = 7;
 
 function generateToken(): string {
   return randomBytes(32).toString("base64url");
+}
+
+function hashInviteToken(token: string): string {
+  return createHash("sha256").update(token.trim(), "utf8").digest("hex");
 }
 
 export async function createInvite({
@@ -27,11 +31,14 @@ export async function createInvite({
 
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   const token = generateToken();
+  const tokenHash = hashInviteToken(token);
 
-  return prisma.householdInvite.create({
-    data: { token, email: normalizedEmail, householdId, invitedById, expiresAt },
-    select: { id: true, token: true, email: true, expiresAt: true },
+  const invite = await prisma.householdInvite.create({
+    data: { tokenHash, email: normalizedEmail, householdId, invitedById, expiresAt },
+    select: { id: true, email: true, expiresAt: true },
   });
+
+  return { ...invite, token };
 }
 
 export async function listPendingInvites(householdId: string) {
@@ -56,8 +63,9 @@ export async function revokeInvite({
 }
 
 export async function getInvitePreview(token: string) {
+  const tokenHash = hashInviteToken(token);
   return prisma.householdInvite.findUnique({
-    where: { token },
+    where: { tokenHash },
     select: {
       status: true,
       expiresAt: true,
@@ -79,9 +87,11 @@ export async function redeemInvite({
   token: string;
   userId: string;
 }): Promise<InviteRedeemResult> {
+  const tokenHash = hashInviteToken(token);
+
   return prisma.$transaction(async (tx) => {
     const invite = await tx.householdInvite.findUnique({
-      where: { token },
+      where: { tokenHash },
       select: { id: true, householdId: true, status: true, expiresAt: true },
     });
 

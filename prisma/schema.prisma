@@ -215,7 +215,7 @@ model Expense {
 
 model HouseholdInvite {
   id          String       @id @default(cuid())
-  token       String       @unique
+  tokenHash   String       @unique
   email       String
   householdId String
   invitedById String
@@ -226,7 +226,6 @@ model HouseholdInvite {
   household   Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
   invitedBy   User         @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@index([householdId])
   @@index([email])
 }
