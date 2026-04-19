@@ -10,7 +10,8 @@
     "db:up": "docker compose up -d postgres",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "env:check": "tsx scripts/check-env.ts"
+    "env:check": "tsx scripts/check-env.ts",
+    "check:auth-redirects": "tsx scripts/check-auth-redirects.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
