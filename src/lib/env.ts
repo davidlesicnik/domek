@@ -5,9 +5,20 @@ const supabaseRuntimeSchema = z.object({
   supabaseUrl: z.string().url(),
 });
 
-const appRuntimeSchema = z.object({
-  appUrl: z.string().url().optional(),
-});
+const appRuntimeSchema = z
+  .object({
+    appUrl: z.string().url().optional(),
+    nodeEnv: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.nodeEnv === "production" && !value.appUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "APP_URL is required when NODE_ENV=production.",
+        path: ["appUrl"],
+      });
+    }
+  });
 
 const databaseSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -37,7 +48,10 @@ export function getSupabaseRuntimeConfig() {
 }
 
 export function getAppRuntimeConfig() {
-  return appRuntimeSchema.parse({ appUrl: readEnv("APP_URL") });
+  return appRuntimeSchema.parse({
+    appUrl: readEnv("APP_URL"),
+    nodeEnv: readEnv("NODE_ENV"),
+  });
 }
 
 const emailSchema = z.object({
@@ -55,6 +69,7 @@ export function getEmailConfig() {
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
+    app: getAppRuntimeConfig(),
     database: databaseSchema.parse({
       DATABASE_URL: process.env.DATABASE_URL,
     }),

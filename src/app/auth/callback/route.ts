@@ -1,31 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { sanitizeAuthCallbackNextPath } from "@/lib/auth-redirect";
+import { resolveAuthOrigin } from "@/lib/origin";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { upsertSupabaseUser } from "@/lib/users";
 
 const nextCookieName = "domek_next";
 
-function safeNextPath(value: string | undefined): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
-  }
-
-  if (value.startsWith("/login") || value.startsWith("/auth/callback")) {
-    return "/app";
-  }
-
-  return value;
-}
-
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
-  const host = request.headers.get("x-forwarded-host") ?? requestUrl.host;
-  const publicOrigin = `${proto}://${host}`;
+  const publicOrigin = resolveAuthOrigin(request);
 
   const code = requestUrl.searchParams.get("code");
-  const next = safeNextPath(request.cookies.get(nextCookieName)?.value);
+  const next = sanitizeAuthCallbackNextPath(request.cookies.get(nextCookieName)?.value);
 
   if (!code) {
     const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
