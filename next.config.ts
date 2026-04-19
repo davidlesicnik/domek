@@ -21,7 +21,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "frame-ancestors 'none'",
   "img-src 'self' data: blob: https:",
-  `script-src 'self' ${analyticsScriptOrigin}`,
+  `script-src 'self' 'unsafe-inline' ${analyticsScriptOrigin}`,
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "form-action 'self'",
