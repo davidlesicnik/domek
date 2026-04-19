@@ -5,11 +5,17 @@ import {
   getCurrentShoppingScope,
   parseShoppingItemInput,
 } from "@/lib/shopping-lists";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ listId: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentShoppingScope();
 
   if (!scope) {

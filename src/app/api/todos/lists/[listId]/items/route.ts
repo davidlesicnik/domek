@@ -5,11 +5,17 @@ import {
   getCurrentTodoScope,
   parseTodoItemInput,
 } from "@/lib/todo-lists";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ listId: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentTodoScope();
 
   if (!scope) {

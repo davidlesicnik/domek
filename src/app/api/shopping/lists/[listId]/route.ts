@@ -1,9 +1,15 @@
 import { deleteShoppingList, getCurrentShoppingScope } from "@/lib/shopping-lists";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ listId: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentShoppingScope();
 
   if (!scope) {

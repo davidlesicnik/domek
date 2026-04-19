@@ -5,11 +5,17 @@ import {
   parseCategoryUpdate,
   updateCategory,
 } from "@/lib/expenses";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentExpenseScope();
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 

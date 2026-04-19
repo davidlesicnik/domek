@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
+import {
+  applyRateLimitHeaders,
+  checkRateLimit,
+  getClientIpAddress,
+  logRateLimitEvent,
+  type RateLimitPolicy,
+} from "@/lib/rate-limit";
 import { getTrialState } from "@/lib/trial";
 import { upsertSupabaseUser } from "@/lib/users";
 
@@ -11,6 +18,22 @@ type CookieUpdate = Readonly<{
   value: string;
   options: CookieOptions;
 }>;
+
+
+const AUTH_FLOW_RATE_LIMIT_POLICY: RateLimitPolicy = {
+  burst: { limit: 10, windowMs: 60_000 },
+  sustained: { limit: 100, windowMs: 3_600_000 },
+};
+
+const INVITE_RATE_LIMIT_POLICY: RateLimitPolicy = {
+  burst: { limit: 20, windowMs: 60_000 },
+  sustained: { limit: 200, windowMs: 3_600_000 },
+};
+
+const WRITE_API_RATE_LIMIT_POLICY: RateLimitPolicy = {
+  burst: { limit: 40, windowMs: 60_000 },
+  sustained: { limit: 400, windowMs: 3_600_000 },
+};
 
 const PUBLIC_PATHS = [
   "/",
@@ -97,6 +120,65 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const ipAddress = getClientIpAddress(request.headers);
+  const isWriteApiPath = pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method);
+
+  if (pathname.startsWith("/auth/start/") || pathname === "/auth/callback") {
+    const decision = checkRateLimit(
+      { action: "auth-flow", ipAddress, pathname, userId: user?.id },
+      AUTH_FLOW_RATE_LIMIT_POLICY,
+    );
+
+    if (!decision.allowed) {
+      logRateLimitEvent({ action: "auth-flow", ipAddress, pathname, userId: user?.id }, decision, "proxy");
+      const response = NextResponse.json(
+        { error: "Too many authentication attempts. Please try again shortly." },
+        { status: 429 },
+      );
+      applyRateLimitHeaders(response.headers, decision);
+      return response;
+    }
+
+    applyRateLimitHeaders(response.headers, decision);
+  }
+
+  if (pathname === "/invite" || pathname.startsWith("/invite/")) {
+    const decision = checkRateLimit(
+      { action: "invite", ipAddress, pathname, userId: user?.id },
+      INVITE_RATE_LIMIT_POLICY,
+    );
+
+    if (!decision.allowed) {
+      logRateLimitEvent({ action: "invite", ipAddress, pathname, userId: user?.id }, decision, "proxy");
+      const inviteResponse = NextResponse.json(
+        { error: "Too many invite requests. Please wait before trying again." },
+        { status: 429 },
+      );
+      applyRateLimitHeaders(inviteResponse.headers, decision);
+      return inviteResponse;
+    }
+
+    applyRateLimitHeaders(response.headers, decision);
+  }
+
+  if (isWriteApiPath) {
+    const decision = checkRateLimit(
+      { action: "api-write", ipAddress, pathname, userId: user?.id },
+      WRITE_API_RATE_LIMIT_POLICY,
+    );
+
+    if (!decision.allowed) {
+      logRateLimitEvent({ action: "api-write", ipAddress, pathname, userId: user?.id }, decision, "proxy");
+      const apiResponse = NextResponse.json(
+        { error: "Too many write requests. Please wait and retry." },
+        { status: 429 },
+      );
+      applyRateLimitHeaders(apiResponse.headers, decision);
+      return apiResponse;
+    }
+
+    applyRateLimitHeaders(response.headers, decision);
+  }
 
   if (!user) {
     if (isPublicPath(pathname)) {

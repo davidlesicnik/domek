@@ -6,8 +6,14 @@ import {
   parseCalendarEventInput,
   updateCalendarEvent,
 } from "@/lib/calendar-events";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentCalendarScope();
 
   if (!scope) {
@@ -34,7 +40,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentCalendarScope();
 
   if (!scope) {

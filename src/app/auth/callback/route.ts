@@ -1,10 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { applyRateLimitHeaders, checkRateLimit, getClientIpAddress, logRateLimitEvent } from "@/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { upsertSupabaseUser } from "@/lib/users";
 
 const nextCookieName = "domek_next";
+
+const AUTH_CALLBACK_RATE_LIMIT_POLICY = {
+  burst: { limit: 10, windowMs: 60_000 },
+  sustained: { limit: 120, windowMs: 3_600_000 },
+};
 
 function safeNextPath(value: string | undefined): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -20,6 +26,21 @@ function safeNextPath(value: string | undefined): string {
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  const ipAddress = getClientIpAddress(request.headers);
+  const rateLimitDecision = checkRateLimit(
+    { action: "auth-callback", ipAddress, pathname: requestUrl.pathname },
+    AUTH_CALLBACK_RATE_LIMIT_POLICY,
+  );
+
+  if (!rateLimitDecision.allowed) {
+    logRateLimitEvent({ action: "auth-callback", ipAddress, pathname: requestUrl.pathname }, rateLimitDecision, "route");
+    const blocked = NextResponse.json(
+      { error: "Too many authentication callbacks. Please retry shortly." },
+      { status: 429 },
+    );
+    applyRateLimitHeaders(blocked.headers, rateLimitDecision);
+    return blocked;
+  }
   const proto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
   const host = request.headers.get("x-forwarded-host") ?? requestUrl.host;
   const publicOrigin = `${proto}://${host}`;
@@ -30,6 +51,7 @@ export async function GET(request: NextRequest) {
   if (!code) {
     const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
+    applyRateLimitHeaders(response.headers, rateLimitDecision);
     return response;
   }
 
@@ -39,6 +61,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
+    applyRateLimitHeaders(response.headers, rateLimitDecision);
     return response;
   }
 
@@ -49,6 +72,7 @@ export async function GET(request: NextRequest) {
   if (!user) {
     const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
+    applyRateLimitHeaders(response.headers, rateLimitDecision);
     return response;
   }
 
@@ -68,5 +92,6 @@ export async function GET(request: NextRequest) {
         : "/onboarding/payment";
   const response = NextResponse.redirect(new URL(destination, publicOrigin));
   response.cookies.delete(nextCookieName);
+  applyRateLimitHeaders(response.headers, rateLimitDecision);
   return response;
 }

@@ -1,8 +1,14 @@
 import { ZodError } from "zod";
 
 import { createNote, getCurrentNoteScope, parseNoteInput } from "@/lib/notes";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentNoteScope();
 
   if (!scope) {

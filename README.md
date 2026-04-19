@@ -201,6 +201,17 @@ docker compose up
 
 The web image is built with a multi-stage Dockerfile and runs as a non-root user in the final stage.
 
+## Rate Limiting
+
+Domek enforces high-risk request throttling in two layers:
+
+- **Edge/request proxy (`src/proxy.ts`)**: rate limits auth flow paths (`/auth/start/*`, `/auth/callback`), invite paths (`/invite/*`), and non-GET write traffic under `/api/*` before route handlers execute.
+- **App route guards (`src/lib/rate-limit-route.ts`)**: write-heavy route handlers apply server-side guards so limits are still enforced if traffic reaches the app runtime directly.
+
+All 429 responses include retry semantics (`Retry-After`, `X-RateLimit-*` headers), and exceed events are logged for monitoring.
+
+For production, mirror these limits at the load-balancer/WAF layer (for example Cloudflare, Cloud Armor, NGINX, or ALB rules) using the same path groupings and conservative burst+sustained thresholds to block abusive traffic before it reaches the container.
+
 ## Quality And Security
 
 - Keep strict TypeScript enabled.

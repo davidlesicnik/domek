@@ -7,6 +7,7 @@ import {
   listExpenses,
   parseExpenseInput,
 } from "@/lib/expenses";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function GET(request: Request) {
   const scope = await getCurrentExpenseScope();
@@ -34,6 +35,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentExpenseScope();
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 

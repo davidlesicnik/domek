@@ -1,11 +1,17 @@
 import { ZodError } from "zod";
 
 import { deleteNote, getCurrentNoteScope, parseNoteInput, updateNote } from "@/lib/notes";
+import { enforceWriteApiRateLimit } from "@/lib/rate-limit-route";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ noteId: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentNoteScope();
 
   if (!scope) {
@@ -32,9 +38,14 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ noteId: string }> },
 ) {
+  const rateLimitResponse = await enforceWriteApiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const scope = await getCurrentNoteScope();
 
   if (!scope) {
