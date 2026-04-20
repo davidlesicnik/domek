@@ -102,7 +102,8 @@ Recommended Railway variables:
 ```bash
 PORT=3000
 HOSTNAME=0.0.0.0
-DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?schema=public"
+DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
+DIRECT_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require"
 SUPABASE_URL="https://PROJECT_REF.supabase.co"
 SUPABASE_ANON_KEY="sb_publishable_or_anon_key"
 RESEND_API_KEY="re_your_server_secret"
@@ -110,6 +111,8 @@ FROM_EMAIL="Domek <noreply@yourdomain.com>"
 NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
 APP_URL="https://your-service.up.railway.app"
 ```
+
+`connection_limit=1` is very conservative and can bottleneck traffic. Start around `5` per app instance, then tune based on replica count and Supabase connection budget.
 
 Do not use the local database URL in Railway:
 
@@ -128,6 +131,28 @@ POSTGRES_PASSWORD
 POSTGRES_PORT
 POSTGRES_USER
 ```
+
+### Railway Migration Command (Production)
+
+Use a Railway **Pre-deploy Command** so migrations run before the app process starts:
+
+```bash
+npm run db:deploy:verify
+```
+
+This command runs a production-safe verification pipeline in order (apply migrations, verify migration status, then run a lightweight database healthcheck):
+
+```bash
+npm run db:migrate:deploy
+npm run db:migrate:status
+npm run db:healthcheck
+```
+
+`DIRECT_URL` is required for migration deploys. If it is missing/invalid, deploy verification now fails fast before migration starts.
+
+If pre-deploy appears stuck on migrations, set `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to enforce a hard timeout and get lock/reachability troubleshooting output. The verifier sends `SIGTERM` and escalates to `SIGKILL` after 5 seconds so hanging migration processes do not block deploy forever.
+
+Keep the Railway start command app-only (`node server.js`). Do not run `prisma migrate dev` or `prisma db push` in production. The Docker runtime image includes the Prisma CLI and deploy scripts so this pre-deploy command works in containerized Railway deployments.
 
 ### Railway 502 Checklist
 

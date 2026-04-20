@@ -48,10 +48,34 @@ npm run lint
 npm run build
 npm run db:up
 npm run db:generate
+npm run db:migrate
+npm run db:migrate:deploy
+npm run db:migrate:status
+npm run db:healthcheck
+npm run db:deploy:verify
 npm run env:check
 docker compose config
 docker compose build
 ```
+
+## Production Migrations (Railway)
+
+- Run production migrations via Railway Pre-deploy Command so schema changes are applied before app startup.
+- Use this command for production deploy checks:
+
+```bash
+npm run db:deploy:verify
+```
+
+- `db:deploy:verify` must run:
+  - `npm run db:migrate:deploy`
+  - `npm run db:migrate:status`
+  - `npm run db:healthcheck`
+- `DIRECT_URL` must be set for migrations; `db:deploy:verify` fails fast when it is missing/invalid.
+- Use `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to cap migration step runtime and surface stuck-lock troubleshooting.
+- Keep the runtime start command app-only (`node server.js` or `npm run start`), without migration commands.
+- The production Docker image ships Prisma CLI plus `scripts/db-deploy-verify.mjs` and `scripts/db-healthcheck.mjs`; keep those files available for Railway Pre-deploy execution.
+- Never use `prisma migrate dev` or `prisma db push` in production.
 
 ## Routing and Auth Middleware
 
