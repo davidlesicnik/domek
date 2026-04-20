@@ -129,6 +129,24 @@ POSTGRES_PORT
 POSTGRES_USER
 ```
 
+### Railway Migration Command (Production)
+
+Use a Railway **Pre-deploy Command** so migrations run before the app process starts:
+
+```bash
+npm run db:deploy:verify
+```
+
+This command runs a production-safe verification pipeline in order (apply migrations, verify migration status, then run a lightweight database healthcheck):
+
+```bash
+npm run db:migrate:deploy
+npm run db:migrate:status
+npm run db:healthcheck
+```
+
+Keep the Railway start command app-only (`node server.js`). Do not run `prisma migrate dev` or `prisma db push` in production. The Docker runtime image includes the Prisma CLI and deploy scripts so this pre-deploy command works in containerized Railway deployments.
+
 ### Railway 502 Checklist
 
 If the Railway app shows 502s:
