@@ -52,7 +52,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const searchParams = useSearchParams();
   const searchParamSnapshot = searchParams.toString();
   const [isCookieConsentAccepted, setIsCookieConsentAccepted] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const pagePath = useMemo(() => {
     const stableSearchParams = new URLSearchParams(searchParamSnapshot);
 
@@ -65,7 +65,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       setIsCookieConsentAccepted(isAccepted);
 
       if (!isAccepted) {
-        setIsReady(false);
+        setIsInitialized(false);
         disableAnalytics();
       }
     }
@@ -80,7 +80,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
     if (
       !measurementId ||
       !isCookieConsentAccepted ||
-      !isReady ||
+      !isInitialized ||
       !hasStoredCookieConsent() ||
       typeof window.gtag !== "function"
     ) {
@@ -91,26 +91,25 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       page_path: pagePath,
       page_title: document.title,
     });
-  }, [isCookieConsentAccepted, isReady, measurementId, pagePath]);
+  }, [isCookieConsentAccepted, isInitialized, measurementId, pagePath]);
 
   if (!measurementId || !isCookieConsentAccepted) {
     return null;
   }
 
   return (
-    <>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" onReady={() => setIsReady(true)} strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${measurementId}', { send_page_view: false });
-        `}
-      </Script>
-    </>
+    <Script
+      src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+      strategy="afterInteractive"
+      onLoad={() => {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = (...args) => {
+          window.dataLayer?.push(args);
+        };
+        window.gtag("js", new Date());
+        window.gtag("config", measurementId, { send_page_view: false });
+        setIsInitialized(true);
+      }}
+    />
   );
 }
