@@ -71,6 +71,8 @@ npm run db:deploy:verify
   - `npm run db:migrate:deploy`
   - `npm run db:migrate:status`
   - `npm run db:healthcheck`
+- `DIRECT_URL` must be set for migrations; `db:deploy:verify` fails fast when it is missing/invalid.
+- Use `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to cap migration step runtime and surface stuck-lock troubleshooting.
 - Keep the runtime start command app-only (`node server.js` or `npm run start`), without migration commands.
 - The production Docker image ships Prisma CLI plus `scripts/db-deploy-verify.mjs` and `scripts/db-healthcheck.mjs`; keep those files available for Railway Pre-deploy execution.
 - Never use `prisma migrate dev` or `prisma db push` in production.
