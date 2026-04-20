@@ -51,6 +51,9 @@ export function HouseholdSettingsView({
       {successMessage ? (
         <p className="text-sm font-medium text-[#2e6641]">{successMessage}</p>
       ) : null}
+      {errorMessage ? (
+        <p className="text-sm font-medium text-[#a6543c]">{errorMessage}</p>
+      ) : null}
 
       {/* Members */}
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
@@ -75,12 +78,9 @@ export function HouseholdSettingsView({
         <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
           <h2 className="text-sm font-semibold text-[#a6543c]">Delete household</h2>
           <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
-            This will permanently delete all household data including todos, shopping lists, notes,
-            calendar events, and expenses. All members will lose access.
+            This will permanently delete all household data including todos, chores, shopping lists,
+            notes, calendar events, and expenses. All members will lose access.
           </p>
-          {errorMessage ? (
-            <p className="mt-3 text-xs font-medium text-[#a6543c]">{errorMessage}</p>
-          ) : null}
           <form action={deleteHouseholdAction} className="mt-4 grid gap-3">
             <label className="flex cursor-pointer items-start gap-2 text-xs text-[#6b3a2d]">
               <input

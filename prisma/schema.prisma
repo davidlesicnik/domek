@@ -31,6 +31,12 @@ enum CalendarEventCategory {
   SCHOOL
 }
 
+enum ChoreIntervalUnit {
+  DAYS
+  WEEKS
+  MONTHS
+}
+
 model User {
   id                         String            @id
   name                       String?
@@ -46,6 +52,8 @@ model User {
   notes                      Note[]
   expenseCategories          ExpenseCategory[]
   expenses                   Expense[]
+  choresCreated              Chore[]
+  choreCompletions           ChoreCompletion[]
   createdAt                  DateTime          @default(now())
   updatedAt                  DateTime          @updatedAt
 }
@@ -63,6 +71,7 @@ model Household {
   notes             Note[]
   expenseCategories ExpenseCategory[]
   expenses          Expense[]
+  chores            Chore[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 }
@@ -78,10 +87,43 @@ model HouseholdMember {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   expenses Expense[]
+  chores   Chore[]
 
   @@unique([userId])
   @@unique([userId, householdId])
   @@index([householdId])
+}
+
+model Chore {
+  id                        String            @id @default(cuid())
+  name                      String            @db.VarChar(200)
+  intervalValue             Int
+  intervalUnit              ChoreIntervalUnit
+  assignedHouseholdMemberId String
+  householdId               String
+  createdByUserId           String?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+  completions               ChoreCompletion[]
+  assignedHouseholdMember   HouseholdMember   @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: Restrict)
+  household                 Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy                 User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([assignedHouseholdMemberId])
+  @@index([createdByUserId])
+}
+
+model ChoreCompletion {
+  id                String   @id @default(cuid())
+  choreId           String
+  completedAt       DateTime @default(now())
+  completedByUserId String?
+  chore             Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  completedBy       User?    @relation(fields: [completedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([choreId, completedAt])
+  @@index([completedByUserId])
 }
 
 model CalendarEvent {
