@@ -9,7 +9,15 @@ function assertDatabaseUrl() {
     throw new Error("DATABASE_URL must be set for db healthcheck.");
   }
 
-  const isLocalhost = /localhost|127\.0\.0\.1/.test(databaseUrl);
+  let hostname;
+
+  try {
+    hostname = new URL(databaseUrl).hostname;
+  } catch {
+    throw new Error("DATABASE_URL must be a valid URL for db healthcheck.");
+  }
+
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
   if (process.env.NODE_ENV === "production" && isLocalhost) {
     throw new Error(
