@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "env:check": "tsx scripts/check-env.ts",
-    "check:auth-redirects": "tsx scripts/check-auth-redirects.ts"
+    "check:auth-redirects": "tsx scripts/check-auth-redirects.ts",
+    "db:migrate:deploy": "./node_modules/.bin/prisma migrate deploy",
+    "db:migrate:status": "./node_modules/.bin/prisma migrate status",
+    "db:healthcheck": "node scripts/db-healthcheck.mjs",
+    "db:deploy:verify": "node scripts/db-deploy-verify.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -23,7 +27,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.11.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "prisma": "^6.19.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -32,7 +37,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
-    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
