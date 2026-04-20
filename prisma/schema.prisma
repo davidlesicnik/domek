@@ -105,7 +105,7 @@ model Chore {
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   completions               ChoreCompletion[]
-  assignedHouseholdMember   HouseholdMember   @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: Cascade)
+  assignedHouseholdMember   HouseholdMember   @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: Restrict)
   household                 Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdBy                 User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 

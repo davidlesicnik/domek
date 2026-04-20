@@ -36,6 +36,17 @@ async function removeMemberAction(formData: FormData) {
     redirect("/app/household");
   }
 
+  const assignedChoreCount = await prisma.chore.count({
+    where: {
+      householdId: membership.householdId,
+      assignedHouseholdMemberId: memberId,
+    },
+  });
+
+  if (assignedChoreCount > 0) {
+    redirect("/app/household?error=assigned-chores");
+  }
+
   await prisma.householdMember.deleteMany({
     where: {
       id: memberId,
@@ -155,6 +166,17 @@ async function leaveHouseholdAction() {
 
   if (!membership || membership.role === "OWNER") redirect("/app/household");
 
+  const assignedChoreCount = await prisma.chore.count({
+    where: {
+      householdId: membership.householdId,
+      assignedHouseholdMemberId: membership.id,
+    },
+  });
+
+  if (assignedChoreCount > 0) {
+    redirect("/app/household?error=assigned-chores");
+  }
+
   await prisma.householdMember.delete({ where: { id: membership.id } });
   redirect("/onboarding/household");
 }
@@ -206,6 +228,8 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
         ? "Please check the confirmation box."
         : errorParam === "color"
           ? "Choose one of the household colors."
+          : errorParam === "assigned-chores"
+            ? "Reassign this person's chores before removing them from the household."
           : null;
 
   return (

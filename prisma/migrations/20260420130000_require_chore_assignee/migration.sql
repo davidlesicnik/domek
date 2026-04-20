@@ -8,4 +8,4 @@ ALTER TABLE "Chore" DROP CONSTRAINT "Chore_assignedHouseholdMemberId_fkey";
 ALTER TABLE "Chore" ALTER COLUMN "assignedHouseholdMemberId" SET NOT NULL;
 
 -- AddForeignKey
-ALTER TABLE "Chore" ADD CONSTRAINT "Chore_assignedHouseholdMemberId_fkey" FOREIGN KEY ("assignedHouseholdMemberId") REFERENCES "HouseholdMember"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Chore" ADD CONSTRAINT "Chore_assignedHouseholdMemberId_fkey" FOREIGN KEY ("assignedHouseholdMemberId") REFERENCES "HouseholdMember"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
