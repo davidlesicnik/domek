@@ -1,4 +1,5 @@
 import { FeatureCard } from "@/components/dashboard/feature-card";
+import { getMemberColor } from "@/lib/member-colors";
 
 const features = [
   {
@@ -32,7 +33,7 @@ const features = [
     marker: "JOB",
     title: "Chore list",
     summary: "Recurring work without the weekly detective game of who did what last time.",
-    status: "Soon",
+    status: "Open",
   },
   {
     accent: "rose",
@@ -44,7 +45,22 @@ const features = [
   },
 ];
 
-export function DashboardOverview() {
+type OverviewMember = {
+  id: string;
+  color: string;
+  name: string | null;
+  email: string | null;
+};
+
+type DashboardOverviewProps = Readonly<{
+  members: OverviewMember[];
+}>;
+
+function memberLabel(member: OverviewMember) {
+  return member.name ?? member.email ?? "Member";
+}
+
+export function DashboardOverview({ members }: DashboardOverviewProps) {
   return (
     <div className="grid gap-8">
       <section className="mx-auto grid w-full max-w-[940px] gap-8 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:p-10">
@@ -59,6 +75,32 @@ export function DashboardOverview() {
             One shared place for the calendar, the list on the fridge, the chore rhythm,
             and the money bits no one wants to chase later.
           </p>
+          {members.length > 0 ? (
+            <div className="mt-5 flex items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+                Home board
+              </p>
+              <div className="flex items-center gap-1.5 rounded-md border border-[#e2dfd8] bg-[#f4f1ea] px-2 py-1.5">
+                {members.map((member) => {
+                  const color = getMemberColor(member.color);
+                  return (
+                    <span
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border font-serif text-xs font-semibold"
+                      key={member.id}
+                      style={{
+                        backgroundColor: color.avatarBg,
+                        borderColor: color.border,
+                        color: color.avatarText,
+                      }}
+                      title={memberLabel(member)}
+                    >
+                      {memberLabel(member).slice(0, 1).toUpperCase()}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

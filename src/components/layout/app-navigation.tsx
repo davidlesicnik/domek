@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Banknote,
   CalendarDays,
+  ClipboardCheck,
   Home,
   ListTodo,
   NotebookPen,
@@ -16,6 +17,7 @@ const navigation = [
   { href: "/app/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/app/todos", icon: ListTodo, label: "To-do" },
   { href: "/app/shopping", icon: ShoppingCart, label: "Shopping" },
+  { href: "/app/chores", icon: ClipboardCheck, label: "Chores" },
   { href: "/app/expenses", icon: Banknote, label: "Expenses" },
   { href: "/app/notes", icon: NotebookPen, label: "Notes" },
 ];
@@ -50,7 +52,7 @@ export function AppNavigation() {
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-50 border-t border-[#dfddd6] bg-[#fdfcf8]/95 px-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(31,35,30,0.12)] backdrop-blur sm:hidden"
       >
-        <div className="mx-auto grid max-w-md grid-cols-6 gap-1">
+        <div className="mx-auto grid max-w-md grid-cols-7 gap-1">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = isActiveNavigationItem(item.href, pathname);
