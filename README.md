@@ -150,7 +150,7 @@ npm run db:healthcheck
 
 `DIRECT_URL` is required for migration deploys. If it is missing/invalid, deploy verification now fails fast before migration starts.
 
-If pre-deploy appears stuck on migrations, set `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to enforce a hard timeout and get lock/reachability troubleshooting output.
+If pre-deploy appears stuck on migrations, set `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to enforce a hard timeout and get lock/reachability troubleshooting output. The verifier sends `SIGTERM` and escalates to `SIGKILL` after 5 seconds so hanging migration processes do not block deploy forever.
 
 Keep the Railway start command app-only (`node server.js`). Do not run `prisma migrate dev` or `prisma db push` in production. The Docker runtime image includes the Prisma CLI and deploy scripts so this pre-deploy command works in containerized Railway deployments.
 

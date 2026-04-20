@@ -72,9 +72,13 @@ function runCommand(label, command, args, timeoutMs = 300000) {
     });
     let output = "";
     let didTimeout = false;
+    let forceKillTimer;
     const timer = setTimeout(() => {
       didTimeout = true;
       child.kill("SIGTERM");
+      forceKillTimer = setTimeout(() => {
+        child.kill("SIGKILL");
+      }, 5000);
     }, timeoutMs);
 
     child.stdout.on("data", (chunk) => {
@@ -95,6 +99,9 @@ function runCommand(label, command, args, timeoutMs = 300000) {
 
     child.on("close", (code) => {
       clearTimeout(timer);
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer);
+      }
 
       if (didTimeout) {
         const error = new Error(
