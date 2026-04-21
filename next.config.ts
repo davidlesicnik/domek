@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const analyticsScriptOrigin = "https://www.googletagmanager.com";
 const analyticsConnectOrigin = "https://www.google-analytics.com";
 const analyticsRegionConnectOrigin = "https://region1.google-analytics.com";
+const isProduction = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseOrigin =
   supabaseUrl && URL.canParse(supabaseUrl) ? new URL(supabaseUrl).origin : null;
@@ -21,7 +22,10 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "frame-ancestors 'none'",
   "img-src 'self' data: blob: https:",
-  `script-src 'self' 'unsafe-inline' ${analyticsScriptOrigin}`,
+  `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "} ${analyticsScriptOrigin}`.replace(
+    /\s+/g,
+    " ",
+  ).trim(),
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "form-action 'self'",

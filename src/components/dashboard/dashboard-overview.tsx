@@ -63,7 +63,7 @@ function memberLabel(member: OverviewMember) {
 export function DashboardOverview({ members }: DashboardOverviewProps) {
   return (
     <div className="grid gap-8">
-      <section className="mx-auto grid w-full max-w-[940px] gap-8 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:p-10">
+      <section className="mx-auto grid w-full max-w-[940px] gap-8 rounded-md border border-[#e9e4da] bg-[#fffdf9] p-6 shadow-[0_20px_45px_rgba(31,35,30,0.07)] sm:p-10">
         <div className="max-w-2xl">
           <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
             On the table

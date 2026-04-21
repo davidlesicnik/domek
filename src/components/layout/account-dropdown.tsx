@@ -5,35 +5,47 @@ import { useState } from "react";
 import { getMemberColor } from "@/lib/member-colors";
 
 export function AccountDropdown({
+  align = "right",
   memberColor,
+  showName = false,
   userName,
 }: {
+  align?: "left" | "right";
   memberColor: string | null;
+  showName?: boolean;
   userName: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const label = userName ?? "Domek";
+  const firstName = label.trim().split(/\s+/)[0] ?? "Domek";
   const palette = getMemberColor(memberColor);
 
   return (
-    <div className="relative w-fit">
+    <div className={`relative ${showName ? "w-full" : "w-fit"}`}>
       <button
         aria-expanded={isOpen}
         aria-label="Account"
-        className="flex cursor-pointer items-center justify-center transition hover:opacity-80"
+        className={`flex cursor-pointer items-center transition ${
+          showName
+            ? "w-full gap-3 rounded-md py-2.5 pl-0 pr-2 text-left text-[13px] font-medium text-[#7a817d] hover:bg-[#f4f1ea] hover:text-[#202321]"
+            : "justify-center hover:opacity-80"
+        }`}
         onClick={() => setIsOpen((v) => !v)}
         type="button"
       >
         <span
-          className="flex h-9 w-9 items-center justify-center rounded-md border font-serif text-sm font-semibold"
+          className={`flex items-center justify-center rounded-md font-serif font-semibold ${
+            showName ? "h-6 w-6 text-xs" : "h-8 w-8 border text-xs"
+          }`}
           style={{
             backgroundColor: palette.avatarBg,
-            borderColor: palette.border,
             color: palette.avatarText,
+            ...(showName ? {} : { borderColor: palette.border }),
           }}
         >
           {label.slice(0, 1).toUpperCase()}
         </span>
+        {showName ? <span className="min-w-0 flex-1 truncate">{firstName}</span> : null}
       </button>
 
       {isOpen ? (
@@ -43,7 +55,11 @@ export function AccountDropdown({
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 top-full z-50 mt-2 min-w-64 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+          <div
+            className={`absolute top-full z-50 mt-2 min-w-64 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)] ${
+              align === "left" ? "left-0" : "right-0"
+            }`}
+          >
             <p className="text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
               Signed in
             </p>
