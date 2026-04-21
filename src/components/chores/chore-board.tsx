@@ -1288,7 +1288,7 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                                   aria-hidden
                                   className={`h-3.5 w-3.5 transition-transform duration-300 ${isCompletingChore ? "scale-110" : ""}`}
                                 />
-                                {isCompletingChore ? "Done" : "Done"}
+                                Done
                               </button>
                             </div>
                           </li>
