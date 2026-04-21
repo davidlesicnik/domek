@@ -1,0 +1,24 @@
+FROM postgres:17-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+ARG RESTIC_VERSION=0.14.0-1+b5
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    coreutils \
+    findutils \
+    gzip \
+    restic=${RESTIC_VERSION} \
+    util-linux \
+    zstd \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY scripts/backup-db.sh /usr/local/bin/backup-db.sh
+
+RUN chmod 0755 /usr/local/bin/backup-db.sh \
+  && mkdir -p /backup
+
+ENTRYPOINT ["/usr/local/bin/backup-db.sh"]
