@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireHouseholdMemberSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { sendInviteEmail } from "@/lib/email";
-import { getAppRuntimeConfig } from "@/lib/env";
+import { getAppRuntimeConfig, getOptionalEmailConfig } from "@/lib/env";
 import { createInvite, revokeInvite } from "@/lib/invites";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
@@ -37,6 +37,10 @@ export async function sendHouseholdInvite(
   });
 
   if (!household) return { ok: false, error: "failed" };
+
+  if (!getOptionalEmailConfig()) {
+    return { ok: false, error: "failed" };
+  }
 
   // Block if the email already belongs to a member of this household
   const existingMember = await prisma.user.findUnique({

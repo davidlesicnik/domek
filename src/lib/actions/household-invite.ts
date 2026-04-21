@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireHouseholdMemberSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { sendInviteEmail } from "@/lib/email";
-import { getAppRuntimeConfig } from "@/lib/env";
+import { getAppRuntimeConfig, getOptionalEmailConfig } from "@/lib/env";
 import { createInvite, revokeInvite } from "@/lib/invites";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
@@ -39,6 +39,13 @@ export async function sendTopBarInviteAction(
 
   if (!household) return { success: false, error: "Household not found." };
 
+  if (!getOptionalEmailConfig()) {
+    return {
+      success: false,
+      error: "We couldn't send the invite right now. Please try again in a bit.",
+    };
+  }
+
   const invite = await createInvite({
     householdId: membership.householdId,
     invitedById: session.user.id,
@@ -49,12 +56,21 @@ export async function sendTopBarInviteAction(
   const origin = appUrl ?? "http://localhost:3000";
   const inviteUrl = `${origin}/invite/${invite.token}`;
 
-  await sendInviteEmail({
-    toEmail: invite.email,
-    inviterName: session.user.name,
-    householdName: household.name,
-    inviteUrl,
-  });
+  try {
+    await sendInviteEmail({
+      toEmail: invite.email,
+      inviterName: session.user.name,
+      householdName: household.name,
+      inviteUrl,
+    });
+  } catch (error) {
+    console.error("[sendTopBarInviteAction] email failed:", error);
+
+    return {
+      success: false,
+      error: "We couldn't send the invite right now. Please try again in a bit.",
+    };
+  }
 
   revalidatePath("/app", "layout");
   return { success: true, error: null };
