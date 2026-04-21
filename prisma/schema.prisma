@@ -37,6 +37,19 @@ enum ChoreIntervalUnit {
   MONTHS
 }
 
+enum ChoreAssignmentType {
+  UNASSIGNED
+  FIXED
+  ROTATING
+}
+
+enum ChoreRecurrenceType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
 model User {
   id                         String            @id
   name                       String?
@@ -51,6 +64,7 @@ model User {
   shoppingLists              ShoppingList[]
   notes                      Note[]
   expenseCategories          ExpenseCategory[]
+  choreCategories            ChoreCategory[]
   expenses                   Expense[]
   choresCreated              Chore[]
   choreCompletions           ChoreCompletion[]
@@ -70,6 +84,7 @@ model Household {
   shoppingLists     ShoppingList[]
   notes             Note[]
   expenseCategories ExpenseCategory[]
+  choreCategories   ChoreCategory[]
   expenses          Expense[]
   chores            Chore[]
   createdAt         DateTime          @default(now())
@@ -97,20 +112,44 @@ model HouseholdMember {
 model Chore {
   id                        String            @id @default(cuid())
   name                      String            @db.VarChar(200)
+  assignmentType            ChoreAssignmentType @default(FIXED)
+  recurrenceType            ChoreRecurrenceType @default(CUSTOM)
+  startsAt                  DateTime
   intervalValue             Int
   intervalUnit              ChoreIntervalUnit
-  assignedHouseholdMemberId String
+  weeklyDays                Int[]             @default([])
+  rotationMemberIds         String[]          @default([])
+  rotationIndex             Int               @default(0)
+  assignedHouseholdMemberId String?
+  categoryId                String?
   householdId               String
   createdByUserId           String?
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   completions               ChoreCompletion[]
-  assignedHouseholdMember   HouseholdMember   @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: Restrict)
+  assignedHouseholdMember   HouseholdMember?  @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: SetNull)
+  category                  ChoreCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   household                 Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdBy                 User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([householdId])
   @@index([assignedHouseholdMemberId])
+  @@index([categoryId])
+  @@index([createdByUserId])
+}
+
+model ChoreCategory {
+  id              String     @id @default(cuid())
+  name            String     @db.VarChar(60)
+  householdId     String
+  createdByUserId String?
+  createdAt       DateTime   @default(now())
+  chores          Chore[]
+  household       Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdBy       User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([householdId, name])
+  @@index([householdId])
   @@index([createdByUserId])
 }
 

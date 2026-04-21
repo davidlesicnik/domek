@@ -1,0 +1,1 @@
+-- No-op placeholder kept so existing dev databases remain aligned.
