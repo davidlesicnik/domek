@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 
 import { AccountDropdown } from "@/components/layout/account-dropdown";
-import { AppNavigation } from "@/components/layout/app-navigation";
+import { AppShellFrame } from "@/components/layout/app-shell-frame";
 import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
 
@@ -27,7 +27,7 @@ export function AppShell({ banner, memberColor, userName, userId, children }: Ap
           </div>
           <div className="flex items-center gap-5">
             <HouseholdModalServer userId={userId} />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:hidden">
               <Link
                 aria-label="Household settings"
                 className="flex h-9 w-9 items-center justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] text-[#5d635f] transition hover:border-[#9ab59d] hover:bg-[#eef7ef] hover:text-[#202321]"
@@ -39,11 +39,12 @@ export function AppShell({ banner, memberColor, userName, userId, children }: Ap
             </div>
           </div>
         </div>
-        <AppNavigation />
       </header>
       {banner}
-      <main className="mx-auto w-full max-w-[1120px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
-        {children}
+      <main className="mx-auto w-full max-w-[1520px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
+        <AppShellFrame memberColor={memberColor} userName={userName}>
+          {children}
+        </AppShellFrame>
       </main>
       <Footer />
     </div>

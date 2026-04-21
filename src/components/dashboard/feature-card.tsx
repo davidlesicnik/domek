@@ -12,19 +12,19 @@ type FeatureCardProps = Readonly<{
 
 const cardStyles: Record<string, { border: string; marker: string }> = {
   moss: {
-    border: "border-t-[#9a8f6a]",
+    border: "border-t-[#a99f7f]",
     marker: "bg-[#ebe8de] text-[#635d46]",
   },
   rose: {
-    border: "border-t-[#d19a95]",
+    border: "border-t-[#ddaea9]",
     marker: "bg-[#f3e4e2] text-[#8d4c45]",
   },
   sage: {
-    border: "border-t-[#9bb6a4]",
+    border: "border-t-[#a8beb0]",
     marker: "bg-[#e8efe9] text-[#536e5a]",
   },
   sun: {
-    border: "border-t-[#d4bf50]",
+    border: "border-t-[#dccd79]",
     marker: "bg-[#f4edc5] text-[#74651e]",
   },
 };
@@ -34,7 +34,7 @@ export function FeatureCard({ accent, id, marker, icon, title, summary, status }
 
   return (
     <article
-      className={`min-h-48 rounded-md border-t bg-[#fffdf8] p-6 shadow-[0_8px_40px_rgba(31,35,30,0.06)] ${styles.border}`}
+      className={`min-h-48 rounded-md border border-[#ece7de] border-t-[1.5px] bg-[#fffdf9] p-6 shadow-[0_8px_30px_rgba(31,35,30,0.04)] ${styles.border}`}
       id={id}
     >
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -44,7 +44,7 @@ export function FeatureCard({ accent, id, marker, icon, title, summary, status }
           {icon ?? <span className="text-[10px] font-bold uppercase tracking-normal">{marker}</span>}
         </span>
         {status ? (
-          <span className="rounded-full border border-[#d4bf50] bg-[#fbf2b9] px-4 py-1 text-[10px] font-semibold uppercase tracking-normal text-[#5f5318]">
+          <span className="rounded-full border border-[#e1d8a5] bg-[#faf5dc] px-4 py-1 text-[10px] font-semibold uppercase tracking-normal text-[#6d6440]">
             {status}
           </span>
         ) : null}

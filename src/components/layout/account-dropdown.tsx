@@ -6,34 +6,44 @@ import { getMemberColor } from "@/lib/member-colors";
 
 export function AccountDropdown({
   memberColor,
+  showName = false,
   userName,
 }: {
   memberColor: string | null;
+  showName?: boolean;
   userName: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const label = userName ?? "Domek";
+  const firstName = label.trim().split(/\s+/)[0] ?? "Domek";
   const palette = getMemberColor(memberColor);
 
   return (
-    <div className="relative w-fit">
+    <div className={`relative ${showName ? "w-full" : "w-fit"}`}>
       <button
         aria-expanded={isOpen}
         aria-label="Account"
-        className="flex cursor-pointer items-center justify-center transition hover:opacity-80"
+        className={`flex cursor-pointer items-center transition ${
+          showName
+            ? "w-full gap-3 rounded-md py-2.5 pl-0 pr-2 text-left text-[13px] font-medium text-[#7a817d] hover:bg-[#f4f1ea] hover:text-[#202321]"
+            : "justify-center hover:opacity-80"
+        }`}
         onClick={() => setIsOpen((v) => !v)}
         type="button"
       >
         <span
-          className="flex h-9 w-9 items-center justify-center rounded-md border font-serif text-sm font-semibold"
+          className={`flex items-center justify-center rounded-md font-serif font-semibold ${
+            showName ? "h-6 w-6 text-xs" : "h-8 w-8 border text-xs"
+          }`}
           style={{
             backgroundColor: palette.avatarBg,
-            borderColor: palette.border,
             color: palette.avatarText,
+            ...(showName ? {} : { borderColor: palette.border }),
           }}
         >
           {label.slice(0, 1).toUpperCase()}
         </span>
+        {showName ? <span className="min-w-0 flex-1 truncate">{firstName}</span> : null}
       </button>
 
       {isOpen ? (
