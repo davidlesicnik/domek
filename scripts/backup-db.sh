@@ -168,7 +168,7 @@ pg_dump \
 
 if [[ "${COMPRESSOR}" == "zstd" ]]; then
   log "Compressing dump with zstd"
-  zstd --quiet --rm -19 --output="${COMPRESSED_PATH}" "${DUMP_PATH}"
+  zstd --quiet --rm -19 -o "${COMPRESSED_PATH}" "${DUMP_PATH}"
 else
   log "Compressing dump with gzip"
   gzip -9 --stdout "${DUMP_PATH}" > "${COMPRESSED_PATH}"
