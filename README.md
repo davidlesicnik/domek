@@ -204,6 +204,89 @@ npm run db:migrate
 
 The schema includes users, households, household membership, and feature-specific tables for calendar events, to-do lists, notes, shopping lists, and expenses. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
 
+### Database Backups
+
+For production on Supabase without PITR, use [`scripts/backup-db.sh`](scripts/backup-db.sh) inside the dedicated backup container defined by [`Dockerfile.backup`](Dockerfile.backup) and [`docker-compose.backup.yaml`](docker-compose.backup.yaml). The script:
+
+- pulls a live `pg_dump` from a Supabase connection on port `5432`
+- compresses the dump with `zstd` or `gzip`
+- snapshots the latest successful dump directory into a `restic` repository
+- prunes snapshots with `--keep-last 96 --keep-daily 35`
+- keeps a local copy of the latest successful artifact in `BACKUP_DEST_DIR/latest`
+
+The backup image is based on `postgres:17-bookworm` so `pg_dump` stays aligned with the Postgres 17 server family used by this project and supported by Supabase. It installs a pinned upstream `restic 0.18.1` release binary with SHA256 verification during the image build.
+
+Use one of these Supabase connection types for `BACKUP_DATABASE_URL`:
+
+- direct connection on `:5432` if the backup runner has IPv6
+- Supavisor session pooler on `:5432` if the backup runner is IPv4-only
+
+Do not use the transaction pooler on `:6543` for this backup job.
+
+Create a runner-specific config from [`scripts/backup-db.env.example`](scripts/backup-db.env.example) and keep it off-repo. The minimum required settings are:
+
+```bash
+BACKUP_DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-YOUR-REGION.pooler.supabase.com:5432/postgres"
+BACKUP_DEST_DIR="/backup"
+BACKUP_DESTINATION_SENTINEL="/backup/.domek-backup-target"
+RESTIC_REPOSITORY="/backup/restic"
+RESTIC_PASSWORD_FILE="/etc/domek/restic-password"
+ALLOW_RESTIC_INIT="false"
+```
+
+Leave `ALLOW_RESTIC_INIT` as `false` for normal runs. Set it to `true` only for the very first run when you intentionally want the script to create a brand-new restic repository.
+Create the sentinel file on the mounted NAS path before the first run, for example `touch /mnt/nas/domek-backups/.domek-backup-target`. The script refuses to write backups if that file is missing so it does not silently write to the host filesystem when the NAS mount is absent.
+
+Create a small host-side compose env file from [`scripts/backup-compose.env.example`](scripts/backup-compose.env.example) and keep it off-repo. It tells Compose where the runtime env file lives and which NAS directory to mount:
+
+```bash
+BACKUP_ENV_FILE=/etc/domek/backup-db.env
+BACKUP_DESTINATION_DIR=/mnt/nas/domek-backups
+RESTIC_PASSWORD_FILE_PATH=/etc/domek/restic-password
+```
+
+The backup container runs as the non-root `postgres` user from the base image. Make sure the mounted NAS path is writable by that container user, or the backup will fail when it tries to create `tmp/`, `latest/`, and the lock file.
+
+First run or after changing the backup image:
+
+```bash
+docker compose \
+  --env-file /etc/domek/backup-compose.env \
+  -f docker-compose.backup.yaml \
+  run --rm --build db-backup
+```
+
+Recurring run after the image has already been built:
+
+```bash
+docker compose \
+  --env-file /etc/domek/backup-compose.env \
+  -f docker-compose.backup.yaml \
+  run --rm db-backup
+```
+
+Example `cron` entry for every 30 minutes:
+
+```cron
+*/30 * * * * cd /path/to/domek && docker compose --env-file /etc/domek/backup-compose.env -f docker-compose.backup.yaml run --rm db-backup >> /var/log/domek-backup.log 2>&1
+```
+
+Restore flow:
+
+```bash
+restic restore latest --target /tmp/domek-restore
+find /tmp/domek-restore -name 'domek-prod-*.dump.zst' -o -name 'domek-prod-*.dump.gz'
+```
+
+If you use the default `zstd` compression, decompress before running `pg_restore`:
+
+```bash
+zstd -d /tmp/domek-restore/path/to/domek-prod-YYYYMMDDTHHMMSSZ.dump.zst -o /tmp/domek-prod.dump
+pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$RESTORE_DATABASE_URL" /tmp/domek-prod.dump
+```
+
+The backup script is designed for live operation. `pg_dump` takes a consistent snapshot, so you do not need to stop the app or turn off the database first.
+
 ## Containers
 
 Validate the Compose file:
