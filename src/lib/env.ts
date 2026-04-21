@@ -28,6 +28,11 @@ function readEnv(name: string): string | undefined {
   return process.env[name];
 }
 
+function readOptionalEnv(name: string): string | undefined {
+  const value = readEnv(name)?.trim();
+  return value ? value : undefined;
+}
+
 function getSupabaseEnv() {
   const supabaseUrl =
     readEnv("SUPABASE_URL") ?? readEnv("NEXT_PUBLIC_SUPABASE_URL");
@@ -61,8 +66,21 @@ const emailSchema = z.object({
 
 export function getEmailConfig() {
   return emailSchema.parse({
-    resendApiKey: readEnv("RESEND_API_KEY"),
-    fromEmail: readEnv("FROM_EMAIL"),
+    resendApiKey: readOptionalEnv("RESEND_API_KEY"),
+    fromEmail: readOptionalEnv("FROM_EMAIL"),
+  });
+}
+
+export function getOptionalEmailConfig() {
+  const resendApiKey = readOptionalEnv("RESEND_API_KEY");
+
+  if (!resendApiKey) {
+    return null;
+  }
+
+  return emailSchema.parse({
+    resendApiKey,
+    fromEmail: readOptionalEnv("FROM_EMAIL"),
   });
 }
 
@@ -73,9 +91,6 @@ export function assertRuntimeEnv() {
     database: databaseSchema.parse({
       DATABASE_URL: process.env.DATABASE_URL,
     }),
-    email: emailSchema.parse({
-      resendApiKey: readEnv("RESEND_API_KEY"),
-      fromEmail: readEnv("FROM_EMAIL"),
-    }),
+    email: getOptionalEmailConfig(),
   };
 }

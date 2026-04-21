@@ -73,6 +73,23 @@ function formatExpiry(date: Date): string {
   return `Expires in ${days} days`;
 }
 
+function SentenceLines({ text, className }: { text: string; className?: string }) {
+  const lines = text
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <p className={className}>
+      {lines.map((line) => (
+        <span key={line} className="block">
+          {line}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 function InvitePopover({
   pendingInvites,
   sendInviteAction,
@@ -153,11 +170,15 @@ function InvitePopover({
             ) : (
               <form action={formAction} key={formKey}>
                 <p className="text-xs font-semibold text-[#3c413e]">Invite someone</p>
-                <p className="mt-1 text-xs leading-5 text-[#686e6a]">
-                  They&apos;ll receive an email link to join. Expires in 7 days.
-                </p>
+                <SentenceLines
+                  className="mt-1 text-xs leading-5 text-[#686e6a]"
+                  text="They'll receive an email link to join. Expires in 7 days."
+                />
                 {state.error ? (
-                  <p className="mt-2 text-xs font-medium text-[#a6543c]">{state.error}</p>
+                  <SentenceLines
+                    className="mt-2 text-xs font-medium leading-5 text-[#a6543c]"
+                    text={state.error}
+                  />
                 ) : null}
                 <div className="mt-3 flex gap-2">
                   <label className="sr-only" htmlFor="topbar-invite-email">
