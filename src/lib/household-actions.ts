@@ -75,7 +75,6 @@ export async function sendHouseholdInvite(
     });
   } catch (err) {
     console.error("[sendHouseholdInvite] email failed:", err);
-    await revokeInvite({ inviteId: invite.id, householdId: membership.householdId });
     return { ok: false, error: "failed" };
   }
 

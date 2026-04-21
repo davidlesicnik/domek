@@ -65,7 +65,6 @@ export async function sendTopBarInviteAction(
     });
   } catch (error) {
     console.error("[sendTopBarInviteAction] email failed:", error);
-    await revokeInvite({ inviteId: invite.id, householdId: membership.householdId });
 
     return {
       success: false,
