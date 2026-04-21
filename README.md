@@ -214,7 +214,7 @@ For production on Supabase without PITR, use [`scripts/backup-db.sh`](scripts/ba
 - prunes snapshots with `--keep-last 96 --keep-daily 35`
 - keeps a local copy of the latest successful artifact in `BACKUP_DEST_DIR/latest`
 
-The backup image is based on `postgres:17-bookworm` so `pg_dump` stays aligned with the Postgres 17 server family used by this project and supported by Supabase.
+The backup image is based on `postgres:17-bookworm` so `pg_dump` stays aligned with the Postgres 17 server family used by this project and supported by Supabase. It installs a pinned upstream `restic 0.18.1` release binary with SHA256 verification during the image build.
 
 Use one of these Supabase connection types for `BACKUP_DATABASE_URL`:
 

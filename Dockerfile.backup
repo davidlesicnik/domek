@@ -1,17 +1,24 @@
 FROM postgres:17-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG RESTIC_VERSION=0.14.0-1+b5
+ARG RESTIC_VERSION=0.18.1
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
     coreutils \
+    curl \
     findutils \
+    bzip2 \
     gzip \
-    restic=${RESTIC_VERSION} \
     util-linux \
     zstd \
+  && curl -fsSL -o /tmp/restic.bz2 "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_amd64.bz2" \
+  && curl -fsSL -o /tmp/SHA256SUMS "https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/SHA256SUMS" \
+  && grep " restic_${RESTIC_VERSION}_linux_amd64.bz2$" /tmp/SHA256SUMS | awk '{print $1 "  /tmp/restic.bz2"}' | sha256sum -c - \
+  && bzip2 -dc /tmp/restic.bz2 > /usr/local/bin/restic \
+  && chmod 0755 /usr/local/bin/restic \
+  && rm -f /tmp/restic.bz2 /tmp/SHA256SUMS \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
