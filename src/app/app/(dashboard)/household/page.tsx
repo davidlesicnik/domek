@@ -39,7 +39,7 @@ async function removeMemberAction(formData: FormData) {
   const assignedChoreCount = await prisma.chore.count({
     where: {
       householdId: membership.householdId,
-      assignedHouseholdMemberId: memberId,
+      OR: [{ assignedHouseholdMemberId: memberId }, { rotationMemberIds: { has: memberId } }],
     },
   });
 
@@ -169,7 +169,7 @@ async function leaveHouseholdAction() {
   const assignedChoreCount = await prisma.chore.count({
     where: {
       householdId: membership.householdId,
-      assignedHouseholdMemberId: membership.id,
+      OR: [{ assignedHouseholdMemberId: membership.id }, { rotationMemberIds: { has: membership.id } }],
     },
   });
 
