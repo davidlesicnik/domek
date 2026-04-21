@@ -19,6 +19,9 @@ WORKDIR /app
 COPY scripts/backup-db.sh /usr/local/bin/backup-db.sh
 
 RUN chmod 0755 /usr/local/bin/backup-db.sh \
-  && mkdir -p /backup
+  && mkdir -p /backup \
+  && chown -R postgres:postgres /app /backup
+
+USER postgres
 
 ENTRYPOINT ["/usr/local/bin/backup-db.sh"]
