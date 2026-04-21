@@ -103,6 +103,17 @@ const createChoreInputSchema = z
       });
     }
 
+    if (input.recurrenceType === "WEEKLY" && input.weeklyDays.length > 0) {
+      const startsAt = new Date(input.startsAt);
+      if (!Number.isNaN(startsAt.getTime()) && !input.weeklyDays.includes(startsAt.getUTCDay())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Start date has to match one of the selected weekly days.",
+          path: ["startsAt"],
+        });
+      }
+    }
+
     if (input.recurrenceType !== "WEEKLY" && input.weeklyDays.length > 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -141,6 +152,8 @@ const createChoreInputSchema = z
 export function parseCreateChoreInput(input: unknown) {
   return createChoreInputSchema.parse(input);
 }
+
+export const parseUpdateChoreInput = parseCreateChoreInput;
 
 export async function getCurrentChoreScope(): Promise<ChoreScope | null> {
   const session = await getCurrentAppSession();
@@ -371,11 +384,8 @@ function intervalForRecurrence(
   }
 }
 
-export async function createChore(
-  input: z.infer<typeof createChoreInputSchema>,
-  scope: ChoreScope,
-): Promise<ChoreView | null> {
-  const validMemberIds = new Set(
+async function listValidHouseholdMemberIds(scope: ChoreScope): Promise<Set<string>> {
+  return new Set(
     (
       await prisma.householdMember.findMany({
         select: { id: true },
@@ -383,51 +393,62 @@ export async function createChore(
       })
     ).map((member) => member.id),
   );
+}
+
+async function resolveChoreCategoryId(categoryName: string | null | undefined, scope: ChoreScope): Promise<string | null> {
+  const normalizedCategoryName = categoryName?.trim() || null;
+  if (!normalizedCategoryName) return null;
+
+  const existingCategory = await prisma.choreCategory.findFirst({
+    where: {
+      householdId: scope.householdId,
+      name: {
+        equals: normalizedCategoryName,
+        mode: "insensitive",
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existingCategory) {
+    return existingCategory.id;
+  }
+
+  const createdCategory = await prisma.choreCategory.create({
+    data: {
+      name: normalizedCategoryName,
+      householdId: scope.householdId,
+      createdByUserId: scope.userId,
+    },
+    select: { id: true },
+  });
+
+  return createdCategory.id;
+}
+
+export async function createChore(
+  input: z.infer<typeof createChoreInputSchema>,
+  scope: ChoreScope,
+): Promise<ChoreView | null> {
+  const validMemberIds = await listValidHouseholdMemberIds(scope);
+  const rotationMemberIds = input.assignmentType === "ROTATING" ? [...new Set(input.rotationMemberIds)] : [];
 
   const assignedHouseholdMemberId =
     input.assignmentType === "FIXED"
       ? input.assignedHouseholdMemberId ?? null
       : input.assignmentType === "ROTATING"
-        ? input.rotationMemberIds[0] ?? null
+        ? rotationMemberIds[0] ?? null
         : null;
 
   if (assignedHouseholdMemberId && !validMemberIds.has(assignedHouseholdMemberId)) {
     return null;
   }
 
-  if (input.rotationMemberIds.some((memberId) => !validMemberIds.has(memberId))) {
+  if (rotationMemberIds.some((memberId) => !validMemberIds.has(memberId))) {
     return null;
   }
 
-  const categoryName = input.categoryName?.trim() || null;
-  let categoryId: string | null = null;
-
-  if (categoryName) {
-    const existingCategory = await prisma.choreCategory.findFirst({
-      where: {
-        householdId: scope.householdId,
-        name: {
-          equals: categoryName,
-          mode: "insensitive",
-        },
-      },
-      select: { id: true },
-    });
-
-    if (existingCategory) {
-      categoryId = existingCategory.id;
-    } else {
-      const createdCategory = await prisma.choreCategory.create({
-        data: {
-          name: categoryName,
-          householdId: scope.householdId,
-          createdByUserId: scope.userId,
-        },
-        select: { id: true },
-      });
-      categoryId = createdCategory.id;
-    }
-  }
+  const categoryId = await resolveChoreCategoryId(input.categoryName, scope);
 
   const chore = await prisma.chore.create({
     data: {
@@ -439,12 +460,77 @@ export async function createChore(
       recurrenceType: input.recurrenceType,
       startsAt: new Date(input.startsAt),
       rotationIndex: 0,
-      rotationMemberIds: input.assignmentType === "ROTATING" ? [...new Set(input.rotationMemberIds)] : [],
+      rotationMemberIds,
       weeklyDays: input.recurrenceType === "WEEKLY" ? [...new Set(input.weeklyDays)].sort((a, b) => a - b) : [],
       ...intervalForRecurrence(input),
       name: input.name,
     },
     select: choreSelect,
+  });
+
+  return toChoreView(chore, new Date());
+}
+
+export async function updateChore(
+  choreId: string,
+  input: z.infer<typeof createChoreInputSchema>,
+  scope: ChoreScope,
+): Promise<ChoreView | null> {
+  const existing = await prisma.chore.findFirst({
+    select: {
+      id: true,
+      assignedHouseholdMemberId: true,
+      assignmentType: true,
+    },
+    where: { id: choreId, ...buildChoreWhere(scope) },
+  });
+
+  if (!existing) return null;
+
+  const validMemberIds = await listValidHouseholdMemberIds(scope);
+  const rotationMemberIds = input.assignmentType === "ROTATING" ? [...new Set(input.rotationMemberIds)] : [];
+
+  if (rotationMemberIds.some((memberId) => !validMemberIds.has(memberId))) {
+    return null;
+  }
+
+  let assignedHouseholdMemberId: string | null = null;
+  let rotationIndex = 0;
+
+  if (input.assignmentType === "FIXED") {
+    assignedHouseholdMemberId = input.assignedHouseholdMemberId ?? null;
+    if (assignedHouseholdMemberId && !validMemberIds.has(assignedHouseholdMemberId)) {
+      return null;
+    }
+  }
+
+  if (input.assignmentType === "ROTATING") {
+    const preservedIndex =
+      existing.assignmentType === "ROTATING" && existing.assignedHouseholdMemberId
+        ? rotationMemberIds.indexOf(existing.assignedHouseholdMemberId)
+        : -1;
+
+    rotationIndex = preservedIndex >= 0 ? preservedIndex : 0;
+    assignedHouseholdMemberId = rotationMemberIds[rotationIndex] ?? null;
+  }
+
+  const categoryId = await resolveChoreCategoryId(input.categoryName, scope);
+
+  const chore = await prisma.chore.update({
+    data: {
+      assignmentType: input.assignmentType,
+      assignedHouseholdMemberId,
+      categoryId,
+      recurrenceType: input.recurrenceType,
+      startsAt: new Date(input.startsAt),
+      rotationIndex,
+      rotationMemberIds,
+      weeklyDays: input.recurrenceType === "WEEKLY" ? [...new Set(input.weeklyDays)].sort((a, b) => a - b) : [],
+      ...intervalForRecurrence(input),
+      name: input.name,
+    },
+    select: choreSelect,
+    where: { id: choreId },
   });
 
   return toChoreView(chore, new Date());
