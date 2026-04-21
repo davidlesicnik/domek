@@ -5,10 +5,12 @@ import { useState } from "react";
 import { getMemberColor } from "@/lib/member-colors";
 
 export function AccountDropdown({
+  align = "right",
   memberColor,
   showName = false,
   userName,
 }: {
+  align?: "left" | "right";
   memberColor: string | null;
   showName?: boolean;
   userName: string | null;
@@ -53,7 +55,11 @@ export function AccountDropdown({
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 top-full z-50 mt-2 min-w-64 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+          <div
+            className={`absolute top-full z-50 mt-2 min-w-64 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)] ${
+              align === "left" ? "left-0" : "right-0"
+            }`}
+          >
             <p className="text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
               Signed in
             </p>

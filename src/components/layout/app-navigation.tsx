@@ -190,6 +190,7 @@ export function AppNavigation({
             />
             <div className="px-2 pt-2">
               <AccountDropdown
+                align="left"
                 memberColor={memberColor}
                 showName={!collapsed}
                 userName={userName}
