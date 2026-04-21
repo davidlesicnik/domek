@@ -245,7 +245,7 @@ BACKUP_DESTINATION_DIR=/mnt/nas/domek-backups
 RESTIC_PASSWORD_FILE_PATH=/etc/domek/restic-password
 ```
 
-The backup container runs as the non-root `postgres` user from the base image. Make sure the mounted NAS path is writable by that container user, or the backup will fail when it tries to create `tmp/`, `latest/`, and the lock file.
+The backup image defaults to the non-root `postgres` user, but [`docker-compose.backup.yaml`](docker-compose.backup.yaml) runs the one-shot backup job as `root` (`user: "0:0"`). This is intentional for NAS environments like Synology where bind-mounted shares often deny access to non-root container users.
 
 First run or after changing the backup image:
 

@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.backup
     image: domek-db-backup
+    user: "0:0"
     env_file:
       - ${BACKUP_ENV_FILE:?Set BACKUP_ENV_FILE to the backup runtime env file.}
     volumes:
