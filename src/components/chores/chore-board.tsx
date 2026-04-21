@@ -112,7 +112,7 @@ function formatCompactIntervalLabel(
     const labels = [...new Set(chore.weeklyDays)]
       .sort((a, b) => a - b)
       .map((day) => WEEKDAY_OPTIONS.find((option) => option.value === day)?.short)
-      .filter((label): label is string => Boolean(label));
+      .filter((label): label is Exclude<(typeof WEEKDAY_OPTIONS)[number]["short"], undefined> => label !== undefined);
 
     return labels.join(" · ");
   }
