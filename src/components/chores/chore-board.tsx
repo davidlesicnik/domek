@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChoreAssignmentType, ChoreIntervalUnit, ChoreRecurrenceType } from "@prisma/client";
-import { Check, ChevronRight, Trash2 } from "lucide-react";
+import { Check, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 
 import type { ChoreCategoryView, ChoreMemberView, ChoreView } from "@/lib/chores";
@@ -30,6 +30,8 @@ type CreateChoreFormState = {
 type TouchedState = {
   name: boolean;
 };
+
+type ChoreDueGroup = "overdue" | "today" | "upcoming";
 
 const WEEKDAY_OPTIONS = [
   { value: 0, short: "Sun", long: "Sunday" },
@@ -101,10 +103,19 @@ function formatWeekdays(weekdays: number[]): string {
   return joinNatural(labels);
 }
 
-function formatIntervalLabel(chore: Pick<ChoreView, "recurrenceType" | "weeklyDays" | "intervalValue" | "intervalUnit">) {
+function formatCompactIntervalLabel(
+  chore: Pick<ChoreView, "recurrenceType" | "weeklyDays" | "intervalValue" | "intervalUnit">,
+) {
   if (chore.recurrenceType === "DAILY") return "Daily";
   if (chore.recurrenceType === "MONTHLY") return "Monthly";
-  if (chore.recurrenceType === "WEEKLY") return `Every ${formatWeekdays(chore.weeklyDays)}`;
+  if (chore.recurrenceType === "WEEKLY") {
+    const labels = [...new Set(chore.weeklyDays)]
+      .sort((a, b) => a - b)
+      .map((day) => WEEKDAY_OPTIONS.find((option) => option.value === day)?.short)
+      .filter((label): label is string => Boolean(label));
+
+    return labels.join(" · ");
+  }
 
   const singular = chore.intervalUnit === "DAYS" ? "day" : chore.intervalUnit === "WEEKS" ? "week" : "month";
   return `Every ${chore.intervalValue} ${chore.intervalValue === 1 ? singular : `${singular}s`}`;
@@ -139,6 +150,47 @@ function dueDateLabel(dateIso: string) {
   return `Due in ${daysDiff} days`;
 }
 
+function dueGroup(dateIso: string): ChoreDueGroup {
+  const dueDate = startOfDayUtc(dateIso);
+  const daysDiff = Math.floor((dueDate.getTime() - startOfTodayUtc().getTime()) / (24 * 60 * 60 * 1000));
+  if (daysDiff < 0) return "overdue";
+  if (daysDiff === 0) return "today";
+  return "upcoming";
+}
+
+function dueDateTone(dateIso: string) {
+  const dueDate = startOfDayUtc(dateIso);
+  const daysDiff = Math.floor((dueDate.getTime() - startOfTodayUtc().getTime()) / (24 * 60 * 60 * 1000));
+
+  if (daysDiff < 0) {
+    return {
+      emphasis: "strong" as const,
+      badge: "border-[#e7c9c2] bg-[#fbefeb] text-[#8d3028]",
+      label: `${Math.abs(daysDiff)} ${Math.abs(daysDiff) === 1 ? "day" : "days"} overdue`.toUpperCase(),
+      text: `${Math.abs(daysDiff)} ${Math.abs(daysDiff) === 1 ? "day" : "days"} overdue`,
+      row: "bg-[#fffaf8]",
+    };
+  }
+
+  if (daysDiff === 0) {
+    return {
+      emphasis: "strong" as const,
+      badge: "border-[#e5dcc5] bg-[#fbf7ea] text-[#735316]",
+      label: "DUE TODAY",
+      text: "Due today",
+      row: "bg-[#fffdf7]",
+    };
+  }
+
+  return {
+    emphasis: "soft" as const,
+    badge: "border-[#dde2dc] bg-[#f7f9f6] text-[#6b736d]",
+    label: dueDateLabel(dateIso),
+    text: dueDateLabel(dateIso).replace(/^Due /, "").toLowerCase(),
+    row: "",
+  };
+}
+
 function isOverdue(dateIso: string): boolean {
   return startOfDayUtc(dateIso).getTime() < startOfTodayUtc().getTime();
 }
@@ -159,8 +211,50 @@ function compareChores(a: ChoreView, b: ChoreView): number {
 
 function parseDateInput(value: string): Date | null {
   if (!value) return null;
-  const date = new Date(`${value}T00:00:00`);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const [, year, month, day] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function weekdayForDateInput(value: string): number | null {
+  const date = parseDateInput(value);
+  return date ? date.getUTCDay() : null;
+}
+
+function alignDateInputToWeeklyDays(value: string, weeklyDays: number[]): string {
+  const date = parseDateInput(value);
+  const allowedDays = [...new Set(weeklyDays)].sort((a, b) => a - b);
+
+  if (!date || allowedDays.length === 0) return value;
+  if (allowedDays.includes(date.getUTCDay())) return value;
+
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const candidate = new Date(date.getTime());
+    candidate.setUTCDate(candidate.getUTCDate() + offset);
+
+    if (allowedDays.includes(candidate.getUTCDay())) {
+      const year = candidate.getUTCFullYear();
+      const month = `${candidate.getUTCMonth() + 1}`.padStart(2, "0");
+      const day = `${candidate.getUTCDate()}`.padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  return value;
+}
+
+function formatDateInputForMessage(value: string): string {
+  const date = parseDateInput(value);
+  if (!date) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 function previewDueDate(form: CreateChoreFormState): Date | null {
@@ -173,6 +267,7 @@ function formatPreviewDate(date: Date | null): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -212,6 +307,22 @@ function previewSchedule(form: CreateChoreFormState): string {
 
 function validateName(value: string): string | null {
   return value.trim() ? null : "Add a chore name.";
+}
+
+function formFromChore(chore: ChoreView): CreateChoreFormState {
+  return {
+    name: chore.name,
+    categoryId: chore.categoryName ?? "",
+    newCategoryName: "",
+    assignmentType: chore.assignmentType,
+    assignedHouseholdMemberId: chore.assignedHouseholdMemberId ?? "",
+    rotationMemberIds: chore.rotationMemberIds,
+    recurrenceType: chore.recurrenceType,
+    startsAt: chore.startsAt.slice(0, 10),
+    weeklyDays: chore.weeklyDays,
+    intervalValue: String(chore.intervalValue),
+    intervalUnit: chore.intervalUnit,
+  };
 }
 
 type SelectOption = {
@@ -319,17 +430,24 @@ function CustomSelect({
   );
 }
 
-function assignmentSummary(chore: ChoreView, membersById: Map<string, ChoreMemberView>): string {
+function compactAssignmentLabel(chore: ChoreView, membersById: Map<string, ChoreMemberView>): string {
   if (chore.assignmentType === "UNASSIGNED") return "Unassigned";
-  if (chore.assignmentType === "FIXED") return chore.assignedHouseholdMemberName ?? "Assigned";
 
-  const names = chore.rotationMemberIds
-    .map((memberId) => membersById.get(memberId))
-    .filter((member): member is ChoreMemberView => Boolean(member))
-    .map(displayNameForMember);
+  if (chore.assignmentType === "FIXED") {
+    const member = chore.assignedHouseholdMemberId ? membersById.get(chore.assignedHouseholdMemberId) : null;
+    if (member) return firstNameForMember(member);
 
-  if (names.length === 0) return "Rotating";
-  return `Rotates between ${joinNatural(names)}`;
+    const fallback = chore.assignedHouseholdMemberName?.trim() ?? "Assigned";
+    return fallback.split(/\s+/)[0] ?? fallback;
+  }
+
+  const member = chore.assignedHouseholdMemberId ? membersById.get(chore.assignedHouseholdMemberId) : null;
+  if (member) return `Next: ${firstNameForMember(member)}`;
+
+  const fallback = chore.assignedHouseholdMemberName?.trim();
+  if (fallback) return `Next: ${fallback.split(/\s+/)[0] ?? fallback}`;
+
+  return "Rotating";
 }
 
 export function ChoreBoard({ categories: initialCategories, initialChores, members }: ChoreBoardProps) {
@@ -339,11 +457,23 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
   const [touched, setTouched] = useState<TouchedState>({ name: false });
   const [error, setError] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [isCreating, startCreateTransition] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [completingChoreIds, setCompletingChoreIds] = useState<string[]>([]);
+  const [weeklyDateAdjustmentMessage, setWeeklyDateAdjustmentMessage] = useState<string | null>(null);
+  const [isSubmitting, startSubmitTransition] = useTransition();
   const [isCompleting, startCompleteTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
 
   const orderedChores = useMemo(() => [...chores].sort(compareChores), [chores]);
+  const groupedChores = useMemo(
+    () => ({
+      overdue: orderedChores.filter((chore) => dueGroup(chore.nextDueAt) === "overdue"),
+      today: orderedChores.filter((chore) => dueGroup(chore.nextDueAt) === "today"),
+      upcoming: orderedChores.filter((chore) => dueGroup(chore.nextDueAt) === "upcoming"),
+    }),
+    [orderedChores],
+  );
   const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
   const categoryOptions = useMemo<SelectOption[]>(
     () => [
@@ -355,7 +485,11 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
   );
   const previewAssignmentText = previewAssignment(form, membersById);
   const nameError = touched.name ? validateName(form.name) : null;
-  const createDisabled = isCreating || !form.name.trim();
+  const submitDisabled = isSubmitting || !form.name.trim();
+  const headerSummary =
+    groupedChores.today.length === 0
+      ? `Nothing due today · ${groupedChores.upcoming.length} upcoming`
+      : `${groupedChores.today.length} due today · ${groupedChores.upcoming.length} upcoming`;
 
   function applyChoreUpdate(updatedChore: ChoreView) {
     setChores((current) => {
@@ -372,14 +506,29 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
 
   function openCreateDialog() {
     setError(null);
+    setEditingId(null);
+    setConfirmDeleteId(null);
+    setWeeklyDateAdjustmentMessage(null);
     setForm(defaultForm());
     setTouched({ name: false });
     setShowCreateDialog(true);
   }
 
+  function openEditDialog(chore: ChoreView) {
+    setError(null);
+    setEditingId(chore.id);
+    setConfirmDeleteId(null);
+    setWeeklyDateAdjustmentMessage(null);
+    setForm(formFromChore(chore));
+    setTouched({ name: false });
+    setShowCreateDialog(true);
+  }
+
   function closeCreateDialog() {
-    if (isCreating) return;
+    if (isSubmitting) return;
     setShowCreateDialog(false);
+    setEditingId(null);
+    setWeeklyDateAdjustmentMessage(null);
     setError(null);
   }
 
@@ -393,12 +542,27 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
   }
 
   function toggleWeeklyDay(day: number) {
-    setForm((current) => ({
-      ...current,
-      weeklyDays: current.weeklyDays.includes(day)
+    setForm((current) => {
+      const weeklyDays = current.weeklyDays.includes(day)
         ? current.weeklyDays.filter((value) => value !== day)
-        : [...current.weeklyDays, day].sort((a, b) => a - b),
-    }));
+        : [...current.weeklyDays, day].sort((a, b) => a - b);
+      const startsAt =
+        current.recurrenceType === "WEEKLY" && weeklyDays.length > 0
+          ? alignDateInputToWeeklyDays(current.startsAt, weeklyDays)
+          : current.startsAt;
+
+      setWeeklyDateAdjustmentMessage(
+        startsAt !== current.startsAt
+          ? `Moved to ${formatDateInputForMessage(startsAt)} to match your selected day(s).`
+          : null,
+      );
+
+      return {
+        ...current,
+        startsAt,
+        weeklyDays,
+      };
+    });
   }
 
   function onCreateSubmit(event: FormEvent<HTMLFormElement>) {
@@ -429,12 +593,21 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
       return;
     }
 
+    if (
+      form.recurrenceType === "WEEKLY" &&
+      form.weeklyDays.length > 0 &&
+      !form.weeklyDays.includes(weekdayForDateInput(form.startsAt) ?? -1)
+    ) {
+      setError("Start date has to match one of the selected weekly days.");
+      return;
+    }
+
     if (form.recurrenceType === "CUSTOM" && (!Number.isInteger(intervalValue) || intervalValue < 1)) {
       setError("Set a repeat interval of at least 1.");
       return;
     }
 
-    startCreateTransition(async () => {
+    startSubmitTransition(async () => {
       const startsAt = parseDateInput(form.startsAt);
       if (!startsAt) {
         setError("Choose when this starts.");
@@ -449,7 +622,7 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
         return;
       }
 
-      const response = await fetch("/api/chores", {
+      const response = await fetch(editingId ? `/api/chores/${editingId}` : "/api/chores", {
         body: JSON.stringify({
           name: form.name.trim(),
           categoryName,
@@ -463,11 +636,11 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
           intervalUnit: form.recurrenceType === "CUSTOM" ? form.intervalUnit : undefined,
         }),
         headers: { "Content-Type": "application/json" },
-        method: "POST",
+        method: editingId ? "PATCH" : "POST",
       });
 
       if (!response.ok) {
-        setError("Could not create chore. Please try again.");
+        setError(editingId ? "Could not update chore. Please try again." : "Could not create chore. Please try again.");
         return;
       }
 
@@ -483,25 +656,33 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
         ));
       }
       setShowCreateDialog(false);
+      setEditingId(null);
+      setWeeklyDateAdjustmentMessage(null);
       setForm(defaultForm());
     });
   }
 
   function markComplete(choreId: string) {
     setError(null);
+    setCompletingChoreIds((current) => (current.includes(choreId) ? current : [...current, choreId]));
 
     startCompleteTransition(async () => {
-      const response = await fetch(`/api/chores/${choreId}/completions`, {
-        method: "POST",
-      });
+      try {
+        const response = await fetch(`/api/chores/${choreId}/completions`, {
+          method: "POST",
+        });
 
-      if (!response.ok) {
-        setError("Could not mark chore complete. Please try again.");
-        return;
+        if (!response.ok) {
+          setError("Could not mark chore complete. Please try again.");
+          return;
+        }
+
+        const payload = (await response.json()) as { chore: ChoreView };
+        await new Promise((resolve) => window.setTimeout(resolve, 220));
+        applyChoreUpdate(payload.chore);
+      } finally {
+        setCompletingChoreIds((current) => current.filter((id) => id !== choreId));
       }
-
-      const payload = (await response.json()) as { chore: ChoreView };
-      applyChoreUpdate(payload.chore);
     });
   }
 
@@ -519,30 +700,23 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
       }
 
       setChores((current) => current.filter((chore) => chore.id !== choreId));
+      setConfirmDeleteId(null);
     });
   }
 
-  const boardBusy = isCreating || isCompleting || isDeleting;
+  const boardBusy = isSubmitting || isCompleting || isDeleting;
 
   return (
-    <div className="grid gap-6">
-      <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-2xl">
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              Chores
-            </p>
-            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
-              Keep the home rhythm steady
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-[#686e6a]">
-              Track repeating jobs in one shared list. Overdue chores rise to the top, then slide back
-              into their next due spot when checked off.
-            </p>
+    <div className="grid gap-4">
+      <section>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">Chores</h1>
+            <p className="mt-0.5 text-sm text-[#6d746f]">{headerSummary}</p>
           </div>
 
           <button
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
+            className="inline-flex h-9 items-center justify-center rounded-md bg-[#343734] px-3 text-sm font-semibold text-white transition hover:bg-[#454944] disabled:opacity-50"
             disabled={boardBusy}
             onClick={openCreateDialog}
             type="button"
@@ -552,12 +726,12 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
         </div>
 
         {members.length === 0 ? (
-          <p className="mt-4 text-xs text-[#686e6a]">
+          <p className="mt-2 text-xs text-[#686e6a]">
             No people added yet. You can still add chores now and leave them unassigned.
           </p>
         ) : null}
 
-        {error ? <p className="mt-3 text-xs font-medium text-[#a6543c]">{error}</p> : null}
+        {error ? <p className="mt-2 text-xs font-medium text-[#a6543c]">{error}</p> : null}
       </section>
 
       {showCreateDialog ? (
@@ -580,13 +754,13 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                   className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
                   id="chore-create-dialog-title"
                 >
-                  Add a chore
+                  {editingId ? "Edit chore" : "Add a chore"}
                 </h2>
               </div>
               <button
                 aria-label="Close add chore dialog"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                disabled={isCreating}
+                disabled={isSubmitting}
                 onClick={closeCreateDialog}
                 type="button"
               >
@@ -790,12 +964,13 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                           : "border-[#d8d2c8] bg-white text-[#4b514d] hover:border-[#b9c5b9]"
                       }`}
                       key={option.value}
-                      onClick={() =>
+                      onClick={() => {
                         setForm((current) => ({
                           ...current,
                           recurrenceType: option.value as ChoreRecurrenceType,
-                        }))
-                      }
+                        }));
+                        setWeeklyDateAdjustmentMessage(null);
+                      }}
                       type="button"
                     >
                       {option.label}
@@ -833,7 +1008,9 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                   className={`mt-4 grid gap-3 ${
                     form.recurrenceType === "CUSTOM"
                       ? "sm:grid-cols-[minmax(0,140px)_minmax(0,120px)_minmax(0,1fr)]"
-                      : "sm:grid-cols-[minmax(0,160px)]"
+                      : form.recurrenceType === "WEEKLY" && weeklyDateAdjustmentMessage
+                        ? "sm:grid-cols-[minmax(0,160px)_minmax(0,1fr)]"
+                        : "sm:grid-cols-[minmax(0,160px)]"
                   }`}
                 >
                   <div>
@@ -843,12 +1020,33 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                     <input
                       className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
                       id="chore-starts-at"
-                      onChange={(event) => setForm((current) => ({ ...current, startsAt: event.target.value }))}
+                      onChange={(event) =>
+                        setForm((current) => {
+                          const startsAt =
+                            current.recurrenceType === "WEEKLY" && current.weeklyDays.length > 0
+                              ? alignDateInputToWeeklyDays(event.target.value, current.weeklyDays)
+                              : event.target.value;
+
+                          setWeeklyDateAdjustmentMessage(
+                            startsAt !== event.target.value
+                              ? `Moved to ${formatDateInputForMessage(startsAt)} to match your selected day(s).`
+                              : null,
+                          );
+
+                          return {
+                            ...current,
+                            startsAt,
+                          };
+                        })
+                      }
                       required
                       type="date"
                       value={form.startsAt}
                     />
                   </div>
+                  {form.recurrenceType === "WEEKLY" && weeklyDateAdjustmentMessage ? (
+                    <p className="self-end pb-2 text-xs text-[#7b817d]">{weeklyDateAdjustmentMessage}</p>
+                  ) : null}
 
                   {form.recurrenceType === "CUSTOM" ? (
                     <>
@@ -907,7 +1105,7 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
             <div className="mt-9 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 className="h-10 rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#4b514d] transition hover:bg-[#f7f4ec]"
-                disabled={isCreating}
+                disabled={isSubmitting}
                 onClick={closeCreateDialog}
                 type="button"
               >
@@ -915,10 +1113,10 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
               </button>
               <button
                 className="h-10 rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
-                disabled={createDisabled}
+                disabled={submitDisabled}
                 type="submit"
               >
-                Create chore
+                {editingId ? "Save changes" : "Create chore"}
               </button>
             </div>
           </form>
@@ -931,76 +1129,177 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
             No chores yet. Add your first repeating task to start the home board rhythm.
           </p>
         ) : (
-          <ul className="divide-y divide-[#eee9df]">
-            {orderedChores.map((chore) => {
-              const member = chore.assignedHouseholdMemberId
-                ? membersById.get(chore.assignedHouseholdMemberId)
-                : null;
-              const memberColor = getMemberColor(member?.color ?? chore.assignedHouseholdMemberColor ?? "sage");
-              const memberName = member
-                ? displayNameForMember(member)
-                : (chore.assignedHouseholdMemberName ?? "Unassigned");
-              const choreIsOverdue = isOverdue(chore.nextDueAt);
-              const avatarLabel = chore.assignmentType === "UNASSIGNED" ? "?" : memberName.slice(0, 1).toUpperCase();
+          <div className="divide-y divide-[#eee9df]">
+            {[
+              { key: "overdue" as const, label: "Overdue", chores: groupedChores.overdue },
+              { key: "today" as const, label: "Today", chores: groupedChores.today },
+              { key: "upcoming" as const, label: "Upcoming", chores: groupedChores.upcoming },
+            ].map((section) => {
+              const isTodayEmpty = section.key === "today" && section.chores.length === 0;
 
-              return (
-                <li className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" key={chore.id}>
-                  <div className="min-w-0">
-                    <p className="font-medium text-[#171a18]">{chore.name}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#646b67]">
-                      {chore.categoryName ? (
-                        <>
-                          <span className="rounded-md border border-[#ddd7cd] bg-[#f7f4ed] px-2 py-1 font-medium text-[#5b655f]">
-                            {chore.categoryName}
-                          </span>
-                          <span className="text-[#a9ada9]">•</span>
-                        </>
-                      ) : null}
-                      <span
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-md border font-serif text-[11px] font-semibold"
-                        style={{
-                          backgroundColor: memberColor.avatarBg,
-                          borderColor: memberColor.border,
-                          color: memberColor.avatarText,
-                        }}
-                        title={memberName}
-                      >
-                        {avatarLabel}
-                      </span>
-                      <span>{assignmentSummary(chore, membersById)}</span>
-                      <span className="text-[#a9ada9]">•</span>
-                      <span>{formatIntervalLabel(chore)}</span>
-                      <span className="text-[#a9ada9]">•</span>
-                      <span className={choreIsOverdue ? "font-semibold text-[#a6543c]" : ""}>
-                        {dueDateLabel(chore.nextDueAt)}
-                      </span>
-                    </div>
-                  </div>
+              return section.chores.length > 0 || section.key === "today" ? (
+                <section
+                  className={`p-4 ${
+                    section.key === "today" && !isTodayEmpty ? "bg-[#fffaf1]" : ""
+                  } ${
+                    section.key === "upcoming" ? "mt-2" : ""
+                  }`}
+                  key={section.key}
+                >
+                  <h2
+                    className={`text-xs font-semibold uppercase tracking-[0.08em] ${
+                      isTodayEmpty ? "mb-1" : "mb-3"
+                    } ${
+                      section.key === "today" ? "text-[#6f5a1b]" : "text-[#7f857f]"
+                    }`}
+                  >
+                    {section.label}
+                  </h2>
+                  {isTodayEmpty ? (
+                    <p className="text-sm font-medium text-[#5f4e1d]">Nothing due today · You&apos;re all caught up</p>
+                  ) : (
+                    <ul className="grid gap-2">
+                      {section.chores.map((chore) => {
+                        const member = chore.assignedHouseholdMemberId
+                          ? membersById.get(chore.assignedHouseholdMemberId)
+                          : null;
+                        const memberColor = getMemberColor(member?.color ?? chore.assignedHouseholdMemberColor ?? "sage");
+                        const memberName = member ? displayNameForMember(member) : (chore.assignedHouseholdMemberName ?? "Unassigned");
+                        const dueTone = dueDateTone(chore.nextDueAt);
+                        const assignmentLabel = compactAssignmentLabel(chore, membersById);
+                        const isCompletingChore = completingChoreIds.includes(chore.id);
+                        const showAssignmentText = chore.assignmentType === "UNASSIGNED";
+                        const avatarLabel = assignmentLabel.replace("Next: ", "").slice(0, 1).toUpperCase();
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="inline-flex h-9 items-center gap-1 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#3c413e] transition hover:border-[#9ab59d] hover:bg-[#eef7ef] disabled:opacity-50"
-                      disabled={isCompleting || isDeleting}
-                      onClick={() => markComplete(chore.id)}
-                      type="button"
-                    >
-                      <Check aria-hidden className="h-3.5 w-3.5" />
-                      Done
-                    </button>
-                    <button
-                      aria-label={`Delete ${chore.name}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#e2cbc2] bg-[#fff5f2] text-[#a6543c] transition hover:bg-[#ffe9e3] disabled:opacity-50"
-                      disabled={isCompleting || isDeleting}
-                      onClick={() => removeChore(chore.id)}
-                      type="button"
-                    >
-                      <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </li>
-              );
+                        return (
+                          <li
+                            className={`group flex flex-col gap-2 rounded-md border border-[#ebe6da] p-3 transition-all duration-300 sm:flex-row sm:items-start sm:justify-between ${
+                              dueTone.row
+                            } ${isCompletingChore ? "scale-[0.985] border-[#bfd4c2] bg-[#f3f8f2] opacity-45" : ""}`}
+                            key={chore.id}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="min-w-0 truncate font-medium text-[#171a18] sm:text-[15px]">{chore.name}</p>
+                              </div>
+
+                              <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:gap-3">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  {chore.assignmentType !== "UNASSIGNED" ? (
+                                    <span
+                                      className="inline-flex h-6 w-6 items-center justify-center rounded-md border font-serif text-[11px] font-semibold"
+                                      style={{
+                                        backgroundColor: memberColor.avatarBg,
+                                        borderColor: memberColor.border,
+                                        color: memberColor.avatarText,
+                                      }}
+                                      title={memberName}
+                                    >
+                                      {avatarLabel}
+                                    </span>
+                                  ) : null}
+                                  {showAssignmentText ? (
+                                    <span className="truncate text-sm font-medium text-[#343936]">{assignmentLabel}</span>
+                                  ) : null}
+                                </div>
+                                {dueTone.emphasis === "strong" ? (
+                                  <span
+                                    className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold tracking-[0.02em] ${dueTone.badge}`}
+                                  >
+                                    {dueTone.label}
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-medium ${dueTone.badge}`}
+                                  >
+                                    {dueTone.text}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#6d746f]">
+                                <span>{formatCompactIntervalLabel(chore)}</span>
+                                {chore.categoryName ? <span className="text-[#b3b7b2]">•</span> : null}
+                                {chore.categoryName ? (
+                                  <span
+                                    className="inline-flex max-w-full truncate rounded-md border border-[#ddd7cd] bg-[#f7f4ed] px-2 py-1 text-[11px] font-medium text-[#5b655f]"
+                                    title={chore.categoryName}
+                                  >
+                                    {chore.categoryName}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-start">
+                              {confirmDeleteId === chore.id ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-[#5d635f]">Delete?</span>
+                                  <button
+                                    className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                                    disabled={isDeleting}
+                                    onClick={() => removeChore(chore.id)}
+                                    type="button"
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    className="h-7 rounded bg-[#ebe8de] px-1.5 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                                    disabled={isDeleting}
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    type="button"
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    aria-label={`Edit ${chore.name}`}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] focus:bg-[#e8efe9] focus:text-[#526c56] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
+                                    disabled={boardBusy}
+                                    onClick={() => openEditDialog(chore)}
+                                    type="button"
+                                  >
+                                    <Pencil aria-hidden className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    aria-label={`Delete ${chore.name}`}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] focus:bg-[#f3e4e2] focus:text-[#b94e3f] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
+                                    disabled={isCompleting || isDeleting}
+                                    onClick={() => setConfirmDeleteId(chore.id)}
+                                    type="button"
+                                  >
+                                    <Trash2 aria-hidden className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                              <button
+                                className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-xs font-semibold transition disabled:opacity-50 ${
+                                  isCompletingChore
+                                    ? "border-[#9ab59d] bg-[#e5f1e5] text-[#2f5a36]"
+                                    : "border-[#cfd9cf] bg-[#f8fbf7] text-[#3c413e] hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+                                }`}
+                                disabled={isCompleting || isDeleting}
+                                onClick={() => markComplete(chore.id)}
+                                type="button"
+                              >
+                                <Check
+                                  aria-hidden
+                                  className={`h-3.5 w-3.5 transition-transform duration-300 ${isCompletingChore ? "scale-110" : ""}`}
+                                />
+                                {isCompletingChore ? "Done" : "Done"}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              ) : null;
             })}
-          </ul>
+          </div>
         )}
       </section>
     </div>
