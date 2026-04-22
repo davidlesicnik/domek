@@ -120,7 +120,7 @@ export async function proxy(request: NextRequest) {
       id: true,
       household: { select: { createdAt: true, paidAt: true } },
     },
-    where: { userId: appUser.id, household: { deletedAt: null } },
+    where: { accountId: appUser.id, household: { deletedAt: null } },
   });
 
   if (!membership && !isPublicPath(pathname) && !isInvitePath(pathname) && !isAuthFlowPath(pathname)) {

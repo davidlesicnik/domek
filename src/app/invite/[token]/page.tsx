@@ -158,7 +158,9 @@ function InviteAcceptPage({
         <p className="mt-4 text-sm font-medium text-[#a6543c]">
           {errorReason === "expired"
             ? "This invite has expired. Ask the household owner to send a new one."
-            : "This invite is no longer valid."}
+            : errorReason === "email_mismatch"
+              ? "Sign in with the email address that received this invite."
+              : "This invite is no longer valid."}
         </p>
       ) : null}
       <form action={acceptAction} className="mt-6">
@@ -176,7 +178,7 @@ function InviteAcceptPage({
 function InviteErrorPage({
   reason,
 }: {
-  reason: "not_found" | "expired" | "already_used" | "already_member";
+  reason: "not_found" | "expired" | "already_used" | "already_member" | "email_mismatch";
 }) {
   const messages: Record<typeof reason, { heading: string; body: string }> = {
     not_found: {
@@ -194,6 +196,10 @@ function InviteErrorPage({
     already_member: {
       heading: "Already in a household",
       body: "You are already a member of a household. Each person can only belong to one household.",
+    },
+    email_mismatch: {
+      heading: "Use the invited email",
+      body: "Sign in with the email address that received this invite, or ask for a new invite.",
     },
   };
 

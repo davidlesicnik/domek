@@ -34,6 +34,11 @@ async function deleteAccountAction(formData: FormData) {
     ]);
   }
 
+  await prisma.householdMember.updateMany({
+    where: { accountId: session.user.id },
+    data: { accountId: null },
+  });
+
   // Soft-delete the user
   await prisma.user.update({
     where: { id: session.user.id },

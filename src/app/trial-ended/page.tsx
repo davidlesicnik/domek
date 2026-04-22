@@ -15,7 +15,7 @@ async function activateAction() {
 
   const membership = await prisma.householdMember.findFirst({
     select: { householdId: true },
-    where: { userId: session.user.id, household: { deletedAt: null } },
+    where: { accountId: session.user.id, household: { deletedAt: null } },
   });
 
   if (!membership) {
@@ -44,7 +44,8 @@ export default function TrialEndedPage() {
                 Keep your household running
               </h1>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                Your 30-day trial has ended. Get a plan to keep your lists, calendar, and notes going — one price for the whole household.
+                Your 30-day trial has ended. Get a plan to keep your lists, calendar, and notes
+                going, one price for the whole household.
               </p>
             </div>
             <div className="flex flex-col gap-3">

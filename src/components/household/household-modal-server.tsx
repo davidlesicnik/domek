@@ -1,4 +1,8 @@
-import { revokeTopBarInviteAction, sendTopBarInviteAction } from "@/lib/actions/household-invite";
+import {
+  createPassiveHouseholdMemberAction,
+  revokeHouseholdMemberInviteAction,
+  sendHouseholdMemberInviteAction,
+} from "@/lib/actions/household-members";
 import { prisma } from "@/lib/db";
 import { listPendingInvites } from "@/lib/invites";
 import { getFirstHouseholdMembership } from "@/lib/users";
@@ -17,7 +21,8 @@ export async function HouseholdModalServer({ userId }: { userId: string }) {
         id: true,
         color: true,
         emoji: true,
-        user: { select: { name: true, email: true } },
+        name: true,
+        account: { select: { email: true } },
       },
       orderBy: { createdAt: "asc" },
     }),
@@ -26,11 +31,18 @@ export async function HouseholdModalServer({ userId }: { userId: string }) {
 
   return (
     <HouseholdHeaderControls
+      createMemberAction={createPassiveHouseholdMemberAction}
       isOwner={isOwner}
-      members={members}
+      members={members.map((member) => ({
+        accountEmail: member.account?.email ?? null,
+        color: member.color,
+        emoji: member.emoji,
+        id: member.id,
+        name: member.name,
+      }))}
       pendingInvites={pendingInvites}
-      revokeInviteAction={revokeTopBarInviteAction}
-      sendInviteAction={sendTopBarInviteAction}
+      revokeInviteAction={revokeHouseholdMemberInviteAction}
+      sendInviteAction={sendHouseholdMemberInviteAction}
     />
   );
 }

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getCurrentAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { EXPENSE_CATEGORY_COLOR_OPTIONS } from "@/lib/expense-colors";
+import { getHouseholdMemberName } from "@/lib/household-members";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 export type ExpenseView = {
@@ -115,7 +116,7 @@ const expenseSelect = {
   category: { select: { color: true, name: true } },
   householdMemberId: true,
   householdMember: {
-    select: { color: true, emoji: true, user: { select: { name: true, email: true } } },
+    select: { color: true, emoji: true, name: true, account: { select: { email: true } } },
   },
 } satisfies Prisma.ExpenseSelect;
 
@@ -130,7 +131,12 @@ type RawExpense = {
   categoryId: string | null;
   category: { color: string; name: string } | null;
   householdMemberId: string | null;
-  householdMember: { color: string; emoji: string | null; user: { name: string | null; email: string | null } } | null;
+  householdMember: {
+    color: string;
+    emoji: string | null;
+    name: string;
+    account: { email: string | null } | null;
+  } | null;
 };
 
 function toExpenseView(e: RawExpense): ExpenseView {
@@ -146,7 +152,12 @@ function toExpenseView(e: RawExpense): ExpenseView {
     categoryColor: e.category?.color ?? null,
     categoryName: e.category?.name ?? null,
     householdMemberId: e.householdMemberId,
-    householdMemberName: e.householdMember?.user.name ?? e.householdMember?.user.email ?? e.memberName,
+    householdMemberName: e.householdMember
+      ? getHouseholdMemberName({
+          accountEmail: e.householdMember.account?.email,
+          name: e.householdMember.name,
+        })
+      : e.memberName,
     householdMemberColor: e.householdMember?.color ?? null,
     householdMemberEmoji: e.householdMember?.emoji ?? null,
   };
@@ -356,9 +367,15 @@ export async function updateCategory(
 export async function listMembers(scope: ExpenseScope): Promise<MemberView[]> {
   const members = await prisma.householdMember.findMany({
     orderBy: { createdAt: "asc" },
-    select: { id: true, color: true, emoji: true, user: { select: { name: true, email: true } } },
+    select: { id: true, color: true, emoji: true, name: true, account: { select: { email: true } } },
     where: { householdId: scope.householdId },
   });
 
-  return members.map((m) => ({ id: m.id, color: m.color, emoji: m.emoji, name: m.user.name, email: m.user.email }));
+  return members.map((member) => ({
+    id: member.id,
+    color: member.color,
+    emoji: member.emoji,
+    name: member.name,
+    email: member.account?.email ?? null,
+  }));
 }

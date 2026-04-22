@@ -46,6 +46,20 @@ export async function sendTopBarInviteAction(
     };
   }
 
+  const existingMember = await prisma.user.findUnique({
+    where: { email: parsed.data.toLowerCase() },
+    select: {
+      memberships: {
+        where: { householdId: membership.householdId },
+        select: { id: true },
+      },
+    },
+  });
+
+  if (existingMember?.memberships.length) {
+    return { success: false, error: "That person is already in this household." };
+  }
+
   const invite = await createInvite({
     householdId: membership.householdId,
     invitedById: session.user.id,

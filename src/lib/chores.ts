@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { getCurrentAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { getHouseholdMemberName } from "@/lib/household-members";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 export type ChoreScope = {
@@ -264,10 +265,10 @@ const choreSelect = {
     select: {
       color: true,
       emoji: true,
-      user: {
+      name: true,
+      account: {
         select: {
           email: true,
-          name: true,
         },
       },
     },
@@ -300,8 +301,12 @@ function toChoreView(chore: RawChore, referenceDate: Date): ChoreView {
     rotationMemberIds: chore.rotationMemberIds,
     rotationIndex: chore.rotationIndex,
     assignedHouseholdMemberId: chore.assignedHouseholdMemberId,
-    assignedHouseholdMemberName:
-      chore.assignedHouseholdMember?.user.name ?? chore.assignedHouseholdMember?.user.email ?? null,
+    assignedHouseholdMemberName: chore.assignedHouseholdMember
+      ? getHouseholdMemberName({
+          accountEmail: chore.assignedHouseholdMember.account?.email,
+          name: chore.assignedHouseholdMember.name,
+        })
+      : null,
     assignedHouseholdMemberColor: chore.assignedHouseholdMember?.color ?? null,
     assignedHouseholdMemberEmoji: chore.assignedHouseholdMember?.emoji ?? null,
     createdAt: chore.createdAt.toISOString(),
@@ -335,15 +340,15 @@ export async function listChores(scope: ChoreScope): Promise<ChoreView[]> {
 export async function listChoreMembers(scope: ChoreScope): Promise<ChoreMemberView[]> {
   return prisma.householdMember
     .findMany({
-      orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
+      orderBy: [{ name: "asc" }, { createdAt: "asc" }],
       select: {
         color: true,
         emoji: true,
         id: true,
-        user: {
+        name: true,
+        account: {
           select: {
             email: true,
-            name: true,
           },
         },
       },
@@ -354,8 +359,8 @@ export async function listChoreMembers(scope: ChoreScope): Promise<ChoreMemberVi
         id: row.id,
         color: row.color,
         emoji: row.emoji,
-        email: row.user.email,
-        name: row.user.name,
+        email: row.account?.email ?? null,
+        name: row.name,
       })),
     );
 }

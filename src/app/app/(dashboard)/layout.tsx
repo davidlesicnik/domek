@@ -22,7 +22,7 @@ export default async function DashboardLayout({
       householdId: true,
       household: { select: { createdAt: true, paidAt: true } },
     },
-    where: { userId: session.user.id, household: { deletedAt: null } },
+    where: { accountId: session.user.id, household: { deletedAt: null } },
   });
 
   let banner: ReactNode = null;
