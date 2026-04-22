@@ -1,30 +1,43 @@
 "use client";
 
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export type ListItemView = { id: string; text: string; done: boolean };
-export type ListView = { id: string; name: string; items: ListItemView[] };
+export type ListView<TItem extends ListItemView = ListItemView> = {
+  id: string;
+  name: string;
+  items: TItem[];
+};
 export type ListBoardAnalyticsArea = "shopping" | "todo";
 
-type ListBoardProps = Readonly<{
+type ListBoardProps<TItem extends ListItemView = ListItemView, TCreateItemInput extends object = { text: string }> = Readonly<{
   title: string;
   listsPath: string;
   itemsPath: string;
-  initialLists: ListView[];
+  initialLists: ListView<TItem>[];
   analyticsArea: ListBoardAnalyticsArea;
+  createItemInput?: (text: string) => TCreateItemInput;
+  createOptimisticItem?: (input: { id: string; text: string }) => TItem;
+  onItemCreated?: () => void;
+  renderComposerFooter?: (input: {
+    canSubmit: boolean;
+    disabled: boolean;
+    isFocused: boolean;
+  }) => ReactNode;
+  renderItemMeta?: (item: TItem) => ReactNode;
 }>;
 
 // Pure helpers — extracted to avoid deep nesting inside state updaters
 
-function withItemReplaced(
-  lists: ListView[],
+function withItemReplaced<TItem extends ListItemView>(
+  lists: ListView<TItem>[],
   listId: string,
   oldId: string,
-  newItem: ListItemView,
-): ListView[] {
+  newItem: TItem,
+): ListView<TItem>[] {
   return lists.map((l) =>
     l.id === listId
       ? { ...l, items: l.items.map((i) => (i.id === oldId ? newItem : i)) }
@@ -32,12 +45,12 @@ function withItemReplaced(
   );
 }
 
-function withItemToggled(
-  lists: ListView[],
+function withItemToggled<TItem extends ListItemView>(
+  lists: ListView<TItem>[],
   listId: string,
   itemId: string,
   done: boolean,
-): ListView[] {
+): ListView<TItem>[] {
   return lists.map((l) =>
     l.id === listId
       ? { ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, done } : i)) }
@@ -45,13 +58,21 @@ function withItemToggled(
   );
 }
 
-function withItemRemoved(lists: ListView[], listId: string, itemId: string): ListView[] {
+function withItemRemoved<TItem extends ListItemView>(
+  lists: ListView<TItem>[],
+  listId: string,
+  itemId: string,
+): ListView<TItem>[] {
   return lists.map((l) =>
     l.id === listId ? { ...l, items: l.items.filter((i) => i.id !== itemId) } : l,
   );
 }
 
-function withItemAppended(lists: ListView[], listId: string, item: ListItemView): ListView[] {
+function withItemAppended<TItem extends ListItemView>(
+  lists: ListView<TItem>[],
+  listId: string,
+  item: TItem,
+): ListView<TItem>[] {
   return lists.map((l) =>
     l.id === listId ? { ...l, items: [...l.items, item] } : l,
   );
@@ -75,14 +96,19 @@ function ChevronLeftIcon(props: IconProps) {
   );
 }
 
-export function ListBoard({
+export function ListBoard<TItem extends ListItemView, TCreateItemInput extends object = { text: string }>({
   title,
   listsPath,
   itemsPath,
   initialLists,
   analyticsArea,
-}: ListBoardProps) {
-  const [lists, setLists] = useState<ListView[]>(initialLists);
+  createItemInput,
+  createOptimisticItem,
+  onItemCreated,
+  renderComposerFooter,
+  renderItemMeta,
+}: ListBoardProps<TItem, TCreateItemInput>) {
+  const [lists, setLists] = useState<ListView<TItem>[]>(initialLists);
   const [selectedListId, setSelectedListId] = useState<string | null>(
     initialLists[0]?.id ?? null,
   );
@@ -93,7 +119,13 @@ export function ListBoard({
   const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null);
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [enteringItemIds, setEnteringItemIds] = useState<string[]>([]);
+  const [recentlyCompletedItemIds, setRecentlyCompletedItemIds] = useState<string[]>([]);
+  const composerFormRef = useRef<HTMLFormElement>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
+  const enterAnimationTimersRef = useRef<Map<string, number>>(new Map());
+  const completionAnimationTimersRef = useRef<Map<string, number>>(new Map());
 
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
@@ -119,6 +151,61 @@ export function ListBoard({
     wasSavingItem.current = isSavingItem;
   }, [isSavingItem]);
 
+  useEffect(() => {
+    const enterAnimationTimers = enterAnimationTimersRef.current;
+    const completionAnimationTimers = completionAnimationTimersRef.current;
+
+    return () => {
+      for (const timerId of enterAnimationTimers.values()) {
+        window.clearTimeout(timerId);
+      }
+      enterAnimationTimers.clear();
+
+      for (const timerId of completionAnimationTimers.values()) {
+        window.clearTimeout(timerId);
+      }
+      completionAnimationTimers.clear();
+    };
+  }, []);
+
+  function markItemEntering(itemId: string) {
+    const existingTimer = enterAnimationTimersRef.current.get(itemId);
+
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+
+    setEnteringItemIds((current) => (current.includes(itemId) ? current : [...current, itemId]));
+
+    const timerId = window.setTimeout(() => {
+      setEnteringItemIds((current) => current.filter((currentItemId) => currentItemId !== itemId));
+      enterAnimationTimersRef.current.delete(itemId);
+    }, 520);
+
+    enterAnimationTimersRef.current.set(itemId, timerId);
+  }
+
+  function markItemCompleted(itemId: string) {
+    const existingTimer = completionAnimationTimersRef.current.get(itemId);
+
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+
+    setRecentlyCompletedItemIds((current) =>
+      current.includes(itemId) ? current : [...current, itemId],
+    );
+
+    const timerId = window.setTimeout(() => {
+      setRecentlyCompletedItemIds((current) =>
+        current.filter((currentItemId) => currentItemId !== itemId),
+      );
+      completionAnimationTimersRef.current.delete(itemId);
+    }, 420);
+
+    completionAnimationTimersRef.current.set(itemId, timerId);
+  }
+
   async function handleCreateList(e: React.FormEvent) {
     e.preventDefault();
     const name = newListName.trim();
@@ -136,7 +223,7 @@ export function ListBoard({
 
       if (!res.ok) throw new Error("Failed to create list");
 
-      const { list } = (await res.json()) as { list: ListView };
+      const { list } = (await res.json()) as { list: ListView<TItem> };
       setLists((prev) => [...prev, list]);
       setSelectedListId(list.id);
       setIsMobileListOpen(true);
@@ -177,21 +264,25 @@ export function ListBoard({
     setNewItemText("");
 
     const optimisticId = `optimistic-${Date.now()}`;
-    const optimisticItem: ListItemView = { done: false, id: optimisticId, text };
+    const optimisticItem = createOptimisticItem
+      ? createOptimisticItem({ id: optimisticId, text })
+      : ({ done: false, id: optimisticId, text } as TItem);
 
     setLists((prev) => withItemAppended(prev, selectedList.id, optimisticItem));
 
     try {
       const res = await fetch(`${listsPath}/${selectedList.id}/items`, {
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(createItemInput ? createItemInput(text) : { text }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
 
       if (!res.ok) throw new Error("Failed to create item");
 
-      const { item } = (await res.json()) as { item: ListItemView };
+      const { item } = (await res.json()) as { item: TItem };
       setLists((prev) => withItemReplaced(prev, selectedList.id, optimisticId, item));
+      markItemEntering(item.id);
+      onItemCreated?.();
       trackAnalyticsEvent("list_item_added", { area: analyticsArea });
     } catch {
       setNewItemText(text);
@@ -203,6 +294,10 @@ export function ListBoard({
 
   async function handleToggleItem(listId: string, itemId: string, currentDone: boolean) {
     setLists((prev) => withItemToggled(prev, listId, itemId, !currentDone));
+
+    if (!currentDone) {
+      markItemCompleted(itemId);
+    }
 
     try {
       const res = await fetch(`${itemsPath}/${itemId}`, { method: "PATCH" });
@@ -237,6 +332,9 @@ export function ListBoard({
     setConfirmDeleteItemId(null);
     setIsMobileListOpen(true);
   }
+
+  const activeItems = selectedList?.items.filter((item) => !item.done) ?? [];
+  const completedItems = selectedList?.items.filter((item) => item.done) ?? [];
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
@@ -279,16 +377,38 @@ export function ListBoard({
                     onClick={() => openList(list.id)}
                     type="button"
                   >
-                    <span className="flex-1 truncate">{list.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate">{list.name}</span>
+                        {totalCount > 0 ? (
+                          <span
+                            className={`shrink-0 text-[10px] font-semibold ${
+                              isSelected ? "text-[#426148]" : "text-[#6f675d]"
+                            }`}
+                          >
+                            {doneCount}/{totalCount}
+                          </span>
+                        ) : null}
+                      </span>
+                    </span>
                     {totalCount > 0 && (
-                      <span
-                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                          isSelected
-                            ? "bg-[#c8deca] text-[#426148]"
-                            : "bg-[#ebe8de] text-[#6a5b52]"
-                        }`}
-                      >
-                        {doneCount}/{totalCount}
+                      <span className="shrink-0">
+                        <span
+                          aria-hidden
+                          className={`block h-1.5 w-14 overflow-hidden rounded-full ${
+                            isSelected ? "bg-[#c7d9ca]" : "bg-[#ddd6ca]"
+                          }`}
+                        >
+                          <span
+                            className={`block h-full rounded-full transition-[width] duration-300 ${
+                              isSelected ? "bg-[#5f8566]" : "bg-[#8f877b]"
+                            }`}
+                            style={{ width: `${Math.max(8, Math.round((doneCount / totalCount) * 100))}%` }}
+                          />
+                        </span>
+                        <span className="sr-only">
+                          {doneCount} of {totalCount} items completed
+                        </span>
                       </span>
                     )}
                   </button>
@@ -376,23 +496,26 @@ export function ListBoard({
                     Nothing here yet. Add an item below.
                   </li>
                 )}
-                {selectedList.items.map((item) => (
+                {activeItems.map((item) => (
                   <li
-                    className="group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 last:border-b-0 sm:items-center sm:px-5"
+                    className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
+                      enteringItemIds.includes(item.id)
+                        ? "animate-[list-item-enter_520ms_cubic-bezier(0.16,1,0.3,1)] bg-[#f7fbf3]"
+                        : ""
+                    }`}
                     key={item.id}
                   >
                     <input
                       checked={item.done}
-                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
+                      className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
                       onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
                       type="checkbox"
                     />
-                    <span
-                      className={`min-w-0 flex-1 break-words text-sm leading-snug ${
-                        item.done ? "text-[#9a9e9b] line-through" : "text-[#2d3230]"
-                      }`}
-                    >
-                      {item.text}
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-words text-sm leading-snug text-[#2d3230]">
+                        {item.text}
+                      </span>
+                      {renderItemMeta ? renderItemMeta(item) : null}
                     </span>
                     {confirmDeleteItemId === item.id ? (
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
@@ -424,29 +547,115 @@ export function ListBoard({
                     )}
                   </li>
                 ))}
+                {completedItems.length > 0 ? (
+                  <>
+                    <li className="border-b border-[#f0ede6] bg-[#fbfaf6] px-4 py-2 sm:px-5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8b908c]">
+                        Completed
+                      </span>
+                    </li>
+                    {completedItems.map((item, index) => (
+                      <li
+                        className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
+                          recentlyCompletedItemIds.includes(item.id)
+                            ? "animate-[list-item-complete_420ms_cubic-bezier(0.22,1,0.36,1)]"
+                            : ""
+                        } ${index === completedItems.length - 1 ? "last:border-b-0" : ""}`}
+                        key={item.id}
+                      >
+                        <input
+                          checked={item.done}
+                          className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
+                          onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
+                          type="checkbox"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block break-words text-sm leading-snug text-[#2d3230] line-through">
+                            {item.text}
+                          </span>
+                          {renderItemMeta ? renderItemMeta(item) : null}
+                        </span>
+                        {confirmDeleteItemId === item.id ? (
+                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                            <span className="text-xs text-[#5d635f]">Delete?</span>
+                            <button
+                              className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                              onClick={() => handleDeleteItem(selectedList.id, item.id)}
+                              type="button"
+                            >
+                              Yes
+                            </button>
+                            <button
+                              className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                              onClick={() => setConfirmDeleteItemId(null)}
+                              type="button"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            aria-label="Delete item"
+                            className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
+                            onClick={() => setConfirmDeleteItemId(item.id)}
+                            type="button"
+                          >
+                            <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </>
+                ) : null}
               </ul>
 
               {/* Add item form */}
               <form
-                className="grid gap-2 border-t border-[#e0dcd4] p-4 sm:flex"
+                className="grid gap-2 border-t border-[#e0dcd4] p-4"
                 onSubmit={handleCreateItem}
+                onBlur={(event) => {
+                  const nextFocused = event.relatedTarget;
+
+                  if (
+                    nextFocused instanceof Node &&
+                    composerFormRef.current?.contains(nextFocused)
+                  ) {
+                    return;
+                  }
+
+                  setIsComposerFocused(false);
+                }}
+                onFocus={() => setIsComposerFocused(true)}
+                ref={composerFormRef}
               >
-                <input
-                  ref={newItemInputRef}
-                  className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9"
-                  disabled={isSavingItem}
-                  onChange={(e) => setNewItemText(e.target.value)}
-                  placeholder="Add an item…"
-                  type="text"
-                  value={newItemText}
-                />
-                <button
-                  className="h-10 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
-                  disabled={isSavingItem || !newItemText.trim()}
-                  type="submit"
-                >
-                  Add
-                </button>
+                <div className="flex min-w-0 items-center rounded-md border border-[#d8d2c8] bg-white focus-within:border-[#9bb6a4]">
+                  <input
+                    ref={newItemInputRef}
+                    className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:outline-none sm:h-9"
+                    disabled={isSavingItem}
+                    onChange={(e) => setNewItemText(e.target.value)}
+                    placeholder="Add an item…"
+                    type="text"
+                    value={newItemText}
+                  />
+                </div>
+                {renderComposerFooter ? (
+                  renderComposerFooter({
+                    canSubmit: Boolean(newItemText.trim()),
+                    disabled: isSavingItem,
+                    isFocused: isComposerFocused,
+                  })
+                ) : (
+                  <div className="flex justify-end">
+                    <button
+                      className="h-10 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
+                      disabled={isSavingItem || !newItemText.trim()}
+                      type="submit"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </form>
             </>
           ) : (
@@ -457,6 +666,36 @@ export function ListBoard({
           )}
         </div>
       </div>
+      <style jsx>{`
+        @keyframes list-item-enter {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.985);
+          }
+
+          55% {
+            opacity: 1;
+            transform: translateY(-2px) scale(1.006);
+          }
+
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes list-item-complete {
+          0% {
+            opacity: 1;
+            transform: translateY(-2px);
+          }
+
+          100% {
+            opacity: 1;
+            transform: translateY(8px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
