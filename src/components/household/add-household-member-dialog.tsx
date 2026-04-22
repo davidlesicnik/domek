@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { HouseholdActionState } from "@/lib/actions/household-members";
+import { MEMBER_EMOJI_OPTIONS } from "@/lib/member-avatar";
 import { MEMBER_COLORS, MEMBER_COLOR_KEYS, type MemberColorKey } from "@/lib/member-colors";
 
 type PendingInvite = Readonly<{
@@ -28,8 +29,6 @@ type AddHouseholdMemberDialogProps = Readonly<{
     formData: FormData,
   ) => Promise<HouseholdActionState>;
 }>;
-
-const EMOJI_OPTIONS = ["", "🙂", "😄", "🦊", "🐸", "🌻", "🚲", "⚽", "🎨", "🧩"] as const;
 
 function formatExpiry(date: Date): string {
   const diff = date.getTime() - Date.now();
@@ -277,58 +276,62 @@ export function AddHouseholdMemberDialog({
                       </div>
                     </div>
 
-                    <div className="grid gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Color</p>
-                      <input name="color" type="hidden" value={selectedColor} />
-                      <div className="flex flex-wrap gap-2">
-                        {MEMBER_COLOR_KEYS.map((key) => {
-                          const color = MEMBER_COLORS[key];
-                          const isSelected = key === selectedColor;
+                    <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+                      <div className="grid gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Color</p>
+                        <input name="color" type="hidden" value={selectedColor} />
+                        <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
+                          {MEMBER_COLOR_KEYS.map((key) => {
+                            const color = MEMBER_COLORS[key];
+                            const isSelected = key === selectedColor;
 
-                          return (
-                            <button
-                              aria-label={`Use ${color.name}`}
-                              className={`h-10 w-10 rounded-md border transition ${
-                                isSelected ? "shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]" : ""
-                              }`}
-                              key={key}
-                              onClick={() => setSelectedColor(key)}
-                              style={{
-                                backgroundColor: color.hex,
-                                borderColor: isSelected ? "#202321" : color.border,
-                              }}
-                              type="button"
-                            />
-                          );
-                        })}
+                            return (
+                              <button
+                                aria-label={`Use ${color.name}`}
+                                className={`flex h-11 w-11 items-center justify-center rounded-md border transition ${
+                                  isSelected ? "shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]" : ""
+                                }`}
+                                key={key}
+                                onClick={() => setSelectedColor(key)}
+                                style={{
+                                  backgroundColor: color.hex,
+                                  borderColor: isSelected ? "#202321" : color.border,
+                                }}
+                                type="button"
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="grid gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Emoji</p>
-                      <input name="emoji" type="hidden" value={selectedEmoji} />
-                      <div className="flex flex-wrap gap-2">
-                        {EMOJI_OPTIONS.map((emoji) => {
-                          const isSelected = emoji === selectedEmoji;
-                          const label = emoji || "Initial";
+                      <div className="grid gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Emoji</p>
+                        <input name="emoji" type="hidden" value={selectedEmoji} />
+                        <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
+                          {["", ...MEMBER_EMOJI_OPTIONS].map((emoji) => {
+                            const isSelected = emoji === selectedEmoji;
+                            const label = emoji || "Initial";
 
-                          return (
-                            <button
-                              className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border px-3 text-lg transition ${
-                                isSelected
-                                  ? "border-[#202321] bg-[#f4f1ea]"
-                                  : "border-[#d8d2c8] bg-white hover:bg-[#faf8f2]"
-                              }`}
-                              key={label}
-                              onClick={() => setSelectedEmoji(emoji)}
-                              type="button"
-                            >
-                              <span className={emoji ? "" : "text-[11px] font-semibold uppercase text-[#5f6661]"}>
-                                {emoji || memberInitial}
-                              </span>
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                className={`inline-flex h-11 w-11 items-center justify-center rounded-md border text-lg transition ${
+                                  isSelected
+                                    ? "border-[#202321] bg-[#f4f1ea]"
+                                    : "border-[#d8d2c8] bg-white hover:bg-[#faf8f2]"
+                                }`}
+                                key={label}
+                                onClick={() => setSelectedEmoji(emoji)}
+                                type="button"
+                              >
+                                <span
+                                  className={emoji ? "" : "text-[11px] font-semibold uppercase text-[#5f6661]"}
+                                >
+                                  {emoji || memberInitial}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
