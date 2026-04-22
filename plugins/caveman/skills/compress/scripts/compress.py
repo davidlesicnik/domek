@@ -6,15 +6,11 @@ Usage:
     python scripts/compress.py <filepath>
 """
 
-import os
 import re
+import os
 import subprocess
 from pathlib import Path
 from typing import List
-
-OUTER_FENCE_REGEX = re.compile(
-    r"\A\s*(`{3,}|~{3,})[^\n]*\n(.*)\n\1\s*\Z", re.DOTALL
-)
 
 # Filenames and paths that almost certainly hold secrets or PII. Compressing
 # them ships raw bytes to the Anthropic API — a third-party data boundary that
@@ -58,10 +54,43 @@ def is_sensitive_path(filepath: Path) -> bool:
 
 def strip_llm_wrapper(text: str) -> str:
     """Strip outer ```markdown ... ``` fence when it wraps the entire output."""
-    m = OUTER_FENCE_REGEX.match(text)
-    if m:
-        return m.group(2)
-    return text
+    lines = text.splitlines()
+    if len(lines) < 2:
+        return text
+
+    start = 0
+    end = len(lines) - 1
+
+    while start <= end and lines[start].strip() == "":
+        start += 1
+    while end >= start and lines[end].strip() == "":
+        end -= 1
+
+    if end - start < 1:
+        return text
+
+    opening = lines[start].lstrip()
+    if not opening:
+        return text
+
+    marker = opening[0]
+    if marker not in {"`", "~"}:
+        return text
+
+    fence_len = 0
+    for char in opening:
+        if char == marker:
+            fence_len += 1
+        else:
+            break
+    if fence_len < 3:
+        return text
+
+    closing = lines[end].strip()
+    if closing != marker * fence_len:
+        return text
+
+    return "\n".join(lines[start + 1:end])
 
 from .detect import should_compress
 from .validate import validate

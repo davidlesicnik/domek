@@ -3,13 +3,12 @@ import re
 from pathlib import Path
 
 URL_REGEX = re.compile(r"https?://[^\s)]+")
-FENCE_OPEN_REGEX = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
-HEADING_REGEX = re.compile(r"^(#{1,6})\s+(.*)", re.MULTILINE)
-BULLET_REGEX = re.compile(r"^\s*[-*+]\s+", re.MULTILINE)
-
-# crude but effective path detection
-# Requires either a path prefix (./ ../ / or drive letter) or a slash/backslash within the match
-PATH_REGEX = re.compile(r"(?:\./|\.\./|/|[A-Za-z]:\\)[\w\-/\\\.]+|[\w\-\.]+[/\\][\w\-/\\\.]+")
+PATH_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "0123456789"
+    "_-./\\"
+)
 
 
 class ValidationResult:
@@ -34,7 +33,38 @@ def read_file(path: Path) -> str:
 
 
 def extract_headings(text):
-    return [(level, title.strip()) for level, title in HEADING_REGEX.findall(text)]
+    headings = []
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if not stripped.startswith("#"):
+            continue
+        level = 0
+        while level < len(stripped) and stripped[level] == "#" and level < 6:
+            level += 1
+        if level == 0 or level >= len(stripped) or stripped[level] != " ":
+            continue
+        headings.append((stripped[:level], stripped[level + 1 :].strip()))
+    return headings
+
+
+def parse_fence_line(line):
+    i = 0
+    indent = 0
+    while i < len(line) and line[i] == " " and indent < 3:
+        i += 1
+        indent += 1
+    if i >= len(line) or line[i] not in {"`", "~"}:
+        return None
+
+    fence_char = line[i]
+    start = i
+    while i < len(line) and line[i] == fence_char:
+        i += 1
+    fence_len = i - start
+    if fence_len < 3:
+        return None
+
+    return indent, fence_char * fence_len, line[i:]
 
 
 def extract_code_blocks(text):
@@ -50,23 +80,23 @@ def extract_code_blocks(text):
     i = 0
     n = len(lines)
     while i < n:
-        m = FENCE_OPEN_REGEX.match(lines[i])
+        m = parse_fence_line(lines[i])
         if not m:
             i += 1
             continue
-        fence_char = m.group(2)[0]
-        fence_len = len(m.group(2))
+        fence_char = m[1][0]
+        fence_len = len(m[1])
         open_line = lines[i]
         block_lines = [open_line]
         i += 1
         closed = False
         while i < n:
-            close_m = FENCE_OPEN_REGEX.match(lines[i])
+            close_m = parse_fence_line(lines[i])
             if (
                 close_m
-                and close_m.group(2)[0] == fence_char
-                and len(close_m.group(2)) >= fence_len
-                and close_m.group(3).strip() == ""
+                and close_m[1][0] == fence_char
+                and len(close_m[1]) >= fence_len
+                and close_m[2].strip() == ""
             ):
                 block_lines.append(lines[i])
                 closed = True
@@ -86,11 +116,47 @@ def extract_urls(text):
 
 
 def extract_paths(text):
-    return set(PATH_REGEX.findall(text))
+    paths = set()
+    token = []
+
+    def flush():
+        if not token:
+            return
+        candidate = "".join(token).strip(".,:;!?()[]{}<>\"'")
+        token.clear()
+        if not candidate:
+            return
+        if is_path_candidate(candidate):
+            paths.add(candidate)
+
+    for char in text:
+        if char in PATH_CHARS:
+            token.append(char)
+        else:
+            flush()
+    flush()
+    return paths
+
+
+def is_path_candidate(token: str) -> bool:
+    if len(token) < 2:
+        return False
+    if token.startswith(("./", "../", "/")):
+        return any(sep in token[1:] for sep in ("/", "\\"))
+    if len(token) >= 3 and token[1:3] == ":\\" and token[0].isalpha():
+        return "\\" in token[3:] or "/" in token[3:]
+    return any(sep in token for sep in ("/", "\\")) and any(
+        ch.isalnum() for ch in token.replace("/", "").replace("\\", "")
+    )
 
 
 def count_bullets(text):
-    return len(BULLET_REGEX.findall(text))
+    count = 0
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(("- ", "* ", "+ ")):
+            count += 1
+    return count
 
 
 # ---------- Validators ----------
