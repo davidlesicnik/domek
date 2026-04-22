@@ -104,6 +104,7 @@ model HouseholdMember {
 
   expenses Expense[]
   chores   Chore[]
+  todoItems TodoItem[]
 
   @@unique([userId])
   @@unique([userId, householdId])
@@ -217,14 +218,19 @@ model TodoList {
 }
 
 model TodoItem {
-  id         String   @id @default(cuid())
-  text       String   @db.VarChar(500)
-  done       Boolean  @default(false)
-  todoListId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  list       TodoList @relation(fields: [todoListId], references: [id], onDelete: Cascade)
+  id                        String           @id @default(cuid())
+  text                      String           @db.VarChar(500)
+  done                      Boolean          @default(false)
+  assignedHouseholdMemberId String?
+  dueDate                   DateTime?
+  todoListId                String
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  assignedHouseholdMember   HouseholdMember? @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: SetNull)
+  list                      TodoList         @relation(fields: [todoListId], references: [id], onDelete: Cascade)
 
+  @@index([assignedHouseholdMemberId])
+  @@index([dueDate])
   @@index([todoListId])
 }
 

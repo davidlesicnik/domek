@@ -19,7 +19,7 @@ export async function POST(
   try {
     const input = parseTodoItemInput(await request.json());
     const { listId } = await params;
-    const item = await createTodoItem(listId, input.text, scope);
+    const item = await createTodoItem(listId, input, scope);
 
     if (!item) {
       return Response.json({ error: "Not found." }, { status: 404 });
