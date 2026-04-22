@@ -1,79 +1,271 @@
 "use client";
 
-import { useTransition } from "react";
+import { Pencil } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
+import { MemberAvatar } from "@/components/ui/member-avatar";
+import { OnboardingTooltip } from "@/components/ui/onboarding-tooltip";
 import {
-  MEMBER_COLOR_KEYS,
   MEMBER_COLORS,
+  MEMBER_COLOR_KEYS,
   getMemberColor,
   type MemberColorKey,
 } from "@/lib/member-colors";
+import { getMemberAvatarText } from "@/lib/member-avatar";
 
-type MemberColorPickerProps = Readonly<{
-  memberId: string;
-  memberLabel: string;
-  selectedColor: string;
-  onSelectedColorChange: (color: MemberColorKey) => void;
-  updateMemberColorAction: (formData: FormData) => Promise<void>;
+type UpdateMemberAvatarResult = Readonly<{
+  error: string | null;
+  success: boolean;
 }>;
 
+type MemberColorPickerProps = Readonly<{
+  memberEmail: string | null;
+  memberId: string;
+  memberLabel: string;
+  memberName: string | null;
+  onSelectedColorChange: (color: MemberColorKey) => void;
+  onSelectedEmojiChange: (emoji: string | null) => void;
+  selectedColor: string;
+  selectedEmoji: string | null;
+  showOnboardingHint: boolean;
+  storageKey: string;
+  updateMemberAvatarAction: (formData: FormData) => Promise<UpdateMemberAvatarResult>;
+}>;
+
+const MEMBER_EMOJI_OPTIONS = ["😄", "😎", "🤖", "👽", "🐸", "🦊", "🐼", "🐙", "🔥", "🍕", "🚀"] as const;
 export function MemberColorPicker({
+  memberEmail,
   memberId,
   memberLabel,
+  memberName,
   onSelectedColorChange,
+  onSelectedEmojiChange,
   selectedColor,
-  updateMemberColorAction,
+  selectedEmoji,
+  showOnboardingHint,
+  storageKey,
+  updateMemberAvatarAction,
 }: MemberColorPickerProps) {
   const currentColor = getMemberColor(selectedColor).key;
+  const [previewColor, setPreviewColor] = useState<MemberColorKey | null>(null);
+  const [previewEmoji, setPreviewEmoji] = useState<string | null | undefined>(undefined);
+  const initialText = getMemberAvatarText({
+    email: memberEmail,
+    name: memberName,
+  });
+  const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (!showOnboardingHint || typeof window === "undefined") {
+      return false;
+    }
 
-  function updateColor(key: MemberColorKey) {
+    try {
+      return !window.localStorage.getItem(storageKey);
+    } catch {
+      return false;
+    }
+  });
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  function dismissOnboarding() {
+    setShowOnboarding(false);
+
+    try {
+      window.localStorage.setItem(storageKey, "1");
+    } catch {}
+  }
+
+  function updateAvatar(nextColor: MemberColorKey, nextEmoji: string | null) {
     const previousColor = currentColor;
+    const previousEmoji = selectedEmoji;
     const formData = new FormData();
     formData.set("memberId", memberId);
-    formData.set("color", key);
+    formData.set("color", nextColor);
+    formData.set("emoji", nextEmoji ?? "");
 
-    onSelectedColorChange(key);
+    onSelectedColorChange(nextColor);
+    onSelectedEmojiChange(nextEmoji);
+    setError(null);
+
     startTransition(() => {
-      void updateMemberColorAction(formData).catch(() => onSelectedColorChange(previousColor));
+      void updateMemberAvatarAction(formData)
+        .then((result) => {
+          if (!result.success) {
+            onSelectedColorChange(previousColor);
+            onSelectedEmojiChange(previousEmoji);
+            setError(result.error);
+          }
+        })
+        .catch(() => {
+          onSelectedColorChange(previousColor);
+          onSelectedEmojiChange(previousEmoji);
+          setError("Could not save avatar changes.");
+        });
     });
   }
 
   return (
-    <div
-      className="mt-2 flex h-7 w-fit items-center gap-1 rounded-md border border-[#ece7dd] bg-[#faf8f2] p-1 leading-none"
-      aria-label={`Color for ${memberLabel}`}
-      aria-disabled={isPending}
-    >
-      {MEMBER_COLOR_KEYS.map((key: MemberColorKey) => {
-        const color = MEMBER_COLORS[key];
-        const isSelected = key === currentColor;
+    <div className="relative shrink-0 pt-0.5" ref={rootRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-label={`Edit avatar for ${memberLabel}`}
+        className="group relative rounded-md transition hover:scale-[1.03] disabled:opacity-60"
+        disabled={isPending}
+        onClick={() => {
+          if (showOnboarding) dismissOnboarding();
+          setError(null);
+          setIsOpen((current) => !current);
+        }}
+        type="button"
+      >
+        <MemberAvatar
+          className="flex h-10 w-10 items-center justify-center rounded-md border text-base font-semibold transition-[filter] group-hover:brightness-[0.84]"
+          color={previewColor ?? selectedColor}
+          email={memberEmail}
+          emoji={previewEmoji === undefined ? selectedEmoji : previewEmoji}
+          fallbackLabel="Unknown"
+          name={memberName}
+        />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-[#202321]/0 text-white opacity-0 transition-[background-color,opacity] group-hover:bg-[#202321]/18 group-hover:opacity-100">
+          <Pencil aria-hidden className="h-3.5 w-3.5" />
+        </span>
+      </button>
 
-        return (
-          <button
-            aria-label={`Use ${color.name} for ${memberLabel}`}
-            aria-pressed={isSelected}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border p-0 leading-none transition hover:border-[#aeb8af]"
-            key={key}
-            onClick={() => updateColor(key)}
-            style={{
-              backgroundColor: color.avatarBg,
-              borderColor: isSelected ? color.avatarText : color.border,
-            }}
-            title={color.name}
-            type="button"
-          >
-            {isSelected ? (
-              <span
-                aria-hidden
-                className="block h-2 w-2 rounded-sm"
-                style={{ backgroundColor: color.dot }}
-              />
-            ) : null}
-            <span className="sr-only">{color.name}</span>
-          </button>
-        );
-      })}
+      {showOnboarding ? (
+        <OnboardingTooltip className="absolute left-full top-1/2 z-30 ml-4 -translate-y-1/2">
+          Tap to change avatar
+        </OnboardingTooltip>
+      ) : null}
+
+      {isOpen ? (
+        <div
+          aria-label={`Avatar options for ${memberLabel}`}
+          className="absolute left-0 top-full z-20 mt-2 w-[228px] rounded-md border border-[#dcd6ca] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)]"
+          role="dialog"
+        >
+          <div className="mb-3">
+            <p className="text-center text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+              Avatar
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            <div className="grid grid-cols-4 gap-1.5">
+              <button
+                aria-label={`Use initial for ${memberLabel}`}
+                aria-pressed={selectedEmoji === null}
+                className={`flex h-11 items-center justify-center rounded-md border text-[11px] font-semibold transition ${
+                  selectedEmoji === null
+                    ? "border-[#202321] bg-[#f4f1ea] text-[#202321]"
+                    : "border-[#d8d2c8] bg-white text-[#676d69] hover:border-[#aeb8af] hover:bg-[#faf8f2]"
+                }`}
+                onBlur={() => setPreviewEmoji(undefined)}
+                onClick={() => updateAvatar(currentColor, null)}
+                onFocus={() => setPreviewEmoji(null)}
+                onMouseEnter={() => setPreviewEmoji(null)}
+                onMouseLeave={() => setPreviewEmoji(undefined)}
+                type="button"
+              >
+                {initialText}
+              </button>
+              {MEMBER_EMOJI_OPTIONS.map((emoji) => (
+                <button
+                  aria-label={`Use ${emoji} for ${memberLabel}`}
+                  aria-pressed={selectedEmoji === emoji}
+                  className={`relative flex h-11 items-center justify-center rounded-md border text-xl transition ${
+                    selectedEmoji === emoji
+                      ? "border-[#202321] bg-[#f1ede4] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]"
+                      : "border-[#d8d2c8] bg-white hover:border-[#aeb8af] hover:bg-[#faf8f2]"
+                  }`}
+                  key={emoji}
+                  onBlur={() => setPreviewEmoji(undefined)}
+                  onClick={() => updateAvatar(currentColor, emoji)}
+                  onFocus={() => setPreviewEmoji(emoji)}
+                  onMouseEnter={() => setPreviewEmoji(emoji)}
+                  onMouseLeave={() => setPreviewEmoji(undefined)}
+                  type="button"
+                >
+                  <span aria-hidden>{emoji}</span>
+                  {selectedEmoji === emoji ? (
+                    <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#202321] text-[9px] font-bold text-white">
+                      ✓
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+
+            <div className="border-t border-[#ece8df]" />
+
+            <div className="grid grid-cols-4 gap-1.5">
+              {MEMBER_COLOR_KEYS.map((key) => {
+                const color = MEMBER_COLORS[key];
+                const isSelected = key === currentColor;
+
+                return (
+                  <button
+                    aria-label={`Use ${color.name} for ${memberLabel}`}
+                    aria-pressed={isSelected}
+                    className={`relative flex h-11 w-11 items-center justify-center rounded-md border transition hover:scale-[1.03] ${
+                      isSelected
+                        ? "border-[#202321] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]"
+                        : ""
+                    }`}
+                    key={key}
+                    onBlur={() => setPreviewColor(null)}
+                    onClick={() => updateAvatar(key, selectedEmoji)}
+                    onFocus={() => setPreviewColor(key)}
+                    onMouseEnter={() => setPreviewColor(key)}
+                    onMouseLeave={() => setPreviewColor(null)}
+                    style={{
+                      backgroundColor: color.hex,
+                      borderColor: isSelected ? "#202321" : color.border,
+                    }}
+                    title={color.name}
+                    type="button"
+                  >
+                    {isSelected ? (
+                      <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#202321] text-[9px] font-bold text-white">
+                        ✓
+                      </span>
+                    ) : null}
+                    <span className="sr-only">{color.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {error ? <p className="mt-3 text-[11px] font-medium text-[#a6543c]">{error}</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

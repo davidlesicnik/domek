@@ -7,10 +7,11 @@ import { AppNavigation } from "@/components/layout/app-navigation";
 type AppShellFrameProps = Readonly<{
   children: ReactNode;
   memberColor: string | null;
+  memberEmoji: string | null;
   userName: string | null;
 }>;
 
-export function AppShellFrame({ children, memberColor, userName }: AppShellFrameProps) {
+export function AppShellFrame({ children, memberColor, memberEmoji, userName }: AppShellFrameProps) {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
 
   return (
@@ -24,6 +25,7 @@ export function AppShellFrame({ children, memberColor, userName }: AppShellFrame
       <AppNavigation
         collapsed={isNavigationCollapsed}
         memberColor={memberColor}
+        memberEmoji={memberEmoji}
         onToggleCollapsed={() => setIsNavigationCollapsed((current) => !current)}
         userName={userName}
       />

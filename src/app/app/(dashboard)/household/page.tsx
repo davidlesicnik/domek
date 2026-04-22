@@ -5,7 +5,8 @@ import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { MEMBER_COLOR_KEYS } from "@/lib/member-colors";
+import { normalizeMemberEmoji } from "@/lib/member-avatar";
+import { isMemberColorKey } from "@/lib/member-colors";
 import { getFirstHouseholdMembership } from "@/lib/users";
 import { HouseholdSettingsView } from "@/components/household/household-settings-view";
 
@@ -14,7 +15,12 @@ export const metadata: Metadata = {
   description: "Manage your household members and invites.",
 };
 
-const memberColorSchema = z.enum(MEMBER_COLOR_KEYS);
+const memberColorSchema = z.string().refine(isMemberColorKey, "Choose one of the household colors.");
+
+type UpdateMemberAvatarResult = Readonly<{
+  error: string | null;
+  success: boolean;
+}>;
 
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -102,28 +108,38 @@ async function transferOwnershipAction(formData: FormData) {
   redirect("/app/household?success=owner");
 }
 
-async function updateMemberColorAction(formData: FormData) {
+async function updateMemberAvatarAction(formData: FormData): Promise<UpdateMemberAvatarResult> {
   "use server";
 
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership) {
-    redirect("/onboarding/household");
+    return { error: "Join a household first.", success: false };
   }
 
   const memberId = formData.get("memberId");
   if (typeof memberId !== "string" || !memberId) {
-    redirect("/app/household");
+    return { error: "Choose a household member.", success: false };
   }
 
   if (memberId !== membership.id && membership.role !== "OWNER") {
-    redirect("/app/household?error=forbidden");
+    return { error: "Only the household owner can manage people.", success: false };
   }
 
   const parsedColor = memberColorSchema.safeParse(formData.get("color"));
   if (!parsedColor.success) {
-    redirect("/app/household?error=color");
+    return { error: "Choose one of the household colors.", success: false };
+  }
+
+  const rawEmoji = formData.get("emoji");
+  if (typeof rawEmoji !== "string") {
+    return { error: "Choose one emoji or leave it blank.", success: false };
+  }
+
+  const parsedEmoji = rawEmoji === "" ? null : normalizeMemberEmoji(rawEmoji);
+  if (rawEmoji !== "" && !parsedEmoji) {
+    return { error: "Choose one emoji or leave it blank.", success: false };
   }
 
   await prisma.householdMember.updateMany({
@@ -131,10 +147,16 @@ async function updateMemberColorAction(formData: FormData) {
       id: memberId,
       householdId: membership.householdId,
     },
-    data: { color: parsedColor.data },
+    data: {
+      color: parsedColor.data,
+      emoji: parsedEmoji,
+    },
   });
 
   revalidatePath("/app/household");
+  revalidatePath("/app");
+
+  return { error: null, success: true };
 }
 
 async function deleteHouseholdAction(formData: FormData) {
@@ -202,6 +224,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
         id: true,
         role: true,
         color: true,
+        emoji: true,
         createdAt: true,
         user: { select: { name: true, email: true, image: true } },
       },
@@ -219,7 +242,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       : successParam === "owner"
         ? "Owner reassigned."
         : successParam === "color"
-          ? "Color updated."
+          ? "Avatar updated."
           : null;
   const errorMessage =
     errorParam === "forbidden"
@@ -240,7 +263,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       isOwner={membership.role === "OWNER"}
       removeMemberAction={removeMemberAction}
       transferOwnershipAction={transferOwnershipAction}
-      updateMemberColorAction={updateMemberColorAction}
+      updateMemberAvatarAction={updateMemberAvatarAction}
       deleteHouseholdAction={deleteHouseholdAction}
       leaveHouseholdAction={leaveHouseholdAction}
       successMessage={successMessage}

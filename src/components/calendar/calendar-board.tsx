@@ -11,6 +11,7 @@ import {
   type CalendarEventView,
   type CalendarMemberOption,
 } from "@/lib/calendar-types";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { getMemberColor } from "@/lib/member-colors";
 
@@ -972,22 +973,16 @@ export function CalendarBoard({ initialEvents, members, todayKey }: CalendarBoar
                             {eventMembers.length > 0 ? (
                               <span className="mt-1 flex flex-wrap gap-0.5">
                                 {eventMembers.map((member) => {
-                                  const color = getMemberColor(member.color);
-                                  const letter = memberLabel(member).slice(0, 1).toUpperCase();
-
                                   return (
-                                    <span
-                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border font-serif text-[8px] font-semibold"
+                                    <MemberAvatar
+                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border text-[8px] font-semibold"
+                                      color={member.color}
+                                      email={member.email}
+                                      emoji={member.emoji}
                                       key={member.id}
-                                      style={{
-                                        backgroundColor: color.avatarBg,
-                                        borderColor: color.border,
-                                        color: color.avatarText,
-                                      }}
+                                      name={member.name}
                                       title={memberLabel(member)}
-                                    >
-                                      {letter}
-                                    </span>
+                                    />
                                   );
                                 })}
                               </span>

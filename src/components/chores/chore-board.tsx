@@ -4,8 +4,8 @@ import type { ChoreAssignmentType, ChoreIntervalUnit, ChoreRecurrenceType } from
 import { Check, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { ChoreCategoryView, ChoreMemberView, ChoreView } from "@/lib/chores";
-import { getMemberColor } from "@/lib/member-colors";
 
 type ChoreBoardProps = Readonly<{
   categories: ChoreCategoryView[];
@@ -67,10 +67,6 @@ function defaultForm(): CreateChoreFormState {
     intervalValue: "1",
     intervalUnit: DEFAULT_CUSTOM_INTERVAL_UNIT,
   };
-}
-
-function initialForMember(member: ChoreMemberView): string {
-  return (member.name ?? member.email ?? "?").slice(0, 1).toUpperCase();
 }
 
 function displayNameForMember(member: ChoreMemberView): string {
@@ -906,8 +902,6 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                     <div className="grid gap-2 sm:grid-cols-2">
                       {members.map((member) => {
                         const selected = form.rotationMemberIds.includes(member.id);
-                        const palette = getMemberColor(member.color);
-
                         return (
                           <button
                             className={`flex items-center gap-3 rounded-md border px-3 py-2 text-left transition ${
@@ -919,16 +913,13 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                             onClick={() => toggleRotationMember(member.id)}
                             type="button"
                           >
-                            <span
-                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border font-serif text-xs font-semibold"
-                              style={{
-                                backgroundColor: palette.avatarBg,
-                                borderColor: palette.border,
-                                color: palette.avatarText,
-                              }}
-                            >
-                              {initialForMember(member)}
-                            </span>
+                            <MemberAvatar
+                              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold"
+                              color={member.color}
+                              email={member.email}
+                              emoji={member.emoji}
+                              name={member.name}
+                            />
                             <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#202321]">
                               {displayNameForMember(member)}
                             </span>
@@ -1163,13 +1154,12 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                         const member = chore.assignedHouseholdMemberId
                           ? membersById.get(chore.assignedHouseholdMemberId)
                           : null;
-                        const memberColor = getMemberColor(member?.color ?? chore.assignedHouseholdMemberColor ?? "sage");
                         const memberName = member ? displayNameForMember(member) : (chore.assignedHouseholdMemberName ?? "Unassigned");
                         const dueTone = dueDateTone(chore.nextDueAt);
                         const assignmentLabel = compactAssignmentLabel(chore, membersById);
                         const isCompletingChore = completingChoreIds.includes(chore.id);
                         const showAssignmentText = chore.assignmentType === "UNASSIGNED";
-                        const avatarLabel = assignmentLabel.replace("Next: ", "").slice(0, 1).toUpperCase();
+                        const avatarLabel = assignmentLabel.replace("Next: ", "");
 
                         return (
                           <li
@@ -1186,17 +1176,15 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
                               <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:gap-3">
                                 <div className="flex min-w-0 items-center gap-2">
                                   {chore.assignmentType !== "UNASSIGNED" ? (
-                                    <span
-                                      className="inline-flex h-6 w-6 items-center justify-center rounded-md border font-serif text-[11px] font-semibold"
-                                      style={{
-                                        backgroundColor: memberColor.avatarBg,
-                                        borderColor: memberColor.border,
-                                        color: memberColor.avatarText,
-                                      }}
+                                    <MemberAvatar
+                                      className="inline-flex h-6 w-6 items-center justify-center rounded-md border text-[11px] font-semibold"
+                                      color={member?.color ?? chore.assignedHouseholdMemberColor ?? "sage"}
+                                      email={member?.email}
+                                      emoji={member?.emoji ?? chore.assignedHouseholdMemberEmoji}
+                                      fallbackLabel={memberName}
+                                      name={member?.name ?? avatarLabel}
                                       title={memberName}
-                                    >
-                                      {avatarLabel}
-                                    </span>
+                                    />
                                   ) : null}
                                   {showAssignmentText ? (
                                     <span className="truncate text-sm font-medium text-[#343936]">{assignmentLabel}</span>

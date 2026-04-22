@@ -16,6 +16,7 @@ export async function HouseholdModalServer({ userId }: { userId: string }) {
       select: {
         id: true,
         color: true,
+        emoji: true,
         user: { select: { name: true, email: true } },
       },
       orderBy: { createdAt: "asc" },

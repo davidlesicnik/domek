@@ -1,5 +1,5 @@
 import { FeatureCard } from "@/components/dashboard/feature-card";
-import { getMemberColor } from "@/lib/member-colors";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 
 const features = [
   {
@@ -48,6 +48,7 @@ const features = [
 type OverviewMember = {
   id: string;
   color: string;
+  emoji: string | null;
   name: string | null;
   email: string | null;
 };
@@ -81,23 +82,17 @@ export function DashboardOverview({ members }: DashboardOverviewProps) {
                 Home board
               </p>
               <div className="flex items-center gap-1.5 rounded-md border border-[#e2dfd8] bg-[#f4f1ea] px-2 py-1.5">
-                {members.map((member) => {
-                  const color = getMemberColor(member.color);
-                  return (
-                    <span
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border font-serif text-xs font-semibold"
-                      key={member.id}
-                      style={{
-                        backgroundColor: color.avatarBg,
-                        borderColor: color.border,
-                        color: color.avatarText,
-                      }}
-                      title={memberLabel(member)}
-                    >
-                      {memberLabel(member).slice(0, 1).toUpperCase()}
-                    </span>
-                  );
-                })}
+                {members.map((member) => (
+                  <MemberAvatar
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold"
+                    color={member.color}
+                    email={member.email}
+                    emoji={member.emoji}
+                    key={member.id}
+                    name={member.name}
+                    title={memberLabel(member)}
+                  />
+                ))}
               </div>
             </div>
           ) : null}

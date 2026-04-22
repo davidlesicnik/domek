@@ -4,12 +4,13 @@ import { UserPlus } from "lucide-react";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { getMemberColor } from "@/lib/member-colors";
+import { MemberAvatar as UiMemberAvatar } from "@/components/ui/member-avatar";
 import type { InviteActionState } from "@/lib/actions/household-invite";
 
 type Member = {
   id: string;
   color: string;
+  emoji: string | null;
   user: { name: string | null; email: string | null };
 };
 
@@ -30,29 +31,25 @@ type HouseholdHeaderControlsProps = Readonly<{
   revokeInviteAction: (formData: FormData) => Promise<void>;
 }>;
 
-function MemberAvatar({ member }: { member: Member }) {
-  const palette = getMemberColor(member.color);
-  const letter = (member.user.name ?? member.user.email ?? "?").slice(0, 1).toUpperCase();
+function HouseholdMemberAvatar({ member }: { member: Member }) {
   const title = member.user.name ?? member.user.email ?? "Member";
   const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
 
   return (
     <>
-      <span
-        className="flex h-8 w-8 shrink-0 cursor-default items-center justify-center rounded-md border font-serif text-sm font-semibold"
+      <UiMemberAvatar
+        className="flex h-8 w-8 shrink-0 cursor-default items-center justify-center rounded-md border text-sm font-semibold"
+        color={member.color}
+        email={member.user.email}
+        emoji={member.emoji}
+        name={member.user.name}
         onMouseEnter={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           setTooltip({ x: rect.left + rect.width / 2, y: rect.bottom });
         }}
         onMouseLeave={() => setTooltip(null)}
-        style={{
-          backgroundColor: palette.avatarBg,
-          borderColor: palette.border,
-          color: palette.avatarText,
-        }}
-      >
-        {letter}
-      </span>
+        title={title}
+      />
       {tooltip ? (
         <div
           className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[#d8d2c8] bg-[#fffdf8] px-2 py-1 text-xs text-[#2a2e2b] shadow-sm"
@@ -248,7 +245,7 @@ export function HouseholdHeaderControls({
   return (
     <div className="flex items-center gap-1.5 rounded-md border border-[#e2dfd8] bg-[#f4f1ea] px-2 py-1.5">
       {members.map((m) => (
-        <MemberAvatar key={m.id} member={m} />
+        <HouseholdMemberAvatar key={m.id} member={m} />
       ))}
       {isOwner ? (
         <InvitePopover
