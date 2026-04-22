@@ -38,6 +38,10 @@ type HouseholdSettingsViewProps = Readonly<{
     prevState: HouseholdActionState,
     formData: FormData,
   ) => Promise<HouseholdActionState>;
+  linkAccountAction: (
+    prevState: HouseholdActionState,
+    formData: FormData,
+  ) => Promise<HouseholdActionState>;
   revokeInviteAction: (formData: FormData) => Promise<void>;
   removeMemberAction: (formData: FormData) => Promise<void>;
   transferOwnershipAction: (formData: FormData) => Promise<void>;
@@ -56,6 +60,7 @@ export function HouseholdSettingsView({
   isOwner,
   createMemberAction,
   sendInviteAction,
+  linkAccountAction,
   revokeInviteAction,
   removeMemberAction,
   transferOwnershipAction,
@@ -109,6 +114,7 @@ export function HouseholdSettingsView({
               currentMemberId={currentMemberId}
               isOwner={isOwner}
               key={m.id}
+              linkAccountAction={linkAccountAction}
               member={m}
               removeMemberAction={removeMemberAction}
               transferOwnershipAction={transferOwnershipAction}

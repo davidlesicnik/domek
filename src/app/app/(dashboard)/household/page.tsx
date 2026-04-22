@@ -50,6 +50,15 @@ async function removeMemberAction(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
+    await tx.householdInvite.updateMany({
+      where: {
+        householdId: membership.householdId,
+        householdMemberId: memberId,
+        status: "PENDING",
+      },
+      data: { status: "REVOKED" },
+    });
+
     await tx.$executeRaw`
       UPDATE "CalendarEvent"
       SET "householdMemberIds" = array_remove("householdMemberIds", ${memberId})
@@ -239,6 +248,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       currentMemberId={membership.id}
       isOwner={membership.role === "OWNER"}
       createMemberAction={createPassiveHouseholdMemberAction}
+      linkAccountAction={sendHouseholdMemberInviteAction}
       sendInviteAction={sendHouseholdMemberInviteAction}
       revokeInviteAction={revokeHouseholdMemberInviteAction}
       removeMemberAction={removeMemberAction}

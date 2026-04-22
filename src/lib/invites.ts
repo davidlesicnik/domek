@@ -16,10 +16,12 @@ export async function createInvite({
   householdId,
   invitedById,
   email,
+  householdMemberId,
 }: {
   householdId: string;
   invitedById: string;
   email: string;
+  householdMemberId?: string | null;
 }) {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -29,12 +31,26 @@ export async function createInvite({
     data: { status: "REVOKED" },
   });
 
+  if (householdMemberId) {
+    await prisma.householdInvite.updateMany({
+      where: { householdId, householdMemberId, status: "PENDING" },
+      data: { status: "REVOKED" },
+    });
+  }
+
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   const token = generateToken();
   const tokenHash = hashInviteToken(token);
 
   const invite = await prisma.householdInvite.create({
-    data: { tokenHash, email: normalizedEmail, householdId, invitedById, expiresAt },
+    data: {
+      email: normalizedEmail,
+      expiresAt,
+      householdId,
+      householdMemberId: householdMemberId ?? null,
+      invitedById,
+      tokenHash,
+    },
     select: { id: true, email: true, expiresAt: true },
   });
 
@@ -92,7 +108,14 @@ export async function redeemInvite({
   return prisma.$transaction(async (tx) => {
     const invite = await tx.householdInvite.findUnique({
       where: { tokenHash },
-      select: { id: true, householdId: true, status: true, expiresAt: true, email: true },
+      select: {
+        id: true,
+        householdId: true,
+        householdMemberId: true,
+        status: true,
+        expiresAt: true,
+        email: true,
+      },
     });
 
     if (!invite) return { ok: false, reason: "not_found" };
@@ -122,15 +145,35 @@ export async function redeemInvite({
       return { ok: false, reason: "email_mismatch" };
     }
 
-    await tx.householdMember.create({
-      data: {
-        accountId: userId,
-        createdByUserId: userId,
-        householdId: invite.householdId,
-        name: account?.name ?? account?.email ?? invite.email,
-        role: "MEMBER",
-      },
-    });
+    if (invite.householdMemberId) {
+      const existingMember = await tx.householdMember.findFirst({
+        where: {
+          accountId: null,
+          householdId: invite.householdId,
+          id: invite.householdMemberId,
+        },
+        select: { id: true },
+      });
+
+      if (!existingMember) {
+        return { ok: false, reason: "already_used" };
+      }
+
+      await tx.householdMember.update({
+        where: { id: existingMember.id },
+        data: { accountId: userId },
+      });
+    } else {
+      await tx.householdMember.create({
+        data: {
+          accountId: userId,
+          createdByUserId: userId,
+          householdId: invite.householdId,
+          name: account?.name ?? account?.email ?? invite.email,
+          role: "MEMBER",
+        },
+      });
+    }
 
     await tx.householdInvite.update({
       where: { id: invite.id },

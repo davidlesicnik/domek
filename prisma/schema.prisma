@@ -105,6 +105,7 @@ model HouseholdMember {
   household       Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
   account         User?         @relation("HouseholdMemberAccount", fields: [accountId], references: [id], onDelete: SetNull)
   createdBy       User?         @relation("HouseholdMemberCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  linkedInvites   HouseholdInvite[] @relation("HouseholdInviteLinkedMember")
 
   expenses  Expense[]
   chores    Chore[]
@@ -305,18 +306,21 @@ model Expense {
 }
 
 model HouseholdInvite {
-  id          String       @id @default(cuid())
-  tokenHash   String       @unique
-  email       String
-  householdId String
-  invitedById String
-  status      InviteStatus @default(PENDING)
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime     @default(now())
-  household   Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  invitedBy   User         @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  tokenHash         String           @unique
+  email             String
+  householdId       String
+  invitedById       String
+  householdMemberId String?
+  status            InviteStatus     @default(PENDING)
+  expiresAt         DateTime
+  acceptedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  household         Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invitedBy         User             @relation("InvitesSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  householdMember   HouseholdMember? @relation("HouseholdInviteLinkedMember", fields: [householdMemberId], references: [id], onDelete: SetNull)
 
   @@index([householdId])
   @@index([email])
+  @@index([householdMemberId])
 }
