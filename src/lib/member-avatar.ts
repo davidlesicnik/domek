@@ -4,6 +4,8 @@ type MemberAvatarInput = Readonly<{
   name?: string | null;
 }>;
 
+export const MEMBER_EMOJI_OPTIONS = ["😄", "😎", "🤖", "👽", "🐸", "🦊", "🐼", "🐙", "🔥", "🍕", "🚀"] as const;
+
 const graphemeSegmenter =
   typeof Intl !== "undefined" && "Segmenter" in Intl
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })

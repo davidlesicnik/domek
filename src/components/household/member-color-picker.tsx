@@ -11,7 +11,7 @@ import {
   getMemberColor,
   type MemberColorKey,
 } from "@/lib/member-colors";
-import { getMemberAvatarText } from "@/lib/member-avatar";
+import { getMemberAvatarText, MEMBER_EMOJI_OPTIONS } from "@/lib/member-avatar";
 
 type UpdateMemberAvatarResult = Readonly<{
   error: string | null;
@@ -32,7 +32,6 @@ type MemberColorPickerProps = Readonly<{
   updateMemberAction: (formData: FormData) => Promise<UpdateMemberAvatarResult>;
 }>;
 
-const MEMBER_EMOJI_OPTIONS = ["😄", "😎", "🤖", "👽", "🐸", "🦊", "🐼", "🐙", "🔥", "🍕", "🚀"] as const;
 export function MemberColorPicker({
   memberEmail,
   memberId,
