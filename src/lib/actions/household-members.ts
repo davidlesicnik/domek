@@ -48,6 +48,9 @@ export async function sendHouseholdMemberInviteAction(
     return { success: false, error: "Enter a valid email address." };
   }
 
+  const rawMemberId = formData.get("memberId");
+  const targetMemberId = typeof rawMemberId === "string" && rawMemberId ? rawMemberId : null;
+
   const household = await prisma.household.findUnique({
     where: { id: membership.householdId },
     select: { name: true },
@@ -75,8 +78,24 @@ export async function sendHouseholdMemberInviteAction(
     return { success: false, error: "That person is already in this household." };
   }
 
+  if (targetMemberId) {
+    const targetMember = await prisma.householdMember.findFirst({
+      where: {
+        accountId: null,
+        householdId: membership.householdId,
+        id: targetMemberId,
+      },
+      select: { id: true },
+    });
+
+    if (!targetMember) {
+      return { success: false, error: "This person already has an account linked." };
+    }
+  }
+
   const invite = await createInvite({
     householdId: membership.householdId,
+    householdMemberId: targetMemberId,
     invitedById: session.user.id,
     email,
   });

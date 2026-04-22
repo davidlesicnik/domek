@@ -1,12 +1,16 @@
 "use client";
 
 import type { HouseholdRole } from "@prisma/client";
-import { Pencil } from "lucide-react";
+import { Mail, Pencil, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { MemberColorPicker } from "@/components/household/member-color-picker";
 import { MemberAvatar } from "@/components/ui/member-avatar";
-import type { UpdateHouseholdMemberResult } from "@/lib/actions/household-members";
+import type {
+  HouseholdActionState,
+  UpdateHouseholdMemberResult,
+} from "@/lib/actions/household-members";
 import { getMemberColor, type MemberColorKey } from "@/lib/member-colors";
 import { getHouseholdMemberName, getHouseholdMemberSubtitle } from "@/lib/household-members";
 
@@ -22,6 +26,10 @@ type HouseholdMemberRowProps = Readonly<{
   };
   currentMemberId: string;
   isOwner: boolean;
+  linkAccountAction: (
+    prevState: HouseholdActionState,
+    formData: FormData,
+  ) => Promise<HouseholdActionState>;
   removeMemberAction: (formData: FormData) => Promise<void>;
   transferOwnershipAction: (formData: FormData) => Promise<void>;
   updateMemberAction: (formData: FormData) => Promise<UpdateHouseholdMemberResult>;
@@ -48,6 +56,7 @@ export function HouseholdMemberRow({
   member,
   currentMemberId,
   isOwner,
+  linkAccountAction,
   removeMemberAction,
   transferOwnershipAction,
   updateMemberAction,
@@ -192,7 +201,13 @@ export function HouseholdMemberRow({
                       Make owner
                     </button>
                   </form>
-                ) : null}
+                ) : (
+                  <LinkAccountDialog
+                    linkAccountAction={linkAccountAction}
+                    memberId={member.id}
+                    memberLabel={memberLabel}
+                  />
+                )}
                 <form action={removeMemberAction}>
                   <input name="memberId" type="hidden" value={member.id} />
                   <button
@@ -208,5 +223,137 @@ export function HouseholdMemberRow({
         </div>
       </div>
     </li>
+  );
+}
+
+type LinkAccountDialogProps = Readonly<{
+  memberId: string;
+  memberLabel: string;
+  linkAccountAction: (
+    prevState: HouseholdActionState,
+    formData: FormData,
+  ) => Promise<HouseholdActionState>;
+}>;
+
+function LinkAccountDialog({
+  memberId,
+  memberLabel,
+  linkAccountAction,
+}: LinkAccountDialogProps) {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const [state, setState] = useState<HouseholdActionState>({ error: null, success: false });
+  const [isPending, startTransition] = useTransition();
+
+  function closeDialog() {
+    setIsOpen(false);
+    setState({ error: null, success: false });
+    setFormKey((current) => current + 1);
+  }
+
+  function handleSubmit(formData: FormData) {
+    formData.set("memberId", memberId);
+
+    startTransition(async () => {
+      const result = await linkAccountAction(state, formData);
+      setState(result);
+
+      if (result.success) {
+        router.refresh();
+        closeDialog();
+      }
+    });
+  }
+
+  return (
+    <>
+      <button
+        className="h-8 rounded-md border border-[#d7ddd6] px-3 text-xs font-semibold text-[#59615c] transition hover:border-[#c2cbbf] hover:bg-[#f4f8f3] hover:text-[#202321]"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        Link account
+      </button>
+      {isOpen ? (
+        <>
+          <div
+            aria-hidden
+            className="fixed inset-0 z-40 bg-[#202321]/28 backdrop-blur-[1px]"
+            onClick={closeDialog}
+          />
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+          >
+            <div className="w-full max-w-[420px] rounded-md border border-[#ddd7cc] bg-[#fffdf8] p-5 shadow-[0_24px_60px_rgba(31,35,30,0.18)] sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+                    Household
+                  </p>
+                  <h3 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                    Invite {memberLabel} to create an account
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[#686e6a]">
+                    Send {memberLabel} a link to create an account for this profile.
+                  </p>
+                </div>
+                <button
+                  aria-label={`Close link account dialog for ${memberLabel}`}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#ddd7cc] text-[#5d635f] transition hover:bg-[#f6f2ea]"
+                  onClick={closeDialog}
+                  type="button"
+                >
+                  <X aria-hidden className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form action={handleSubmit} className="mt-5 grid gap-2.5" key={formKey}>
+                <input name="memberId" type="hidden" value={memberId} />
+                <div className="grid gap-2">
+                  <label
+                    className="text-sm font-semibold text-[#3c413e]"
+                    htmlFor={`link-account-email-${memberId}`}
+                  >
+                    Email
+                  </label>
+                  <div className="flex items-center gap-2 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3">
+                    <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
+                    <input
+                      autoComplete="email"
+                      className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#202321] outline-none"
+                      id={`link-account-email-${memberId}`}
+                      maxLength={320}
+                      name="email"
+                      placeholder="name@example.com"
+                      required
+                      type="email"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs leading-5 text-[#7a817c]">
+                  Once they accept, their account will be linked to this existing profile.
+                </p>
+                <p className="text-xs leading-5 text-[#7a817c]">
+                  This won&apos;t create a duplicate member.
+                </p>
+                {state.error ? <p className="text-sm font-medium text-[#a6543c]">{state.error}</p> : null}
+                <div className="flex justify-end">
+                  <button
+                    className="inline-flex h-10 items-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
+                    disabled={isPending}
+                    type="submit"
+                  >
+                    Send invite
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }

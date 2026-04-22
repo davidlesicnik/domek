@@ -239,6 +239,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       currentMemberId={membership.id}
       isOwner={membership.role === "OWNER"}
       createMemberAction={createPassiveHouseholdMemberAction}
+      linkAccountAction={sendHouseholdMemberInviteAction}
       sendInviteAction={sendHouseholdMemberInviteAction}
       revokeInviteAction={revokeHouseholdMemberInviteAction}
       removeMemberAction={removeMemberAction}
