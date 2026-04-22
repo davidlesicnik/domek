@@ -78,7 +78,7 @@ export async function getInvitePreview(token: string) {
 
 export type InviteRedeemResult =
   | { ok: true; householdId: string }
-  | { ok: false; reason: "not_found" | "expired" | "already_used" | "already_member" };
+  | { ok: false; reason: "not_found" | "expired" | "already_used" | "already_member" | "email_mismatch" };
 
 export async function redeemInvite({
   token,
@@ -92,7 +92,7 @@ export async function redeemInvite({
   return prisma.$transaction(async (tx) => {
     const invite = await tx.householdInvite.findUnique({
       where: { tokenHash },
-      select: { id: true, householdId: true, status: true, expiresAt: true },
+      select: { id: true, householdId: true, status: true, expiresAt: true, email: true },
     });
 
     if (!invite) return { ok: false, reason: "not_found" };
@@ -108,13 +108,28 @@ export async function redeemInvite({
 
     const existingMembership = await tx.householdMember.findFirst({
       select: { id: true },
-      where: { userId, household: { deletedAt: null } },
+      where: { accountId: userId, household: { deletedAt: null } },
     });
 
     if (existingMembership) return { ok: false, reason: "already_member" };
 
+    const account = await tx.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
+
+    if (!account?.email || account.email.toLowerCase() !== invite.email) {
+      return { ok: false, reason: "email_mismatch" };
+    }
+
     await tx.householdMember.create({
-      data: { userId, householdId: invite.householdId, role: "MEMBER" },
+      data: {
+        accountId: userId,
+        createdByUserId: userId,
+        householdId: invite.householdId,
+        name: account?.name ?? account?.email ?? invite.email,
+        role: "MEMBER",
+      },
     });
 
     await tx.householdInvite.update({

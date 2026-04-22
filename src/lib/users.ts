@@ -65,14 +65,14 @@ export async function getFirstHouseholdMembership(userId: string) {
       id: true,
       role: true,
     },
-    where: { userId, household: { deletedAt: null } },
+    where: { accountId: userId, household: { deletedAt: null } },
   });
 }
 
 export async function hasHouseholdMembership(userId: string): Promise<boolean> {
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
-    where: { userId, household: { deletedAt: null } },
+    where: { accountId: userId, household: { deletedAt: null } },
   });
 
   return Boolean(membership);

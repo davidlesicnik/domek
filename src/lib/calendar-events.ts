@@ -122,16 +122,16 @@ export async function listCalendarEventMembers(): Promise<CalendarMemberOption[]
 
   const members = await prisma.householdMember.findMany({
     orderBy: { createdAt: "asc" },
-    select: { id: true, color: true, emoji: true, user: { select: { email: true, name: true } } },
+    select: { id: true, color: true, emoji: true, name: true, account: { select: { email: true } } },
     where: { householdId: scope.householdId },
   });
 
   return members.map((member) => ({
     color: member.color,
-    email: member.user.email,
+    email: member.account?.email ?? null,
     emoji: member.emoji,
     id: member.id,
-    name: member.user.name,
+    name: member.name,
   }));
 }
 

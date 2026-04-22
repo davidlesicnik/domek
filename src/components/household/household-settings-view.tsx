@@ -1,24 +1,47 @@
 import type { HouseholdRole } from "@prisma/client";
 
+import { AddHouseholdMemberDialog } from "@/components/household/add-household-member-dialog";
 import { HouseholdMemberRow } from "@/components/household/household-member-row";
+import type {
+  HouseholdActionState,
+  UpdateHouseholdMemberResult,
+} from "@/lib/actions/household-members";
 
 type Member = {
   id: string;
   role: HouseholdRole;
   color: string;
   emoji: string | null;
+  name: string;
+  accountId: string | null;
+  accountEmail: string | null;
   createdAt: Date;
-  user: { name: string | null; email: string | null; image: string | null };
+};
+
+type PendingInvite = {
+  id: string;
+  email: string;
+  expiresAt: Date;
 };
 
 type HouseholdSettingsViewProps = Readonly<{
   householdName: string;
   members: Member[];
+  pendingInvites: PendingInvite[];
   currentMemberId: string;
   isOwner: boolean;
+  createMemberAction: (
+    prevState: HouseholdActionState,
+    formData: FormData,
+  ) => Promise<HouseholdActionState>;
+  sendInviteAction: (
+    prevState: HouseholdActionState,
+    formData: FormData,
+  ) => Promise<HouseholdActionState>;
+  revokeInviteAction: (formData: FormData) => Promise<void>;
   removeMemberAction: (formData: FormData) => Promise<void>;
   transferOwnershipAction: (formData: FormData) => Promise<void>;
-  updateMemberAvatarAction: (formData: FormData) => Promise<{ error: string | null; success: boolean }>;
+  updateMemberAction: (formData: FormData) => Promise<UpdateHouseholdMemberResult>;
   deleteHouseholdAction: (formData: FormData) => Promise<void>;
   leaveHouseholdAction: () => Promise<void>;
   successMessage: string | null;
@@ -28,11 +51,15 @@ type HouseholdSettingsViewProps = Readonly<{
 export function HouseholdSettingsView({
   householdName,
   members,
+  pendingInvites,
   currentMemberId,
   isOwner,
+  createMemberAction,
+  sendInviteAction,
+  revokeInviteAction,
   removeMemberAction,
   transferOwnershipAction,
-  updateMemberAvatarAction,
+  updateMemberAction,
   deleteHouseholdAction,
   leaveHouseholdAction,
   successMessage,
@@ -58,7 +85,24 @@ export function HouseholdSettingsView({
 
       {/* Members */}
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
-        <h2 className="text-sm font-semibold text-[#3c413e]">People in your home</h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-[#3c413e]">People in your home</h2>
+            <p className="mt-1 text-xs leading-5 text-[#7b827d]">
+              Everyone on the board lives here, whether they sign in or not.
+            </p>
+          </div>
+          {isOwner ? (
+            <AddHouseholdMemberDialog
+              buttonClassName="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+              buttonLabel="Add"
+              createMemberAction={createMemberAction}
+              pendingInvites={pendingInvites}
+              revokeInviteAction={revokeInviteAction}
+              sendInviteAction={sendInviteAction}
+            />
+          ) : null}
+        </div>
         <ul className="mt-3 divide-y divide-[#eee9df]">
           {members.map((m) => (
             <HouseholdMemberRow
@@ -68,7 +112,7 @@ export function HouseholdSettingsView({
               member={m}
               removeMemberAction={removeMemberAction}
               transferOwnershipAction={transferOwnershipAction}
-              updateMemberAvatarAction={updateMemberAvatarAction}
+              updateMemberAction={updateMemberAction}
             />
           ))}
         </ul>

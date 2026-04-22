@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
+import { getHouseholdMemberName } from "@/lib/household-members";
 import {
   createOwnedListOperations,
   getCurrentOwnedListScope,
@@ -67,10 +68,10 @@ const todoItemSelect = {
       color: true,
       emoji: true,
       id: true,
-      user: {
+      name: true,
+      account: {
         select: {
           email: true,
-          name: true,
         },
       },
     },
@@ -127,10 +128,15 @@ function utcDateToDateKey(date: Date | null): string | null {
 function toTodoItemView(item: TodoItemRecord): TodoItemView {
   return {
     assignedHouseholdMemberColor: item.assignedHouseholdMember?.color ?? null,
-    assignedHouseholdMemberEmail: item.assignedHouseholdMember?.user.email ?? null,
+    assignedHouseholdMemberEmail: item.assignedHouseholdMember?.account?.email ?? null,
     assignedHouseholdMemberEmoji: item.assignedHouseholdMember?.emoji ?? null,
     assignedHouseholdMemberId: item.assignedHouseholdMemberId,
-    assignedHouseholdMemberName: item.assignedHouseholdMember?.user.name ?? null,
+    assignedHouseholdMemberName: item.assignedHouseholdMember
+      ? getHouseholdMemberName({
+          accountEmail: item.assignedHouseholdMember.account?.email,
+          name: item.assignedHouseholdMember.name,
+        })
+      : null,
     done: item.done,
     dueDate: utcDateToDateKey(item.dueDate),
     id: item.id,
@@ -269,10 +275,10 @@ export async function listTodoMembers(scope: TodoScope): Promise<TodoMemberView[
       color: true,
       emoji: true,
       id: true,
-      user: {
+      name: true,
+      account: {
         select: {
           email: true,
-          name: true,
         },
       },
     },
@@ -281,9 +287,9 @@ export async function listTodoMembers(scope: TodoScope): Promise<TodoMemberView[
 
   return members.map((member) => ({
     color: member.color,
-    email: member.user.email,
+    email: member.account?.email ?? null,
     emoji: member.emoji,
     id: member.id,
-    name: member.user.name,
+    name: member.name,
   }));
 }

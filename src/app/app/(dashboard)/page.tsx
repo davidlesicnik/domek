@@ -9,12 +9,13 @@ export default async function Home() {
 
   const members = membership
     ? await prisma.householdMember.findMany({
-        orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
+        orderBy: [{ name: "asc" }, { createdAt: "asc" }],
         select: {
           color: true,
           emoji: true,
           id: true,
-          user: { select: { email: true, name: true } },
+          name: true,
+          account: { select: { email: true } },
         },
         where: { householdId: membership.householdId },
       })
@@ -24,10 +25,10 @@ export default async function Home() {
     <DashboardOverview
       members={members.map((member) => ({
         color: member.color,
-        email: member.user.email,
+        email: member.account?.email ?? null,
         emoji: member.emoji,
         id: member.id,
-        name: member.user.name,
+        name: member.name,
       }))}
     />
   );

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
+import {
+  createPassiveHouseholdMemberAction,
+  revokeHouseholdMemberInviteAction,
+  sendHouseholdMemberInviteAction,
+  updateHouseholdMemberAction,
+} from "@/lib/actions/household-members";
 import { prisma } from "@/lib/db";
-import { normalizeMemberEmoji } from "@/lib/member-avatar";
-import { isMemberColorKey } from "@/lib/member-colors";
+import { listPendingInvites } from "@/lib/invites";
 import { getFirstHouseholdMembership } from "@/lib/users";
 import { HouseholdSettingsView } from "@/components/household/household-settings-view";
 
@@ -14,13 +17,6 @@ export const metadata: Metadata = {
   title: "Household | Domek",
   description: "Manage your household members and invites.",
 };
-
-const memberColorSchema = z.string().refine(isMemberColorKey, "Choose one of the household colors.");
-
-type UpdateMemberAvatarResult = Readonly<{
-  error: string | null;
-  success: boolean;
-}>;
 
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -53,12 +49,21 @@ async function removeMemberAction(formData: FormData) {
     redirect("/app/household?error=assigned-chores");
   }
 
-  await prisma.householdMember.deleteMany({
-    where: {
-      id: memberId,
-      householdId: membership.householdId,
-      role: "MEMBER",
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      UPDATE "CalendarEvent"
+      SET "householdMemberIds" = array_remove("householdMemberIds", ${memberId})
+      WHERE "householdId" = ${membership.householdId}
+        AND ${memberId} = ANY("householdMemberIds")
+    `;
+
+    await tx.householdMember.deleteMany({
+      where: {
+        id: memberId,
+        householdId: membership.householdId,
+        role: "MEMBER",
+      },
+    });
   });
 
   redirect("/app/household?success=removed");
@@ -82,11 +87,12 @@ async function transferOwnershipAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const targetMember = await tx.householdMember.findFirst({
       where: {
+        accountId: { not: null },
         id: memberId,
         householdId: membership.householdId,
         role: "MEMBER",
       },
-      select: { id: true },
+      select: { id: true, accountId: true },
     });
 
     if (!targetMember) return;
@@ -106,57 +112,6 @@ async function transferOwnershipAction(formData: FormData) {
   });
 
   redirect("/app/household?success=owner");
-}
-
-async function updateMemberAvatarAction(formData: FormData): Promise<UpdateMemberAvatarResult> {
-  "use server";
-
-  const session = await requireHouseholdMemberSession();
-  const membership = await getFirstHouseholdMembership(session.user.id);
-
-  if (!membership) {
-    return { error: "Join a household first.", success: false };
-  }
-
-  const memberId = formData.get("memberId");
-  if (typeof memberId !== "string" || !memberId) {
-    return { error: "Choose a household member.", success: false };
-  }
-
-  if (memberId !== membership.id && membership.role !== "OWNER") {
-    return { error: "Only the household owner can manage people.", success: false };
-  }
-
-  const parsedColor = memberColorSchema.safeParse(formData.get("color"));
-  if (!parsedColor.success) {
-    return { error: "Choose one of the household colors.", success: false };
-  }
-
-  const rawEmoji = formData.get("emoji");
-  if (typeof rawEmoji !== "string") {
-    return { error: "Choose one emoji or leave it blank.", success: false };
-  }
-
-  const parsedEmoji = rawEmoji === "" ? null : normalizeMemberEmoji(rawEmoji);
-  if (rawEmoji !== "" && !parsedEmoji) {
-    return { error: "Choose one emoji or leave it blank.", success: false };
-  }
-
-  await prisma.householdMember.updateMany({
-    where: {
-      id: memberId,
-      householdId: membership.householdId,
-    },
-    data: {
-      color: parsedColor.data,
-      emoji: parsedEmoji,
-    },
-  });
-
-  revalidatePath("/app/household");
-  revalidatePath("/app");
-
-  return { error: null, success: true };
 }
 
 async function deleteHouseholdAction(formData: FormData) {
@@ -199,7 +154,16 @@ async function leaveHouseholdAction() {
     redirect("/app/household?error=assigned-chores");
   }
 
-  await prisma.householdMember.delete({ where: { id: membership.id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      UPDATE "CalendarEvent"
+      SET "householdMemberIds" = array_remove("householdMemberIds", ${membership.id})
+      WHERE "householdId" = ${membership.householdId}
+        AND ${membership.id} = ANY("householdMemberIds")
+    `;
+
+    await tx.householdMember.delete({ where: { id: membership.id } });
+  });
   redirect("/onboarding/household");
 }
 
@@ -213,7 +177,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
 
   if (!membership) redirect("/onboarding/household");
 
-  const [household, members] = await Promise.all([
+  const [household, members, pendingInvites] = await Promise.all([
     prisma.household.findUnique({
       where: { id: membership.householdId },
       select: { name: true },
@@ -225,11 +189,14 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
         role: true,
         color: true,
         emoji: true,
+        name: true,
+        accountId: true,
         createdAt: true,
-        user: { select: { name: true, email: true, image: true } },
+        account: { select: { email: true } },
       },
       orderBy: { createdAt: "asc" },
     }),
+    membership.role === "OWNER" ? listPendingInvites(membership.householdId) : Promise.resolve([]),
   ]);
 
   const params = (await searchParams) ?? {};
@@ -258,12 +225,25 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
   return (
     <HouseholdSettingsView
       householdName={household?.name ?? ""}
-      members={members}
+      members={members.map((member) => ({
+        accountEmail: member.account?.email ?? null,
+        accountId: member.accountId,
+        color: member.color,
+        createdAt: member.createdAt,
+        emoji: member.emoji,
+        id: member.id,
+        name: member.name,
+        role: member.role,
+      }))}
+      pendingInvites={pendingInvites}
       currentMemberId={membership.id}
       isOwner={membership.role === "OWNER"}
+      createMemberAction={createPassiveHouseholdMemberAction}
+      sendInviteAction={sendHouseholdMemberInviteAction}
+      revokeInviteAction={revokeHouseholdMemberInviteAction}
       removeMemberAction={removeMemberAction}
       transferOwnershipAction={transferOwnershipAction}
-      updateMemberAvatarAction={updateMemberAvatarAction}
+      updateMemberAction={updateHouseholdMemberAction}
       deleteHouseholdAction={deleteHouseholdAction}
       leaveHouseholdAction={leaveHouseholdAction}
       successMessage={successMessage}

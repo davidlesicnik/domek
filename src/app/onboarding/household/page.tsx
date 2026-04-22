@@ -49,14 +49,14 @@ async function createHouseholdAction(formData: FormData) {
   try {
     created = await prisma.$transaction(async (tx) => {
       // Remove any stale memberships pointing to soft-deleted households so the
-      // @@unique([userId]) DB constraint doesn't block the new insert.
+      // unique accountId constraint doesn't block the new insert.
       await tx.householdMember.deleteMany({
-        where: { userId: session.user.id, household: { deletedAt: { not: null } } },
+        where: { accountId: session.user.id, household: { deletedAt: { not: null } } },
       });
 
       const existingMembership = await tx.householdMember.findFirst({
         select: { id: true },
-        where: { userId: session.user.id, household: { deletedAt: null } },
+        where: { accountId: session.user.id, household: { deletedAt: null } },
       });
 
       if (existingMembership) {
@@ -70,9 +70,11 @@ async function createHouseholdAction(formData: FormData) {
 
       await tx.householdMember.create({
         data: {
+          accountId: session.user.id,
+          createdByUserId: session.user.id,
           householdId: household.id,
+          name: session.user.name ?? session.user.email ?? "Household member",
           role: "OWNER",
-          userId: session.user.id,
         },
       });
 

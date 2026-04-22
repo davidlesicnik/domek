@@ -29,7 +29,7 @@ type MemberColorPickerProps = Readonly<{
   selectedEmoji: string | null;
   showOnboardingHint: boolean;
   storageKey: string;
-  updateMemberAvatarAction: (formData: FormData) => Promise<UpdateMemberAvatarResult>;
+  updateMemberAction: (formData: FormData) => Promise<UpdateMemberAvatarResult>;
 }>;
 
 const MEMBER_EMOJI_OPTIONS = ["😄", "😎", "🤖", "👽", "🐸", "🦊", "🐼", "🐙", "🔥", "🍕", "🚀"] as const;
@@ -44,7 +44,7 @@ export function MemberColorPicker({
   selectedEmoji,
   showOnboardingHint,
   storageKey,
-  updateMemberAvatarAction,
+  updateMemberAction,
 }: MemberColorPickerProps) {
   const currentColor = getMemberColor(selectedColor).key;
   const [previewColor, setPreviewColor] = useState<MemberColorKey | null>(null);
@@ -114,7 +114,7 @@ export function MemberColorPicker({
     setError(null);
 
     startTransition(() => {
-      void updateMemberAvatarAction(formData)
+      void updateMemberAction(formData)
         .then((result) => {
           if (!result.success) {
             onSelectedColorChange(previousColor);
