@@ -31,6 +31,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 - Put shared server helpers in `src/lib`.
 - Keep Prisma schema changes in `prisma/schema.prisma`.
 - Do not hardcode provider-specific OAuth secrets or household-specific domains in application code.
+- Reuse shared UI primitives when they already exist. For onboarding/callout bubbles, prefer `src/components/ui/onboarding-tooltip.tsx` over custom tooltip markup.
 
 ## Product And Visual Direction
 
