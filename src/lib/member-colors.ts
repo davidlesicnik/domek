@@ -128,12 +128,17 @@ export const MEMBER_COLORS: Record<MemberColorKey, MemberColor> = Object.fromEnt
 export const DEFAULT_MEMBER_COLOR: MemberColorKey = "green";
 
 export function isMemberColorKey(value: string): value is MemberColorKey {
-  return value in MEMBER_COLORS || value in LEGACY_MEMBER_COLOR_ALIASES;
+  return (
+    Object.hasOwn(MEMBER_COLORS, value) ||
+    Object.hasOwn(LEGACY_MEMBER_COLOR_ALIASES, value)
+  );
 }
 
 export function getMemberColor(value: string | null | undefined): MemberColor {
   const key = value ?? "";
   const normalizedKey = LEGACY_MEMBER_COLOR_ALIASES[key] ?? key;
 
-  return normalizedKey in MEMBER_COLORS ? MEMBER_COLORS[normalizedKey as MemberColorKey] : MEMBER_COLORS[DEFAULT_MEMBER_COLOR];
+  return Object.hasOwn(MEMBER_COLORS, normalizedKey)
+    ? MEMBER_COLORS[normalizedKey as MemberColorKey]
+    : MEMBER_COLORS[DEFAULT_MEMBER_COLOR];
 }
