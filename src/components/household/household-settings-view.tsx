@@ -6,6 +6,7 @@ type Member = {
   id: string;
   role: HouseholdRole;
   color: string;
+  emoji: string | null;
   createdAt: Date;
   user: { name: string | null; email: string | null; image: string | null };
 };
@@ -17,7 +18,7 @@ type HouseholdSettingsViewProps = Readonly<{
   isOwner: boolean;
   removeMemberAction: (formData: FormData) => Promise<void>;
   transferOwnershipAction: (formData: FormData) => Promise<void>;
-  updateMemberColorAction: (formData: FormData) => Promise<void>;
+  updateMemberAvatarAction: (formData: FormData) => Promise<{ error: string | null; success: boolean }>;
   deleteHouseholdAction: (formData: FormData) => Promise<void>;
   leaveHouseholdAction: () => Promise<void>;
   successMessage: string | null;
@@ -31,7 +32,7 @@ export function HouseholdSettingsView({
   isOwner,
   removeMemberAction,
   transferOwnershipAction,
-  updateMemberColorAction,
+  updateMemberAvatarAction,
   deleteHouseholdAction,
   leaveHouseholdAction,
   successMessage,
@@ -67,7 +68,7 @@ export function HouseholdSettingsView({
               member={m}
               removeMemberAction={removeMemberAction}
               transferOwnershipAction={transferOwnershipAction}
-              updateMemberColorAction={updateMemberColorAction}
+              updateMemberAvatarAction={updateMemberAvatarAction}
             />
           ))}
         </ul>

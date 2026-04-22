@@ -28,4 +28,5 @@ export type CalendarMemberOption = Readonly<{
   name: string | null;
   email: string | null;
   color: string;
+  emoji: string | null;
 }>;

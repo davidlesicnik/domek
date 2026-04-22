@@ -3,9 +3,9 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { getMemberColor } from "@/lib/member-colors";
 
 type ExpenseView = {
   id: string;
@@ -21,12 +21,13 @@ type ExpenseView = {
   householdMemberId: string | null;
   householdMemberName: string | null;
   householdMemberColor: string | null;
+  householdMemberEmoji: string | null;
 };
 
 type CategoryView = { id: string; color: string; name: string };
-type MemberView = { id: string; color: string; name: string | null; email: string | null };
+type MemberView = { id: string; color: string; emoji: string | null; name: string | null; email: string | null };
 type MonthStats = { carryover: number; income: number; expenses: number; net: number };
-type NetPointEntry = { amount: number; id: string; memberColor: string | null; memberName: string | null; name: string; type: "INCOME" | "EXPENSE" };
+type NetPointEntry = { amount: number; id: string; memberColor: string | null; memberEmoji: string | null; memberName: string | null; name: string; type: "INCOME" | "EXPENSE" };
 type NetPoint = { day: number; entries: NetPointEntry[]; value: number; x: number; y: number };
 type NetChart = {
   end: number;
@@ -106,6 +107,7 @@ function buildNetChart(expenses: ExpenseView[], year: number, month: number, car
       amount: expense.amount,
       id: expense.id,
       memberColor: expense.householdMemberColor ?? null,
+      memberEmoji: expense.householdMemberEmoji ?? null,
       memberName: expense.householdMemberName ?? null,
       name: expense.name,
       type: expense.type,
@@ -1127,24 +1129,20 @@ export function ExpensesBoard({
                 {hoveredNetPoint.entries.length > 0 ? (
                   <div className="grid gap-1.5">
                     {hoveredNetPoint.entries.slice(0, 3).map((entry) => {
-                      const memberColor = entry.memberName ? getMemberColor(entry.memberColor) : null;
                       return (
                         <div
                           className="flex items-center gap-2 rounded-md border border-[#e8e4dc] bg-[#f5f2ec] px-2 py-1.5"
                           key={entry.id}
                         >
-                          {memberColor && entry.memberName ? (
-                            <span
-                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border font-serif text-[10px] font-semibold"
-                              style={{
-                                backgroundColor: memberColor.avatarBg,
-                                borderColor: memberColor.border,
-                                color: memberColor.avatarText,
-                              }}
+                          {entry.memberColor && entry.memberName ? (
+                            <MemberAvatar
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-semibold"
+                              color={entry.memberColor}
+                              emoji={entry.memberEmoji}
+                              fallbackLabel={entry.memberName}
+                              name={entry.memberName}
                               title={entry.memberName}
-                            >
-                              {entry.memberName.slice(0, 1).toUpperCase()}
-                            </span>
+                            />
                           ) : (
                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-[#ece8e0] text-[10px] text-[#9da39f]">
                               ?
@@ -1552,21 +1550,19 @@ export function ExpensesBoard({
                       </td>
                       <td className="hidden px-4 py-3 md:table-cell">
                         {expense.householdMemberName ? (
-                          <span
+                          <MemberAvatar
                             className="flex h-7 w-7 cursor-default items-center justify-center rounded-md border font-serif text-xs font-semibold"
+                            color={expense.householdMemberColor}
+                            emoji={expense.householdMemberEmoji}
+                            fallbackLabel={expense.householdMemberName}
+                            name={expense.householdMemberName}
                             onMouseEnter={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect();
                               setMemberTooltip({ name: expense.householdMemberName!, x: rect.left + rect.width / 2, y: rect.bottom });
                             }}
                             onMouseLeave={() => setMemberTooltip(null)}
-                            style={{
-                              backgroundColor: getMemberColor(expense.householdMemberColor).avatarBg,
-                              borderColor: getMemberColor(expense.householdMemberColor).border,
-                              color: getMemberColor(expense.householdMemberColor).avatarText,
-                            }}
-                          >
-                            {expense.householdMemberName.slice(0, 1).toUpperCase()}
-                          </span>
+                            title={expense.householdMemberName}
+                          />
                         ) : (
                           <span className="text-[#c8c4bb]">—</span>
                         )}

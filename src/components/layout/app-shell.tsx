@@ -10,12 +10,13 @@ import { HouseholdModalServer } from "@/components/household/household-modal-ser
 type AppShellProps = Readonly<{
   banner?: ReactNode;
   memberColor: string | null;
+  memberEmoji: string | null;
   userName: string | null;
   userId: string;
   children: ReactNode;
 }>;
 
-export function AppShell({ banner, memberColor, userName, userId, children }: AppShellProps) {
+export function AppShell({ banner, memberColor, memberEmoji, userName, userId, children }: AppShellProps) {
   return (
     <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
       <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
@@ -35,14 +36,14 @@ export function AppShell({ banner, memberColor, userName, userId, children }: Ap
               >
                 <Settings aria-hidden className="h-4 w-4" />
               </Link>
-              <AccountDropdown memberColor={memberColor} userName={userName} />
+              <AccountDropdown memberColor={memberColor} memberEmoji={memberEmoji} userName={userName} />
             </div>
           </div>
         </div>
       </header>
       {banner}
       <main className="mx-auto w-full max-w-[1520px] px-4 pb-[calc(7rem_+_env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-10">
-        <AppShellFrame memberColor={memberColor} userName={userName}>
+        <AppShellFrame memberColor={memberColor} memberEmoji={memberEmoji} userName={userName}>
           {children}
         </AppShellFrame>
       </main>

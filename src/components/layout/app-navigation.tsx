@@ -35,6 +35,7 @@ function isActiveNavigationItem(href: string, pathname: string) {
 type AppNavigationProps = Readonly<{
   collapsed: boolean;
   memberColor: string | null;
+  memberEmoji: string | null;
   onToggleCollapsed: () => void;
   userName: string | null;
 }>;
@@ -111,6 +112,7 @@ function SidebarUtilityButton({
 export function AppNavigation({
   collapsed,
   memberColor,
+  memberEmoji,
   onToggleCollapsed,
   userName,
 }: AppNavigationProps) {
@@ -192,6 +194,7 @@ export function AppNavigation({
               <AccountDropdown
                 align="left"
                 memberColor={memberColor}
+                memberEmoji={memberEmoji}
                 showName={!collapsed}
                 userName={userName}
               />

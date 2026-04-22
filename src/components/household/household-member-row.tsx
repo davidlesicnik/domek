@@ -4,6 +4,7 @@ import type { HouseholdRole } from "@prisma/client";
 import { useState } from "react";
 
 import { MemberColorPicker } from "@/components/household/member-color-picker";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 import { getMemberColor, type MemberColorKey } from "@/lib/member-colors";
 
 type HouseholdMemberRowProps = Readonly<{
@@ -11,40 +12,17 @@ type HouseholdMemberRowProps = Readonly<{
     id: string;
     role: HouseholdRole;
     color: string;
+    emoji: string | null;
     user: { name: string | null; email: string | null; image: string | null };
   };
   currentMemberId: string;
   isOwner: boolean;
   removeMemberAction: (formData: FormData) => Promise<void>;
   transferOwnershipAction: (formData: FormData) => Promise<void>;
-  updateMemberColorAction: (formData: FormData) => Promise<void>;
+  updateMemberAvatarAction: (formData: FormData) => Promise<{ error: string | null; success: boolean }>;
 }>;
 
-function MemberInitials({
-  color,
-  name,
-  email,
-}: {
-  color: string;
-  name: string | null;
-  email: string | null;
-}) {
-  const letter = (name ?? email ?? "?").slice(0, 1).toUpperCase();
-  const palette = getMemberColor(color);
-
-  return (
-    <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border font-serif text-base font-semibold transition-colors"
-      style={{
-        backgroundColor: palette.avatarBg,
-        borderColor: palette.border,
-        color: palette.avatarText,
-      }}
-    >
-      {letter}
-    </span>
-  );
-}
+const AVATAR_ONBOARDING_KEY = "domek.household.avatar-picker-seen";
 
 function RolePill({ role }: { role: HouseholdRole }) {
   if (role === "OWNER") {
@@ -67,14 +45,40 @@ export function HouseholdMemberRow({
   isOwner,
   removeMemberAction,
   transferOwnershipAction,
-  updateMemberColorAction,
+  updateMemberAvatarAction,
 }: HouseholdMemberRowProps) {
   const [selectedColor, setSelectedColor] = useState(getMemberColor(member.color).key);
+  const [selectedEmoji, setSelectedEmoji] = useState(member.emoji);
   const memberLabel = member.user.name ?? member.user.email ?? "member";
 
   return (
     <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <MemberInitials color={selectedColor} name={member.user.name} email={member.user.email} />
+      {isOwner || currentMemberId === member.id ? (
+        <MemberColorPicker
+          memberEmail={member.user.email}
+          memberId={member.id}
+          memberLabel={memberLabel}
+          memberName={member.user.name}
+          onSelectedColorChange={(color: MemberColorKey) => setSelectedColor(color)}
+          onSelectedEmojiChange={setSelectedEmoji}
+          selectedEmoji={selectedEmoji}
+          selectedColor={selectedColor}
+          showOnboardingHint={currentMemberId === member.id}
+          storageKey={AVATAR_ONBOARDING_KEY}
+          updateMemberAvatarAction={updateMemberAvatarAction}
+        />
+      ) : (
+        <span className="pt-0.5">
+          <MemberAvatar
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border text-base font-semibold transition-colors"
+            color={selectedColor}
+            email={member.user.email}
+            emoji={selectedEmoji}
+            fallbackLabel="Unknown"
+            name={member.user.name}
+          />
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-[15px] font-semibold leading-5 text-[#171a18]">
@@ -84,15 +88,6 @@ export function HouseholdMemberRow({
         </div>
         {member.user.name && member.user.email ? (
           <p className="truncate text-xs font-normal leading-5 text-[#8a928c]">{member.user.email}</p>
-        ) : null}
-        {isOwner || currentMemberId === member.id ? (
-          <MemberColorPicker
-            memberId={member.id}
-            memberLabel={memberLabel}
-            onSelectedColorChange={(color: MemberColorKey) => setSelectedColor(color)}
-            selectedColor={selectedColor}
-            updateMemberColorAction={updateMemberColorAction}
-          />
         ) : null}
       </div>
       {isOwner && member.role === "MEMBER" ? (

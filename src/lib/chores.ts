@@ -18,6 +18,7 @@ export type ChoreScope = {
 export type ChoreMemberView = {
   id: string;
   color: string;
+  emoji: string | null;
   name: string | null;
   email: string | null;
 };
@@ -43,6 +44,7 @@ export type ChoreView = {
   assignedHouseholdMemberId: string | null;
   assignedHouseholdMemberName: string | null;
   assignedHouseholdMemberColor: string | null;
+  assignedHouseholdMemberEmoji: string | null;
   lastCompletedAt: string | null;
   nextDueAt: string;
   createdAt: string;
@@ -261,6 +263,7 @@ const choreSelect = {
   assignedHouseholdMember: {
     select: {
       color: true,
+      emoji: true,
       user: {
         select: {
           email: true,
@@ -300,6 +303,7 @@ function toChoreView(chore: RawChore, referenceDate: Date): ChoreView {
     assignedHouseholdMemberName:
       chore.assignedHouseholdMember?.user.name ?? chore.assignedHouseholdMember?.user.email ?? null,
     assignedHouseholdMemberColor: chore.assignedHouseholdMember?.color ?? null,
+    assignedHouseholdMemberEmoji: chore.assignedHouseholdMember?.emoji ?? null,
     createdAt: chore.createdAt.toISOString(),
     lastCompletedAt: lastCompletion?.toISOString() ?? null,
     nextDueAt: nextDueDate.toISOString(),
@@ -334,6 +338,7 @@ export async function listChoreMembers(scope: ChoreScope): Promise<ChoreMemberVi
       orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
       select: {
         color: true,
+        emoji: true,
         id: true,
         user: {
           select: {
@@ -348,6 +353,7 @@ export async function listChoreMembers(scope: ChoreScope): Promise<ChoreMemberVi
       rows.map((row) => ({
         id: row.id,
         color: row.color,
+        emoji: row.emoji,
         email: row.user.email,
         name: row.user.name,
       })),

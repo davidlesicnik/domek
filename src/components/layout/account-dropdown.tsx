@@ -2,23 +2,24 @@
 
 import { useState } from "react";
 
-import { getMemberColor } from "@/lib/member-colors";
+import { MemberAvatar } from "@/components/ui/member-avatar";
 
 export function AccountDropdown({
   align = "right",
   memberColor,
+  memberEmoji,
   showName = false,
   userName,
 }: {
   align?: "left" | "right";
   memberColor: string | null;
+  memberEmoji: string | null;
   showName?: boolean;
   userName: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const label = userName ?? "Domek";
   const firstName = label.trim().split(/\s+/)[0] ?? "Domek";
-  const palette = getMemberColor(memberColor);
 
   return (
     <div className={`relative ${showName ? "w-full" : "w-fit"}`}>
@@ -33,18 +34,15 @@ export function AccountDropdown({
         onClick={() => setIsOpen((v) => !v)}
         type="button"
       >
-        <span
-          className={`flex items-center justify-center rounded-md font-serif font-semibold ${
+        <MemberAvatar
+          className={`flex items-center justify-center rounded-md font-semibold ${
             showName ? "h-6 w-6 text-xs" : "h-8 w-8 border text-xs"
           }`}
-          style={{
-            backgroundColor: palette.avatarBg,
-            color: palette.avatarText,
-            ...(showName ? {} : { borderColor: palette.border }),
-          }}
-        >
-          {label.slice(0, 1).toUpperCase()}
-        </span>
+          color={memberColor}
+          emoji={memberEmoji}
+          fallbackLabel="Domek"
+          name={label}
+        />
         {showName ? <span className="min-w-0 flex-1 truncate">{firstName}</span> : null}
       </button>
 

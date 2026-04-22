@@ -12,6 +12,7 @@ export default async function Home() {
         orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
         select: {
           color: true,
+          emoji: true,
           id: true,
           user: { select: { email: true, name: true } },
         },
@@ -24,6 +25,7 @@ export default async function Home() {
       members={members.map((member) => ({
         color: member.color,
         email: member.user.email,
+        emoji: member.emoji,
         id: member.id,
         name: member.user.name,
       }))}
