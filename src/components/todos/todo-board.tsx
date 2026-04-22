@@ -34,17 +34,24 @@ const fullDateFormatter = new Intl.DateTimeFormat("en", {
   weekday: "short",
 });
 
+function padDatePart(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
 function memberLabel(member: TodoMemberView) {
   return member.name ?? member.email ?? "Member";
 }
 
 function todayDateKey() {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+
+  return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`;
 }
 
 function formatDateLabel(dateKey: string, formatter: Intl.DateTimeFormat) {
   const [year, month, day] = dateKey.split("-").map(Number);
-  return formatter.format(new Date(Date.UTC(year, month - 1, day)));
+
+  return formatter.format(new Date(year, month - 1, day));
 }
 
 function TodoQuickAddControls({
