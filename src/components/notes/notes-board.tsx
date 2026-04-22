@@ -124,7 +124,6 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   const [editTitle, setEditTitle] = useState(initialNotes[0]?.title ?? "");
   const [editBody, setEditBody] = useState(initialNotes[0]?.body ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialNotes[0]?.updatedAt ?? null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
 
@@ -153,7 +152,6 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
         const { note } = (await res.json()) as { note: NoteView };
         setNotes((prev) => [...prev, note]);
         setPane({ mode: "edit", noteId: note.id });
-        setLastSavedAt(note.updatedAt);
         trackAnalyticsEvent("note_created");
       } else if (pane.mode === "edit") {
         const res = await fetch(`/api/notes/${pane.noteId}`, {
@@ -166,7 +164,6 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
         const { note } = (await res.json()) as { note: NoteView };
         setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
-        setLastSavedAt(note.updatedAt);
       }
 
       setSaveStatus("saved");
@@ -195,7 +192,6 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     setEditTitle(note.title);
     setEditBody(note.body);
     setConfirmDeleteId(null);
-    setLastSavedAt(note.updatedAt);
     setSaveStatus("idle");
     setIsMobileDetailOpen(true);
   }
@@ -214,7 +210,6 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     setEditTitle("");
     setEditBody("");
     setConfirmDeleteId(null);
-    setLastSavedAt(null);
     setSaveStatus("idle");
     setIsMobileDetailOpen(true);
   }
@@ -257,12 +252,13 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   }
 
   const selectedNoteId = pane.mode === "edit" ? pane.noteId : null;
+  const activeNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
   const saveMessage =
     saveStatus === "saving"
       ? "Saving changes..."
       : pane.mode === "new" && !editTitle.trim()
         ? "Start writing to save this note."
-        : formatLastEditedLabel(lastSavedAt);
+        : formatLastEditedLabel(activeNote?.updatedAt ?? null);
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
