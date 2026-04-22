@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentOwnedListScope, type OwnedListScope } from "@/lib/owned-lists";
 
-export type NoteView = { id: string; title: string; body: string };
+export type NoteView = { id: string; title: string; body: string; updatedAt: string };
 
 type NoteScope = OwnedListScope<
   Pick<Prisma.NoteUncheckedCreateInput, "createdByUserId" | "householdId">,
@@ -20,7 +20,19 @@ const noteSelect = {
   id: true,
   title: true,
   body: true,
+  updatedAt: true,
 } satisfies Prisma.NoteSelect;
+
+function toNoteView(
+  note: Pick<Prisma.NoteGetPayload<{ select: typeof noteSelect }>, "id" | "title" | "body" | "updatedAt">,
+): NoteView {
+  return {
+    body: note.body,
+    id: note.id,
+    title: note.title,
+    updatedAt: note.updatedAt.toISOString(),
+  };
+}
 
 const noteInputSchema = z
   .object({ title: z.string().trim().min(1).max(200), body: z.string().trim().max(50000) })
@@ -31,11 +43,13 @@ export function parseNoteInput(input: unknown): { title: string; body: string } 
 }
 
 export async function listAllNotes(scope: NoteScope): Promise<NoteView[]> {
-  return prisma.note.findMany({
+  const notes = await prisma.note.findMany({
     orderBy: { createdAt: "asc" },
     select: noteSelect,
     where: scope.where,
   });
+
+  return notes.map(toNoteView);
 }
 
 export async function createNote(
@@ -43,10 +57,12 @@ export async function createNote(
   body: string,
   scope: NoteScope,
 ): Promise<NoteView> {
-  return prisma.note.create({
+  const note = await prisma.note.create({
     data: { ...scope.create, title, body },
     select: noteSelect,
   });
+
+  return toNoteView(note);
 }
 
 export async function updateNote(
@@ -62,7 +78,9 @@ export async function updateNote(
 
   if (result.count === 0) return null;
 
-  return prisma.note.findUnique({ select: noteSelect, where: { id } });
+  const note = await prisma.note.findUnique({ select: noteSelect, where: { id } });
+
+  return note ? toNoteView(note) : null;
 }
 
 export async function deleteNote(id: string, scope: NoteScope): Promise<boolean> {

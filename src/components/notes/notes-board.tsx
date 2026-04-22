@@ -17,6 +17,52 @@ type RightPaneState =
 
 type SaveStatus = "idle" | "saving" | "saved";
 
+function notePreview(body: string): string {
+  const firstLine = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+
+  if (!firstLine) {
+    return "Nothing written yet.";
+  }
+
+  return firstLine.length > 72 ? `${firstLine.slice(0, 69)}...` : firstLine;
+}
+
+function formatLastEditedLabel(updatedAt: string | null): string {
+  if (!updatedAt) {
+    return "Start writing to save this note.";
+  }
+
+  const updatedAtDate = new Date(updatedAt);
+
+  if (Number.isNaN(updatedAtDate.getTime())) {
+    return "Changes are saved automatically.";
+  }
+
+  const diffMs = Date.now() - updatedAtDate.getTime();
+
+  if (diffMs < 45_000) {
+    return "Last edited just now";
+  }
+
+  const diffMinutes = Math.round(diffMs / 60_000);
+
+  if (diffMinutes < 60) {
+    return `Last edited ${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `Last edited ${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  return `Last edited ${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+}
+
 function ChevronLeftIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -53,6 +99,23 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function PlusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 export function NotesBoard({ initialNotes }: NotesBoardProps) {
   const [notes, setNotes] = useState<NoteView[]>(initialNotes);
   const [pane, setPane] = useState<RightPaneState>(
@@ -61,6 +124,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   const [editTitle, setEditTitle] = useState(initialNotes[0]?.title ?? "");
   const [editBody, setEditBody] = useState(initialNotes[0]?.body ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialNotes[0]?.updatedAt ?? null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
 
@@ -89,6 +153,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
         const { note } = (await res.json()) as { note: NoteView };
         setNotes((prev) => [...prev, note]);
         setPane({ mode: "edit", noteId: note.id });
+        setLastSavedAt(note.updatedAt);
         trackAnalyticsEvent("note_created");
       } else if (pane.mode === "edit") {
         const res = await fetch(`/api/notes/${pane.noteId}`, {
@@ -101,6 +166,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
         const { note } = (await res.json()) as { note: NoteView };
         setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
+        setLastSavedAt(note.updatedAt);
       }
 
       setSaveStatus("saved");
@@ -129,6 +195,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     setEditTitle(note.title);
     setEditBody(note.body);
     setConfirmDeleteId(null);
+    setLastSavedAt(note.updatedAt);
     setSaveStatus("idle");
     setIsMobileDetailOpen(true);
   }
@@ -147,6 +214,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
     setEditTitle("");
     setEditBody("");
     setConfirmDeleteId(null);
+    setLastSavedAt(null);
     setSaveStatus("idle");
     setIsMobileDetailOpen(true);
   }
@@ -189,6 +257,12 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   }
 
   const selectedNoteId = pane.mode === "edit" ? pane.noteId : null;
+  const saveMessage =
+    saveStatus === "saving"
+      ? "Saving changes..."
+      : pane.mode === "new" && !editTitle.trim()
+        ? "Start writing to save this note."
+        : formatLastEditedLabel(lastSavedAt);
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
@@ -200,28 +274,33 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
             isMobileDetailOpen ? "hidden sm:flex" : "flex"
           }`}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-[#e0dcd4] px-4 py-3">
-            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#6a5b52]">
-              Notes
-            </h2>
-            <button
-              className="hidden h-7 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-2 text-xs font-medium text-[#45614c] transition hover:bg-[#e2f0e4] sm:block"
-              onClick={openNewNote}
-              type="button"
-            >
-              + Add note
-            </button>
-          </div>
-
           <ul className="flex-1 overflow-y-auto">
+            <li className="border-b border-[#e7e2d9]">
+              <button
+                className="hidden w-full items-center gap-2 px-3 py-3 text-left text-sm font-medium text-[#6e7e72] transition hover:bg-[#f4f1ea] hover:text-[#45614c] sm:flex"
+                onClick={openNewNote}
+                type="button"
+              >
+                <span
+                  aria-hidden
+                  className="flex h-5 w-5 items-center justify-center rounded-md border border-[#d7ddd4] bg-[#fbfaf6] text-[#7b887d]"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                </span>
+                <span>New note</span>
+              </button>
+            </li>
             {notes.length === 0 && pane.mode !== "new" && (
               <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">No notes yet.</li>
             )}
             {pane.mode === "new" && (
-              <li className="flex items-center border-b border-[#e0dcd4] border-l-2 border-l-[#6e9274] bg-[#edf3ee]">
-                <span className="min-w-0 flex-1 px-3 py-3 text-left text-sm font-medium text-[#426148]">
-                  <span className="block truncate">
+              <li className="flex items-center border-b border-[#e0dcd4] border-l-4 border-l-[#6e9274] bg-[#f6faf6]">
+                <span className="min-w-0 flex-1 px-3 py-3 text-left">
+                  <span className="block truncate text-sm font-semibold text-[#426148]">
                     {editTitle.trim() || <span className="italic text-[#9ab5a0]">New note</span>}
+                  </span>
+                  <span className="mt-1 block truncate text-xs text-[#64806a]">
+                    {notePreview(editBody)}
                   </span>
                 </span>
               </li>
@@ -233,19 +312,28 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                 <li
                   className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 transition ${
                     isSelected
-                      ? "border-l-2 border-l-[#6e9274] bg-[#edf3ee]"
-                      : "border-l-2 border-l-transparent hover:bg-[#f4f1ea]"
+                      ? "border-l-4 border-l-[#6e9274] bg-[#f6faf6]"
+                      : "border-l-4 border-l-transparent hover:bg-[#f4f1ea]"
                   }`}
                   key={note.id}
                 >
                   <button
-                    className={`min-w-0 flex-1 px-3 py-3 text-left text-sm ${
-                      isSelected ? "font-medium text-[#426148]" : "text-[#4d5451]"
+                    className={`min-w-0 flex-1 px-3 py-3 text-left ${
+                      isSelected ? "text-[#426148]" : "text-[#4d5451]"
                     }`}
                     onClick={() => openNote(note)}
                     type="button"
                   >
-                    <span className="block truncate">{note.title}</span>
+                    <span className={`block truncate text-sm ${isSelected ? "font-semibold" : "font-medium"}`}>
+                      {note.title}
+                    </span>
+                    <span
+                      className={`mt-1 block truncate text-xs ${
+                        isSelected ? "text-[#64806a]" : "text-[#8b857d]"
+                      }`}
+                    >
+                      {notePreview(note.body)}
+                    </span>
                   </button>
                   {confirmDeleteId === note.id ? (
                     <div className="mr-2 flex shrink-0 items-center gap-1">
@@ -283,7 +371,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
         {/* Right pane: editor */}
         <div
-          className={`min-h-[480px] min-w-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+          className={`min-h-[480px] min-w-0 rounded-md border border-[#e3ddd2] bg-[linear-gradient(180deg,#fffdf8_0%,#fff9f0_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(223,216,204,0.48)] ${
             isMobileDetailOpen ? "flex flex-col" : "hidden sm:flex sm:flex-col"
           }`}
         >
@@ -296,34 +384,36 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
             </div>
           ) : (
             <div className="flex flex-1 flex-col">
-              <div className="flex items-center gap-3 border-b border-[#e0dcd4] px-4 py-3 sm:px-5">
-                <button
-                  aria-label="Back to notes"
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
-                  onClick={() => setIsMobileDetailOpen(false)}
-                  type="button"
-                >
-                  <ChevronLeftIcon aria-hidden className="h-5 w-5" />
-                </button>
-                <input
-                  autoFocus={pane.mode === "new"}
-                  className="min-w-0 flex-1 bg-transparent font-serif text-lg font-semibold text-[#171a18] placeholder:font-serif placeholder:text-[#c0bbb4] focus:outline-none"
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Title"
-                  type="text"
-                  value={editTitle}
-                />
-                {saveStatus !== "idle" && (
-                  <span className="shrink-0 text-xs text-[#9a9e9b]">
-                    {saveStatus === "saving" ? "Saving…" : "Saved"}
-                  </span>
-                )}
+              <div className="border-b border-[#e6dfd3] bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,250,241,0.58))] px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
+                <div className="flex items-start gap-3">
+                  <button
+                    aria-label="Back to notes"
+                    className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white/90 text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                    onClick={() => setIsMobileDetailOpen(false)}
+                    type="button"
+                  >
+                    <ChevronLeftIcon aria-hidden className="h-5 w-5" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <input
+                      autoFocus={pane.mode === "new"}
+                      className="min-w-0 w-full bg-transparent font-serif text-[1.4rem] font-semibold text-[#171a18] placeholder:font-serif placeholder:text-[#c0bbb4] focus:outline-none"
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Untitled note"
+                      type="text"
+                      value={editTitle}
+                    />
+                    <div className="mt-3 text-sm text-[#7a746a]">
+                      <p>{saveMessage}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <textarea
-                className="flex-1 resize-none bg-transparent px-4 py-4 text-sm leading-relaxed text-[#2d3230] placeholder:text-[#c0bbb4] focus:outline-none sm:px-5 sm:py-5"
+                className="flex-1 resize-none bg-transparent px-4 pt-6 pb-5 text-[15px] leading-[1.95] text-[#2d3230] placeholder:text-[#c0bbb4] focus:outline-none sm:px-6 sm:pt-7 sm:pb-6"
                 onChange={(e) => setEditBody(e.target.value)}
-                placeholder="Write something…"
+                placeholder="Write down a plan, reminder, or little household thought..."
                 value={editBody}
               />
             </div>
