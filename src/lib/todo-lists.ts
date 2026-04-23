@@ -252,6 +252,48 @@ export async function toggleTodoItem(itemId: string, scope: TodoScope): Promise<
   return toTodoItemView(updated);
 }
 
+export async function updateTodoItem(
+  itemId: string,
+  input: TodoItemInput,
+  scope: TodoScope,
+): Promise<TodoItemView | null> {
+  const householdId = scope.create.householdId;
+
+  if (!householdId) {
+    return null;
+  }
+
+  const item = await prisma.todoItem.findFirst({
+    select: { id: true },
+    where: { id: itemId, list: scope.where },
+  });
+
+  if (!item) {
+    return null;
+  }
+
+  const assignedHouseholdMemberId = input.assignedHouseholdMemberId ?? null;
+
+  if (
+    assignedHouseholdMemberId &&
+    !(await isValidTodoMemberId(assignedHouseholdMemberId, householdId))
+  ) {
+    return null;
+  }
+
+  const updated = await prisma.todoItem.update({
+    data: {
+      assignedHouseholdMemberId,
+      dueDate: input.dueDate ? dateKeyToUtcDate(input.dueDate) : null,
+      text: input.text,
+    },
+    select: todoItemSelect,
+    where: { id: itemId },
+  });
+
+  return toTodoItemView(updated);
+}
+
 export async function deleteTodoItem(itemId: string, scope: TodoScope): Promise<boolean> {
   const result = await prisma.todoItem.deleteMany({
     where: { id: itemId, list: scope.where },

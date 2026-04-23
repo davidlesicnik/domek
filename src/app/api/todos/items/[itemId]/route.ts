@@ -1,7 +1,15 @@
-import { deleteTodoItem, getCurrentTodoScope, toggleTodoItem } from "@/lib/todo-lists";
+import { ZodError } from "zod";
+
+import {
+  deleteTodoItem,
+  getCurrentTodoScope,
+  parseTodoItemInput,
+  toggleTodoItem,
+  updateTodoItem,
+} from "@/lib/todo-lists";
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
   const scope = await getCurrentTodoScope();
@@ -11,13 +19,35 @@ export async function PATCH(
   }
 
   const { itemId } = await params;
-  const item = await toggleTodoItem(itemId, scope);
 
-  if (!item) {
-    return Response.json({ error: "Not found." }, { status: 404 });
+  try {
+    const rawBody = await request.text();
+
+    if (!rawBody.trim()) {
+      const item = await toggleTodoItem(itemId, scope);
+
+      if (!item) {
+        return Response.json({ error: "Not found." }, { status: 404 });
+      }
+
+      return Response.json({ item });
+    }
+
+    const input = parseTodoItemInput(JSON.parse(rawBody));
+    const item = await updateTodoItem(itemId, input, scope);
+
+    if (!item) {
+      return Response.json({ error: "Not found." }, { status: 404 });
+    }
+
+    return Response.json({ item });
+  } catch (error) {
+    if (error instanceof SyntaxError || error instanceof ZodError) {
+      return Response.json({ error: "Invalid todo item." }, { status: 400 });
+    }
+
+    throw error;
   }
-
-  return Response.json({ item });
 }
 
 export async function DELETE(

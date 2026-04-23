@@ -8,6 +8,7 @@ import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { TodoItemView, TodoListView, TodoMemberView } from "@/lib/todo-lists";
 
 type TodoBoardProps = Readonly<{
+  autoOpenComposer?: boolean;
   initialLists: TodoListView[];
   members: TodoMemberView[];
 }>;
@@ -306,15 +307,28 @@ function TodoItemMeta({ item }: { item: TodoItemView }) {
   );
 }
 
-export function TodoBoard({ initialLists, members }: TodoBoardProps) {
+export function TodoBoard({ autoOpenComposer = false, initialLists, members }: TodoBoardProps) {
   const [composerResetKey, setComposerResetKey] = useState(0);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
 
+  useEffect(() => {
+    if (!autoOpenComposer) {
+      return;
+    }
+
+    const composerInput = document.querySelector<HTMLInputElement>(
+      'form[data-list-board-composer="true"] input[type="text"]',
+    );
+
+    composerInput?.focus();
+  }, [autoOpenComposer]);
+
   return (
     <ListBoard<TodoItemView>
       analyticsArea="todo"
+      autoOpenComposer={autoOpenComposer}
       createItemInput={(text) => ({
         assignedHouseholdMemberId: selectedMemberId,
         dueDate: selectedDueDate,
