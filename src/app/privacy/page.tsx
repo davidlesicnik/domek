@@ -67,6 +67,7 @@ export default function PrivacyPage() {
             <h2 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">Data we collect</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5">
               <li>Account data, such as your name, email address, profile image, sign-in provider, and session data.</li>
+              <li>Contact form data, such as your name, email address, message, and delivery status.</li>
               <li>Household data, such as household name, members, roles, colors, emojis, and invite email addresses.</li>
               <li>
                 Content you and household members add, including calendar events, chores, notes, to-do lists, shopping
@@ -110,6 +111,10 @@ export default function PrivacyPage() {
               <li>
                 Invite email addresses and service-message data are used to send transactional emails, such as household
                 invites and important service notices. The lawful basis is contract performance or legitimate interests.
+              </li>
+              <li>
+                Contact form data is used to receive, route, and respond to support and general questions. The lawful
+                basis is legitimate interests or steps taken before a contract.
               </li>
               <li>
                 Technical logs, security events, and request metadata, such as IP address, timestamps, requested endpoint,
@@ -218,6 +223,10 @@ export default function PrivacyPage() {
               <li>
                 Invite links expire after 7 days. Invite records are kept until expiry, acceptance, or revocation, and
                 may be retained after they are no longer active for abuse prevention, audit, or legal reasons.
+              </li>
+              <li>
+                Contact form messages are kept only as long as needed to answer the request, troubleshoot delivery, or
+                keep necessary service records.
               </li>
               <li>
                 Technical logs, HTTP logs, and error records are retained for 7 days, unless logs need to be kept longer
