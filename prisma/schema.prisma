@@ -305,6 +305,20 @@ model Expense {
   @@index([createdByUserId])
 }
 
+model ContactMessage {
+  id            String    @id @default(cuid())
+  name          String?   @db.VarChar(120)
+  email         String    @db.VarChar(320)
+  message       String    @db.Text
+  deliveryError String?   @db.Text
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 model HouseholdInvite {
   id                String           @id @default(cuid())
   tokenHash         String           @unique

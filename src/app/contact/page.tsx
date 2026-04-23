@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { ContactForm } from "@/components/contact/contact-form";
 import { Footer } from "@/components/layout/footer";
+import { sendContactMessageAction } from "@/lib/actions/contact";
 
 export const metadata = {
   title: "Contact — Domek",
@@ -24,9 +26,26 @@ export default function ContactPage() {
         <h1 className="font-serif text-3xl font-semibold tracking-normal text-[#171a18] sm:text-4xl">
           Contact
         </h1>
-        <div className="mt-8 text-sm leading-7 text-[#686e6a]">
-          {/* Write your contact information here */}
+        <div className="mt-4 max-w-[620px] text-sm leading-7 text-[#686e6a]">
+          <p>Have a question, issue, or idea? Send a message — it goes directly to me.</p>
+          <p className="mt-1">
+            Or email:{" "}
+            <a
+              className="font-medium text-[#3d6f4a] underline underline-offset-2 hover:text-[#2d5638]"
+              href="mailto:contact@domekapp.com"
+            >
+              contact@domekapp.com
+            </a>
+          </p>
         </div>
+        <div className="mt-6 grid gap-2 text-sm text-[#4f5752] sm:grid-cols-3">
+          {["Account issues", "Billing", "Feedback / ideas"].map((item) => (
+            <div key={item} className="rounded-md border border-[#dfddd6] bg-[#fdfcf8] px-3 py-2 font-medium">
+              {item}
+            </div>
+          ))}
+        </div>
+        <ContactForm action={sendContactMessageAction} />
       </main>
 
       <Footer />

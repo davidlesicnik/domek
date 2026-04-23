@@ -34,6 +34,32 @@ export async function sendInviteEmail({
   }
 }
 
+export async function sendContactMessageEmail({
+  email,
+  message,
+  name,
+}: {
+  email: string;
+  message: string;
+  name?: string | null;
+}): Promise<void> {
+  const { resend, from } = getResend();
+  const senderName = name?.trim() || "Someone";
+
+  const { error } = await resend.emails.send({
+    from,
+    to: "contact@domekapp.com",
+    replyTo: email,
+    subject: `New Domek contact message from ${senderName}`,
+    html: buildContactHtml({ email, message, name: senderName }),
+    text: buildContactText({ email, message, name: senderName }),
+  });
+
+  if (error) {
+    throw new Error(`Failed to send contact email: ${error.message}`);
+  }
+}
+
 function buildInviteHtml(opts: {
   inviterName: string;
   householdName: string;
@@ -60,6 +86,45 @@ function buildInviteHtml(opts: {
   </table>
 </body>
 </html>`;
+}
+
+function buildContactHtml(opts: {
+  email: string;
+  message: string;
+  name: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f1ea;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#fdfcf8;border:1px solid #dfddd6;border-radius:8px;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#3d6f4a;">Domek contact</p>
+          <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:22px;font-weight:600;color:#171a18;">New message from ${escapeHtml(opts.name)}</h1>
+          <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#4d5451;"><strong>Email:</strong> ${escapeHtml(opts.email)}</p>
+          <div style="white-space:pre-wrap;margin:0;font-size:14px;line-height:1.7;color:#202321;">${escapeHtml(opts.message)}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildContactText(opts: {
+  email: string;
+  message: string;
+  name: string;
+}): string {
+  return [
+    `New Domek contact message`,
+    `Name: ${opts.name}`,
+    `Email: ${opts.email}`,
+    `Message:`,
+    opts.message,
+  ].join("\n\n");
 }
 
 function buildInviteText(opts: {
