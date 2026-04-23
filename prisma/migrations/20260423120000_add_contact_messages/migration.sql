@@ -1,6 +1,6 @@
 CREATE TABLE "ContactMessage" (
     "id" TEXT NOT NULL,
-    "name" VARCHAR(120) NOT NULL,
+    "name" VARCHAR(120),
     "email" VARCHAR(320) NOT NULL,
     "message" TEXT NOT NULL,
     "deliveryError" TEXT,

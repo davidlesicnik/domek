@@ -41,17 +41,18 @@ export async function sendContactMessageEmail({
 }: {
   email: string;
   message: string;
-  name: string;
+  name?: string | null;
 }): Promise<void> {
   const { resend, from } = getResend();
+  const senderName = name?.trim() || "Someone";
 
   const { error } = await resend.emails.send({
     from,
     to: "contact@domekapp.com",
     replyTo: email,
-    subject: `New Domek contact message from ${name}`,
-    html: buildContactHtml({ email, message, name }),
-    text: buildContactText({ email, message, name }),
+    subject: `New Domek contact message from ${senderName}`,
+    html: buildContactHtml({ email, message, name: senderName }),
+    text: buildContactText({ email, message, name: senderName }),
   });
 
   if (error) {
