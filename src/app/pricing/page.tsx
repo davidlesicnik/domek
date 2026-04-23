@@ -71,7 +71,16 @@ export default function PricingPage() {
               >
                 Start your household
               </Link>
-              <p className="mt-3 text-xs text-[#9ea49f] sm:text-right">You&apos;ll be able to review everything before confirming.</p>
+              <p className="mt-3 text-xs text-[#7f857f] sm:text-right">
+                30-day free trial. No charge today.
+              </p>
+              <p className="mt-1 text-xs text-[#9ea49f] sm:text-right">
+                Cancel anytime during trial. If something feels off after billing, we&apos;ll{" "}
+                <Link className="underline underline-offset-2 hover:text-[#686e6a]" href="/refund-policy">
+                  review it fairly
+                </Link>
+                .
+              </p>
               <p className="mt-1 text-xs text-[#9ea49f] sm:text-right">Payments handled securely by Paddle.</p>
             </div>
           </div>
