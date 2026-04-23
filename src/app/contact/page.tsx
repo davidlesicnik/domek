@@ -27,15 +27,15 @@ export default function ContactPage() {
           Contact
         </h1>
         <div className="mt-4 max-w-[620px] text-sm leading-7 text-[#686e6a]">
-          <p>
-            Have a question, issue, or idea? Send a message — it goes directly to me at{" "}
+          <p>Have a question, issue, or idea? Send a message — it goes directly to me.</p>
+          <p className="mt-1">
+            Or email:{" "}
             <a
               className="font-medium text-[#3d6f4a] underline underline-offset-2 hover:text-[#2d5638]"
               href="mailto:contact@domekapp.com"
             >
               contact@domekapp.com
             </a>
-            .
           </p>
         </div>
         <div className="mt-6 grid gap-2 text-sm text-[#4f5752] sm:grid-cols-3">

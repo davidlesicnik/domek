@@ -9,7 +9,7 @@ import { getOptionalEmailConfig } from "@/lib/env";
 const contactSchema = z.object({
   email: z.string().trim().email("Enter a valid email address.").max(320),
   message: z.string().trim().min(10, "Message must be at least 10 characters.").max(4000),
-  name: z.string().trim().min(1, "Enter your name.").max(120),
+  name: z.string().trim().max(120).optional(),
 });
 
 export type ContactActionState = {

@@ -307,7 +307,7 @@ model Expense {
 
 model ContactMessage {
   id            String    @id @default(cuid())
-  name          String    @db.VarChar(120)
+  name          String?   @db.VarChar(120)
   email         String    @db.VarChar(320)
   message       String    @db.Text
   deliveryError String?   @db.Text

@@ -32,7 +32,7 @@ export function ContactForm({ action }: ContactFormProps) {
     >
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-[#3c413e]" htmlFor="contact-name">
-          Name
+          Name <span className="font-normal text-[#9a9e9b]">(optional)</span>
         </label>
         <input
           autoComplete="name"
@@ -40,7 +40,6 @@ export function ContactForm({ action }: ContactFormProps) {
           id="contact-name"
           maxLength={120}
           name="name"
-          required
           type="text"
         />
         {state.fieldErrors?.name ? (
@@ -90,7 +89,7 @@ export function ContactForm({ action }: ContactFormProps) {
           {state.success ? "Message sent. We will reply by email." : state.error}
         </p>
         <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#232323] px-4 text-sm font-semibold text-[#fdfcf8] transition hover:bg-[#3a3a37] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#232323] px-4 text-sm font-semibold text-[#fdfcf8] transition hover:bg-[#3a3a37] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           disabled={pending}
           type="submit"
         >
