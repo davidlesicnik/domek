@@ -468,6 +468,7 @@ export function ChoreBoard({
   const [isSubmitting, startSubmitTransition] = useTransition();
   const [isCompleting, startCompleteTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const consumedAutoOpenEditIdRef = useRef<string | null>(null);
 
   const orderedChores = useMemo(() => [...chores].sort(compareChores), [chores]);
   const groupedChores = useMemo(
@@ -496,7 +497,7 @@ export function ChoreBoard({
       : `${groupedChores.today.length} due today · ${groupedChores.upcoming.length} upcoming`;
 
   useEffect(() => {
-    if (!autoOpenEditId) {
+    if (!autoOpenEditId || consumedAutoOpenEditIdRef.current === autoOpenEditId) {
       return;
     }
 
@@ -505,6 +506,8 @@ export function ChoreBoard({
     if (matchingChore) {
       openEditDialog(matchingChore);
     }
+
+    consumedAutoOpenEditIdRef.current = autoOpenEditId;
   }, [autoOpenEditId, chores]);
 
   function applyChoreUpdate(updatedChore: ChoreView) {
