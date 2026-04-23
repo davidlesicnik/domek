@@ -63,6 +63,13 @@ export default function TrialEndedPage() {
               >
                 View pricing
               </Link>
+              <p className="text-center text-xs leading-5 text-[#8b918c]">
+                Questions about billing or refunds?{" "}
+                <Link className="underline underline-offset-2 hover:text-[#686e6a]" href="/refund-policy">
+                  See how it works
+                </Link>
+                .
+              </p>
               <a
                 className="mt-1 text-center text-xs text-[#9ea49f] hover:underline"
                 href="/api/auth/signout"
