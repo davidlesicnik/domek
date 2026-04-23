@@ -19,6 +19,7 @@ type ListBoardProps<TItem extends ListItemView = ListItemView, TCreateItemInput 
   itemsPath: string;
   initialLists: ListView<TItem>[];
   analyticsArea: ListBoardAnalyticsArea;
+  autoOpenComposer?: boolean;
   createItemInput?: (text: string) => TCreateItemInput;
   createOptimisticItem?: (input: { id: string; text: string }) => TItem;
   onItemCreated?: () => void;
@@ -102,6 +103,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
   itemsPath,
   initialLists,
   analyticsArea,
+  autoOpenComposer = false,
   createItemInput,
   createOptimisticItem,
   onItemCreated,
@@ -118,7 +120,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
   const [isSavingItem, setIsSavingItem] = useState(false);
   const [confirmDeleteListId, setConfirmDeleteListId] = useState<string | null>(null);
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
-  const [isMobileListOpen, setIsMobileListOpen] = useState(false);
+  const [isMobileListOpen, setIsMobileListOpen] = useState(autoOpenComposer && initialLists.length > 0);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [enteringItemIds, setEnteringItemIds] = useState<string[]>([]);
   const [recentlyCompletedItemIds, setRecentlyCompletedItemIds] = useState<string[]>([]);
@@ -141,6 +143,15 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
       focusItemInput();
     }
   }, [selectedListId]);
+
+  useEffect(() => {
+    if (!autoOpenComposer || !selectedListId) {
+      return;
+    }
+
+    setIsMobileListOpen(true);
+    focusItemInput();
+  }, [autoOpenComposer, selectedListId]);
 
   // Focus after an item is saved (runs after React re-enables the input)
   const wasSavingItem = useRef(false);
@@ -612,6 +623,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               {/* Add item form */}
               <form
                 className="grid gap-2 border-t border-[#e0dcd4] p-4"
+                data-list-board-composer="true"
                 onSubmit={handleCreateItem}
                 onBlur={(event) => {
                   const nextFocused = event.relatedTarget;

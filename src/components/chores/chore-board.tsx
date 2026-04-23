@@ -8,6 +8,8 @@ import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { ChoreCategoryView, ChoreMemberView, ChoreView } from "@/lib/chores";
 
 type ChoreBoardProps = Readonly<{
+  autoOpenCreate?: boolean;
+  autoOpenEditId?: string | null;
   categories: ChoreCategoryView[];
   initialChores: ChoreView[];
   members: ChoreMemberView[];
@@ -446,13 +448,19 @@ function compactAssignmentLabel(chore: ChoreView, membersById: Map<string, Chore
   return "Rotating";
 }
 
-export function ChoreBoard({ categories: initialCategories, initialChores, members }: ChoreBoardProps) {
+export function ChoreBoard({
+  autoOpenCreate = false,
+  autoOpenEditId = null,
+  categories: initialCategories,
+  initialChores,
+  members,
+}: ChoreBoardProps) {
   const [chores, setChores] = useState<ChoreView[]>(initialChores);
   const [categories, setCategories] = useState<ChoreCategoryView[]>(initialCategories);
   const [form, setForm] = useState<CreateChoreFormState>(() => defaultForm());
   const [touched, setTouched] = useState<TouchedState>({ name: false });
   const [error, setError] = useState<string | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(autoOpenCreate);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [completingChoreIds, setCompletingChoreIds] = useState<string[]>([]);
@@ -486,6 +494,18 @@ export function ChoreBoard({ categories: initialCategories, initialChores, membe
     groupedChores.today.length === 0
       ? `Nothing due today · ${groupedChores.upcoming.length} upcoming`
       : `${groupedChores.today.length} due today · ${groupedChores.upcoming.length} upcoming`;
+
+  useEffect(() => {
+    if (!autoOpenEditId) {
+      return;
+    }
+
+    const matchingChore = chores.find((chore) => chore.id === autoOpenEditId);
+
+    if (matchingChore) {
+      openEditDialog(matchingChore);
+    }
+  }, [autoOpenEditId, chores]);
 
   function applyChoreUpdate(updatedChore: ChoreView) {
     setChores((current) => {

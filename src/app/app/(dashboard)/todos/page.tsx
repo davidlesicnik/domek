@@ -8,10 +8,16 @@ export const metadata: Metadata = {
   description: "Shared todo lists for your household.",
 };
 
-export default async function TodosPage() {
+type TodosPageProps = Readonly<{
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}>;
+
+export default async function TodosPage({ searchParams }: TodosPageProps) {
   const scope = await getCurrentTodoScope();
   const initialLists = scope ? await listAllTodoListsWithItems(scope) : [];
   const members = scope ? await listTodoMembers(scope) : [];
+  const params = (await searchParams) ?? {};
+  const create = Array.isArray(params.create) ? params.create[0] : params.create;
 
-  return <TodoBoard initialLists={initialLists} members={members} />;
+  return <TodoBoard autoOpenComposer={create === "1"} initialLists={initialLists} members={members} />;
 }

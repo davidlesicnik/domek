@@ -7,7 +7,6 @@ import {
   type CalendarCategory,
   type CalendarEventInput,
   type CalendarEventView,
-  type CalendarMemberOption,
 } from "@/lib/calendar-types";
 import { prisma } from "@/lib/db";
 import { getFirstHouseholdMembership } from "@/lib/users";
@@ -111,44 +110,6 @@ export async function getCurrentCalendarScope(): Promise<CalendarScope | null> {
       householdId,
     },
   };
-}
-
-export async function listCalendarEventMembers(): Promise<CalendarMemberOption[]> {
-  const scope = await getCurrentCalendarScope();
-
-  if (!scope) {
-    return [];
-  }
-
-  const members = await prisma.householdMember.findMany({
-    orderBy: { createdAt: "asc" },
-    select: { id: true, color: true, emoji: true, name: true, account: { select: { email: true } } },
-    where: { householdId: scope.householdId },
-  });
-
-  return members.map((member) => ({
-    color: member.color,
-    email: member.account?.email ?? null,
-    emoji: member.emoji,
-    id: member.id,
-    name: member.name,
-  }));
-}
-
-export async function listCalendarEvents() {
-  const scope = await getCurrentCalendarScope();
-
-  if (!scope) {
-    return [];
-  }
-
-  const calendarEvents = await prisma.calendarEvent.findMany({
-    orderBy: [{ dateKey: "asc" }, { allDay: "desc" }, { time: "asc" }, { createdAt: "asc" }],
-    select: calendarEventSelect,
-    where: scope.where,
-  });
-
-  return calendarEvents.map(toCalendarEventView);
 }
 
 export async function createCalendarEvent(input: CalendarEventInput, scope: CalendarScope) {
