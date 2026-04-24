@@ -118,6 +118,7 @@ export async function POST(request: Request) {
     select: {
       id: true,
       lastEventOccurredAt: true,
+      householdId: true,
       trialEndsAt: true,
       userId: true,
     },
@@ -142,11 +143,17 @@ export async function POST(request: Request) {
           select: {
             id: true,
             lastEventOccurredAt: true,
+            householdId: true,
             trialEndsAt: true,
             userId: true,
           },
           where: { userId },
         });
+
+  const membership = await prisma.householdMember.findFirst({
+    select: { householdId: true },
+    where: { accountId: userId, household: { deletedAt: null } },
+  });
 
   const currentRecord = existingBySubscription ?? existingByUser;
   const occurredAt = new Date(event.occurred_at);
@@ -170,6 +177,7 @@ export async function POST(request: Request) {
     paddleCustomerId: event.data.customer_id,
     paddleSubscriptionId: event.data.id,
     priceId: event.data.items?.[0]?.price?.id ?? null,
+    householdId: currentRecord?.householdId ?? membership?.householdId ?? null,
     scheduledCancellationAt: event.data.scheduled_change?.effective_at
       ? new Date(event.data.scheduled_change.effective_at)
       : null,

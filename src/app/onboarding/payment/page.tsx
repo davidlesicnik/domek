@@ -6,7 +6,6 @@ import { billingStatusHasAccess, getUserBillingSubscription } from "@/lib/billin
 import { requireAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getAppRuntimeConfig, getPaddleRuntimeConfig } from "@/lib/env";
-import { getFirstHouseholdMembership } from "@/lib/users";
 
 const developmentCode = "domekappdevelopment";
 
@@ -42,17 +41,37 @@ export default async function PaymentOnboardingPage({
   searchParams,
 }: PaymentOnboardingPageProps) {
   const session = await requireAppSession();
-  const existingMembership = await getFirstHouseholdMembership(session.user.id);
+  const existingMembership = await prisma.householdMember.findFirst({
+    select: {
+      household: {
+        select: {
+          billingSubscription: {
+            select: {
+              status: true,
+            },
+          },
+        },
+      },
+      householdId: true,
+      id: true,
+      role: true,
+    },
+    where: { accountId: session.user.id, household: { deletedAt: null } },
+  });
   const billingSubscription = await getUserBillingSubscription(session.user.id);
+  const membershipHasAccess =
+    !!existingMembership &&
+    billingStatusHasAccess(existingMembership.household.billingSubscription?.status);
 
-  if (existingMembership) {
+  if (existingMembership && membershipHasAccess) {
     redirect("/app");
   }
 
   if (
-    session.user.developmentAccessGrantedAt ||
+    !existingMembership &&
+    (session.user.developmentAccessGrantedAt ||
     billingStatusHasAccess(billingSubscription?.status)
-  ) {
+  )) {
     redirect("/onboarding/household");
   }
 

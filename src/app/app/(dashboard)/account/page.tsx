@@ -105,6 +105,13 @@ async function deleteAccountAction(formData: FormData) {
 
   const session = await requireAppSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
+  if (membership?.role === "OWNER") {
+    const memberCount = await prisma.householdMember.count({
+      where: { householdId: membership.householdId },
+    });
+    if (memberCount > 1) redirect("/app/account?error=owner_with_members");
+  }
+
   const billingSubscription = await prisma.billingSubscription.findUnique({
     select: {
       id: true,
@@ -150,10 +157,6 @@ async function deleteAccountAction(formData: FormData) {
   }
 
   if (membership?.role === "OWNER") {
-    const memberCount = await prisma.householdMember.count({
-      where: { householdId: membership.householdId },
-    });
-    if (memberCount > 1) redirect("/app/account?error=owner_with_members");
     // Sole owner: clear members and soft-delete the household
     await prisma.$transaction([
       prisma.householdMember.deleteMany({ where: { householdId: membership.householdId } }),
