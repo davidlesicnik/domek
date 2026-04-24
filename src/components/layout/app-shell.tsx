@@ -33,6 +33,7 @@ export function AppShell({ banner, memberColor, memberEmoji, userName, userId, c
                 aria-label="Household settings"
                 className="flex h-9 w-9 items-center justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] text-[#5d635f] transition hover:border-[#9ab59d] hover:bg-[#eef7ef] hover:text-[#202321]"
                 href="/app/household"
+                prefetch={true}
               >
                 <Settings aria-hidden className="h-4 w-4" />
               </Link>
