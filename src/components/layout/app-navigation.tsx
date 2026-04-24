@@ -29,7 +29,6 @@ const navigation = [
 const appPrefetchHrefs = [
   ...navigation.map((item) => item.href),
   "/app/account",
-  "/app/calendar",
   "/app/household",
 ];
 const appPrefetchRefreshMs = 4 * 60 * 1000;
