@@ -22,19 +22,52 @@ type CancelSubscriptionResult = Readonly<{
   status: BillingSubscriptionStatus;
 }>;
 
-export async function cancelPaddleSubscriptionImmediately({
-  apiKey,
-  clientToken,
-  subscriptionId,
-}: {
+type CancelSubscriptionParams = Readonly<{
   apiKey: string;
   clientToken: string;
   subscriptionId: string;
-}): Promise<CancelSubscriptionResult> {
+}>;
+
+type PaddleCancelSubscriptionPayload = {
+  data?: {
+    canceled_at?: string | null;
+    current_billing_period?: {
+      ends_at?: string | null;
+    } | null;
+    scheduled_change?: {
+      effective_at?: string | null;
+    } | null;
+    status?: string;
+  };
+  error?: {
+    detail?: string;
+  };
+} | null;
+
+function parseOptionalDate(value: string | null | undefined): Date | null {
+  return value ? new Date(value) : null;
+}
+
+function subscriptionPeriodEnd(payload: PaddleCancelSubscriptionPayload): Date | null {
+  return parseOptionalDate(payload?.data?.current_billing_period?.ends_at);
+}
+
+function subscriptionCanceledAt(payload: PaddleCancelSubscriptionPayload): Date | null {
+  return parseOptionalDate(payload?.data?.canceled_at);
+}
+
+function scheduledCancellationAt(payload: PaddleCancelSubscriptionPayload): Date | null {
+  return parseOptionalDate(payload?.data?.scheduled_change?.effective_at);
+}
+
+async function sendCancelSubscriptionRequest(
+  { apiKey, clientToken, subscriptionId }: CancelSubscriptionParams,
+  effectiveFrom: "immediately" | "next_billing_period",
+): Promise<PaddleCancelSubscriptionPayload> {
   const response = await fetch(
     `${getPaddleApiBaseUrl(clientToken)}/subscriptions/${subscriptionId}/cancel`,
     {
-      body: JSON.stringify({ effective_from: "immediately" }),
+      body: JSON.stringify({ effective_from: effectiveFrom }),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -43,26 +76,21 @@ export async function cancelPaddleSubscriptionImmediately({
     },
   );
 
-  const payload = (await response.json().catch(() => null)) as
-    | {
-        data?: {
-          canceled_at?: string | null;
-          current_billing_period?: {
-            ends_at?: string | null;
-          } | null;
-          status?: string;
-        };
-        error?: {
-          detail?: string;
-        };
-      }
-    | null;
+  const payload = (await response.json().catch(() => null)) as PaddleCancelSubscriptionPayload;
 
   if (!response.ok) {
     throw new PaddleSubscriptionCancelError(
       payload?.error?.detail ?? "Paddle rejected the subscription cancellation request.",
     );
   }
+
+  return payload;
+}
+
+export async function cancelPaddleSubscriptionImmediately(
+  params: CancelSubscriptionParams,
+): Promise<CancelSubscriptionResult> {
+  const payload = await sendCancelSubscriptionRequest(params, "immediately");
 
   const status = payload?.data?.status;
 
@@ -73,59 +101,17 @@ export async function cancelPaddleSubscriptionImmediately({
   }
 
   return {
-    canceledAt: payload?.data?.canceled_at ? new Date(payload.data.canceled_at) : null,
-    currentPeriodEndsAt: payload?.data?.current_billing_period?.ends_at
-      ? new Date(payload.data.current_billing_period.ends_at)
-      : null,
+    canceledAt: subscriptionCanceledAt(payload),
+    currentPeriodEndsAt: subscriptionPeriodEnd(payload),
     scheduledCancellationAt: null,
     status: BillingSubscriptionStatus.CANCELED,
   };
 }
 
-export async function cancelPaddleSubscriptionAtPeriodEnd({
-  apiKey,
-  clientToken,
-  subscriptionId,
-}: {
-  apiKey: string;
-  clientToken: string;
-  subscriptionId: string;
-}): Promise<CancelSubscriptionResult> {
-  const response = await fetch(
-    `${getPaddleApiBaseUrl(clientToken)}/subscriptions/${subscriptionId}/cancel`,
-    {
-      body: JSON.stringify({ effective_from: "next_billing_period" }),
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    },
-  );
-
-  const payload = (await response.json().catch(() => null)) as
-    | {
-        data?: {
-          canceled_at?: string | null;
-          current_billing_period?: {
-            ends_at?: string | null;
-          } | null;
-          scheduled_change?: {
-            effective_at?: string | null;
-          } | null;
-          status?: string;
-        };
-        error?: {
-          detail?: string;
-        };
-      }
-    | null;
-
-  if (!response.ok) {
-    throw new PaddleSubscriptionCancelError(
-      payload?.error?.detail ?? "Paddle rejected the subscription cancellation request.",
-    );
-  }
+export async function cancelPaddleSubscriptionAtPeriodEnd(
+  params: CancelSubscriptionParams,
+): Promise<CancelSubscriptionResult> {
+  const payload = await sendCancelSubscriptionRequest(params, "next_billing_period");
 
   const status = payload?.data?.status;
 
@@ -135,22 +121,18 @@ export async function cancelPaddleSubscriptionAtPeriodEnd({
     );
   }
 
-  const scheduledCancellationAt = payload?.data?.scheduled_change?.effective_at
-    ? new Date(payload.data.scheduled_change.effective_at)
-    : null;
+  const scheduledAt = scheduledCancellationAt(payload);
 
-  if (!scheduledCancellationAt) {
+  if (!scheduledAt) {
     throw new PaddleSubscriptionCancelError(
       "Paddle did not return the scheduled cancellation date for this subscription.",
     );
   }
 
   return {
-    canceledAt: payload?.data?.canceled_at ? new Date(payload.data.canceled_at) : null,
-    currentPeriodEndsAt: payload?.data?.current_billing_period?.ends_at
-      ? new Date(payload.data.current_billing_period.ends_at)
-      : null,
-    scheduledCancellationAt,
+    canceledAt: subscriptionCanceledAt(payload),
+    currentPeriodEndsAt: subscriptionPeriodEnd(payload),
+    scheduledCancellationAt: scheduledAt,
     status:
       status === "trialing"
         ? BillingSubscriptionStatus.TRIALING

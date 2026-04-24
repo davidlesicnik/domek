@@ -46,6 +46,8 @@ type PaddleCheckoutLauncherProps = Readonly<{
   successUrl: string;
 }>;
 
+const paddleScriptUrl = "https://cdn.paddle.com/paddle/v2/paddle.js";
+
 function paddleEnvironment(clientToken: string): PaddleEnvironment {
   return clientToken.startsWith("test_") ? "sandbox" : "live";
 }
@@ -131,8 +133,12 @@ export function PaddleCheckoutLauncher({
     }
 
     const script = document.createElement("script");
-    script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+    // NOSONAR: Paddle ships its checkout SDK from a fixed vendor CDN origin and updates it independently.
+    // We rely on our CSP allowlist plus Paddle's scoped client token instead of pinning an SRI hash that would
+    // break vendor-managed updates to the hosted checkout asset.
+    script.src = paddleScriptUrl;
     script.async = true;
+    script.crossOrigin = "anonymous";
     script.dataset.domekPaddle = "true";
     script.addEventListener("load", initializePaddle, { once: true });
     script.addEventListener(
