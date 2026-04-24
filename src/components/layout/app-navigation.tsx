@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
   ChevronLeft,
@@ -26,8 +26,27 @@ const navigation = [
   { href: "/app/notes", icon: NotebookPen, label: "Notes" },
 ];
 
+const appPrefetchHrefs = [
+  ...navigation.map((item) => item.href),
+  "/app/account",
+  "/app/calendar",
+  "/app/household",
+];
+const appPrefetchRefreshMs = 4 * 60 * 1000;
+
 function isActiveNavigationItem(href: string, pathname: string) {
   return href === "/app" ? pathname === "/app" : pathname === href;
+}
+
+function isUnmodifiedPrimaryClick(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    event.button === 0 &&
+    !event.defaultPrevented &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.shiftKey
+  );
 }
 
 type AppNavigationProps = Readonly<{
@@ -54,6 +73,7 @@ function SidebarFooterLink({
       aria-label={collapsed ? label : undefined}
       className="group inline-flex items-center rounded-md px-2 py-2.5 text-[13px] font-medium text-[#7a817d] transition hover:bg-[#f4f1ea] hover:text-[#202321]"
       href={href}
+      prefetch={true}
       title={collapsed ? label : undefined}
     >
       <span className="inline-flex w-4 shrink-0 justify-center text-[#b0b6b1]/70 transition group-hover:text-[#8f9691]">
@@ -115,6 +135,50 @@ export function AppNavigation({
   userName,
 }: AppNavigationProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [pendingNavigation, setPendingNavigation] = useState<{
+    fromPathname: string;
+    href: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const warmAppRoute = (href: string) => {
+      if (href !== pathname) {
+        router.prefetch(href);
+      }
+    };
+    const warmAppRoutes = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+
+      for (const href of appPrefetchHrefs) {
+        warmAppRoute(href);
+      }
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleCallbackId = window.requestIdleCallback(warmAppRoutes, { timeout: 1200 });
+      const intervalId = globalThis.setInterval(warmAppRoutes, appPrefetchRefreshMs);
+      return () => {
+        window.cancelIdleCallback(idleCallbackId);
+        globalThis.clearInterval(intervalId);
+      };
+    }
+
+    const timeoutId = globalThis.setTimeout(warmAppRoutes, 250);
+    const intervalId = globalThis.setInterval(warmAppRoutes, appPrefetchRefreshMs);
+    return () => {
+      globalThis.clearTimeout(timeoutId);
+      globalThis.clearInterval(intervalId);
+    };
+  }, [pathname, router]);
+
+  function handleNavigationClick(href: string, event: MouseEvent<HTMLAnchorElement>) {
+    if (isUnmodifiedPrimaryClick(event) && !isActiveNavigationItem(href, pathname)) {
+      setPendingNavigation({ fromPathname: pathname, href });
+    }
+  }
 
   return (
     <>
@@ -132,13 +196,17 @@ export function AppNavigation({
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = isActiveNavigationItem(item.href, pathname);
+            const isPending =
+              pendingNavigation?.href === item.href &&
+              pendingNavigation.fromPathname === pathname;
+            const isVisuallyActive = isActive || isPending;
             const className = `relative inline-flex rounded-md text-sm font-medium transition ${
-              isActive
+              isVisuallyActive
                 ? "bg-[#ddebe2] text-[#121513] before:absolute before:bottom-2 before:left-0 before:top-2 before:w-[3px] before:rounded-full before:bg-[#5f816e]"
                 : "text-[#666d69] hover:bg-[#f4f1ea] hover:text-[#202321]"
             }`;
             const iconClassName = `h-4 w-4 shrink-0 transition ${
-              isActive
+              isVisuallyActive
                 ? "text-[#5f816e]"
                 : collapsed
                   ? "text-[#666d69] group-hover:text-[#202321]"
@@ -152,6 +220,8 @@ export function AppNavigation({
                 className={`${className} group items-center px-2 py-3 transition-all duration-200 ease-out`}
                 href={item.href}
                 key={item.label}
+                onClick={(event) => handleNavigationClick(item.href, event)}
+                prefetch={true}
                 title={collapsed ? item.label : undefined}
               >
                 <span className="inline-flex w-4 shrink-0 justify-center">
@@ -209,8 +279,12 @@ export function AppNavigation({
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = isActiveNavigationItem(item.href, pathname);
+            const isPending =
+              pendingNavigation?.href === item.href &&
+              pendingNavigation.fromPathname === pathname;
+            const isVisuallyActive = isActive || isPending;
             const className = `inline-flex h-12 items-center justify-center rounded-md border text-[#5d635f] transition ${
-              isActive
+              isVisuallyActive
                 ? "border-[#c85b45] bg-[#f7ecea] text-[#a6543c]"
                 : "border-transparent hover:border-[#cbd9ce] hover:bg-[#f4f1ea] hover:text-[#202321]"
             }`;
@@ -222,6 +296,8 @@ export function AppNavigation({
                 className={className}
                 href={item.href}
                 key={item.label}
+                onClick={(event) => handleNavigationClick(item.href, event)}
+                prefetch={true}
               >
                 <Icon aria-hidden className="h-5 w-5" />
                 <span className="sr-only">{item.label}</span>
