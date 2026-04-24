@@ -1,9 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { billingStatusHasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
-import { getTrialState } from "@/lib/trial";
 import { upsertSupabaseUser } from "@/lib/users";
 
 type CookieUpdate = Readonly<{
@@ -21,6 +21,7 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/refund-policy",
   "/terms",
+  "/api/paddle/webhook",
   "/auth/callback",
   "/auth/start",
   "/api/auth/signout",
@@ -34,8 +35,8 @@ function isOnboardingPath(pathname: string): boolean {
   return pathname === "/onboarding/household" || pathname.startsWith("/onboarding/household/");
 }
 
-function isTrialEndedPath(pathname: string): boolean {
-  return pathname === "/trial-ended" || pathname.startsWith("/trial-ended/");
+function isPaymentPath(pathname: string): boolean {
+  return pathname === "/onboarding/payment" || pathname.startsWith("/onboarding/payment/");
 }
 
 function isInvitePath(pathname: string): boolean {
@@ -119,36 +120,57 @@ export async function proxy(request: NextRequest) {
   const membership = await prisma.householdMember.findFirst({
     select: {
       id: true,
-      household: { select: { createdAt: true, paidAt: true } },
+      householdId: true,
+      household: {
+        select: {
+          billingSubscription: {
+            select: {
+              status: true,
+            },
+          },
+        },
+      },
     },
     where: { accountId: appUser.id, household: { deletedAt: null } },
   });
 
-  if (!membership && !isPublicPath(pathname) && !isInvitePath(pathname) && !isAuthFlowPath(pathname)) {
-    if (!isOnboardingPath(pathname)) {
-      return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+  if (membership) {
+    const hasAccess =
+      !!appUser.developmentAccessGrantedAt ||
+      billingStatusHasAccess(membership.household.billingSubscription?.status);
+
+    if (!hasAccess && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
+      if (!isPaymentPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+      }
+    }
+
+    if (hasAccess && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
+      return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
+    }
+
+    return response;
+  }
+
+  if (!isPublicPath(pathname) && !isInvitePath(pathname) && !isAuthFlowPath(pathname)) {
+    const billingSubscription = await prisma.billingSubscription.findUnique({
+      select: { status: true },
+      where: { userId: appUser.id },
+    });
+    const hasPreHouseholdAccess =
+      !!appUser.developmentAccessGrantedAt || billingStatusHasAccess(billingSubscription?.status);
+
+    if (hasPreHouseholdAccess) {
+      if (!isOnboardingPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+      }
+    } else if (!isPaymentPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
     }
   }
 
-  if (membership) {
-    const trialState = getTrialState(
-      membership.household.createdAt,
-      membership.household.paidAt,
-      !!appUser.developmentAccessGrantedAt,
-    );
-
-    if (trialState === "expired") {
-      if (!isTrialEndedPath(pathname) && !isPublicPath(pathname)) {
-        return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
-      }
-    } else {
-      if (isTrialEndedPath(pathname)) {
-        return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
-      }
-      if (pathname === "/login" || isOnboardingPath(pathname)) {
-        return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
-      }
-    }
+  if (isPaymentPath(pathname) && appUser.developmentAccessGrantedAt) {
+    return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
   }
 
   return response;

@@ -13,6 +13,14 @@ enum HouseholdRole {
   MEMBER
 }
 
+enum BillingSubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELED
+}
+
 enum InviteStatus {
   PENDING
   ACCEPTED
@@ -57,6 +65,7 @@ model User {
   image                      String?
   deletedAt                  DateTime?
   developmentAccessGrantedAt DateTime?
+  billingSubscription        BillingSubscription?
   memberships                HouseholdMember[] @relation("HouseholdMemberAccount")
   createdHouseholdMembers    HouseholdMember[] @relation("HouseholdMemberCreatedBy")
   invitesSent                HouseholdInvite[] @relation("InvitesSent")
@@ -78,6 +87,7 @@ model Household {
   name              String
   paidAt            DateTime?
   deletedAt         DateTime?
+  billingSubscription BillingSubscription?
   members           HouseholdMember[]
   invites           HouseholdInvite[]
   calendarEvents    CalendarEvent[]
@@ -90,6 +100,30 @@ model Household {
   chores            Chore[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+}
+
+model BillingSubscription {
+  id                   String                    @id @default(cuid())
+  status               BillingSubscriptionStatus
+  paddleCustomerId     String?                   @unique
+  paddleSubscriptionId String                    @unique
+  priceId              String?                   @db.VarChar(64)
+  userId               String                    @unique
+  householdId          String?                   @unique
+  startedAt            DateTime?
+  trialEndsAt          DateTime?
+  currentPeriodStartsAt DateTime?
+  currentPeriodEndsAt  DateTime?
+  scheduledCancellationAt DateTime?
+  canceledAt           DateTime?
+  lastEventOccurredAt  DateTime?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household            Household?                @relation(fields: [householdId], references: [id], onDelete: SetNull)
+
+  @@index([householdId])
+  @@index([status])
 }
 
 model HouseholdMember {
