@@ -114,6 +114,7 @@ model BillingSubscription {
   trialEndsAt          DateTime?
   currentPeriodStartsAt DateTime?
   currentPeriodEndsAt  DateTime?
+  scheduledCancellationAt DateTime?
   canceledAt           DateTime?
   lastEventOccurredAt  DateTime?
   createdAt            DateTime                  @default(now())

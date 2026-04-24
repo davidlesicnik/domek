@@ -39,8 +39,8 @@ export default async function PaymentSuccessPage() {
             Setting up your Domek access
           </h1>
           <p className="mt-4 text-base leading-7 text-[#686e6a]">
-            We&apos;re waiting for Paddle to confirm the subscription. This page refreshes on
-            its own and will send you forward as soon as your household trial is ready.
+            We&apos;re confirming your subscription now. This page refreshes on its own and
+            will send you forward as soon as your household trial is ready.
           </p>
           <p className="mt-6 text-xs leading-5 text-[#9ea49f]">
             If this takes longer than expected,{" "}

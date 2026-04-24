@@ -70,6 +70,11 @@ const paddleRuntimeSchema = z.object({
   webhookSecretKey: z.string().min(1),
 });
 
+const paddleServerSchema = z.object({
+  apiKey: z.string().regex(/^pdl_/, "PADDLE_API_KEY must start with pdl_."),
+  clientToken: z.string().regex(/^(test|live)_/, "PADDLE_CLIENT_TOKEN must start with test_ or live_."),
+});
+
 export function getEmailConfig() {
   return emailSchema.parse({
     resendApiKey: readOptionalEnv("RESEND_API_KEY"),
@@ -114,6 +119,31 @@ export function getOptionalPaddleRuntimeConfig() {
   });
 }
 
+export function getPaddleServerConfig() {
+  return paddleServerSchema.parse({
+    apiKey: readOptionalEnv("PADDLE_API_KEY"),
+    clientToken: readOptionalEnv("PADDLE_CLIENT_TOKEN"),
+  });
+}
+
+export function getOptionalPaddleServerConfig() {
+  const apiKey = readOptionalEnv("PADDLE_API_KEY");
+  const clientToken = readOptionalEnv("PADDLE_CLIENT_TOKEN");
+
+  if (!apiKey && !clientToken) {
+    return null;
+  }
+
+  if (!apiKey || !clientToken) {
+    return null;
+  }
+
+  return paddleServerSchema.parse({
+    apiKey,
+    clientToken,
+  });
+}
+
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
@@ -123,5 +153,6 @@ export function assertRuntimeEnv() {
     }),
     email: getOptionalEmailConfig(),
     paddle: getOptionalPaddleRuntimeConfig(),
+    paddleServer: getOptionalPaddleServerConfig(),
   };
 }

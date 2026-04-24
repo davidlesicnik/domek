@@ -35,6 +35,12 @@ const subscriptionEventSchema = z.object({
         starts_at: z.string().datetime(),
       })
       .nullable(),
+    scheduled_change: z
+      .object({
+        effective_at: z.string().datetime(),
+      })
+      .nullable()
+      .optional(),
     custom_data: z.record(z.string(), z.unknown()).nullable().optional(),
     customer_id: z.string().min(1),
     id: z.string().min(1),
@@ -164,6 +170,9 @@ export async function POST(request: Request) {
     paddleCustomerId: event.data.customer_id,
     paddleSubscriptionId: event.data.id,
     priceId: event.data.items?.[0]?.price?.id ?? null,
+    scheduledCancellationAt: event.data.scheduled_change?.effective_at
+      ? new Date(event.data.scheduled_change.effective_at)
+      : null,
     startedAt: event.data.started_at ? new Date(event.data.started_at) : null,
     status,
     trialEndsAt:
