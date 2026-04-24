@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAppSession } from "@/lib/authz";
+import { billingStatusHasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
@@ -11,8 +12,6 @@ type HouseholdOnboardingPageProps = Readonly<{
 }>;
 
 const householdNameSchema = z.string().trim().min(1).max(120);
-const developmentCode = "domekappdevelopment";
-const trialCode = "domekappuserbeta";
 
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -29,19 +28,18 @@ async function createHouseholdAction(formData: FormData) {
   if (!parsedName.success) {
     redirect("/onboarding/household?error=name");
   }
-
-  if (!session.user.developmentAccessGrantedAt) {
-    const rawCode = formData.get("accessCode");
-    const accessCode = typeof rawCode === "string" ? rawCode.trim() : "";
-
-    if (accessCode === developmentCode) {
-      await prisma.user.update({
-        data: { developmentAccessGrantedAt: new Date() },
-        where: { id: session.user.id },
+  const billingSubscription = session.user.developmentAccessGrantedAt
+    ? null
+    : await prisma.billingSubscription.findUnique({
+        select: { id: true, status: true },
+        where: { userId: session.user.id },
       });
-    } else if (accessCode !== trialCode) {
-      redirect("/onboarding/household?error=code");
-    }
+
+  if (
+    !session.user.developmentAccessGrantedAt &&
+    !billingStatusHasAccess(billingSubscription?.status)
+  ) {
+    redirect("/onboarding/payment");
   }
 
   let created = false;
@@ -67,6 +65,13 @@ async function createHouseholdAction(formData: FormData) {
         data: { name: parsedName.data },
         select: { id: true },
       });
+
+      if (billingSubscription?.id) {
+        await tx.billingSubscription.update({
+          data: { householdId: household.id },
+          where: { id: billingSubscription.id },
+        });
+      }
 
       await tx.householdMember.create({
         data: {
@@ -100,14 +105,26 @@ export default async function HouseholdOnboardingPage({
 }: HouseholdOnboardingPageProps) {
   const session = await requireAppSession();
   const existingMembership = await getFirstHouseholdMembership(session.user.id);
+  const billingSubscription = session.user.developmentAccessGrantedAt
+    ? null
+    : await prisma.billingSubscription.findUnique({
+        select: { status: true, trialEndsAt: true },
+        where: { userId: session.user.id },
+      });
+  const hasBillingAccess =
+    !!session.user.developmentAccessGrantedAt ||
+    billingStatusHasAccess(billingSubscription?.status);
 
   if (existingMembership) {
     redirect("/app");
   }
 
+  if (!hasBillingAccess) {
+    redirect("/onboarding/payment");
+  }
+
   const params = (await searchParams) ?? {};
   const hasNameError = stringParam(params.error) === "name";
-  const hasCodeError = stringParam(params.error) === "code";
 
   return (
     <main className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] px-4 py-8 text-[#202321] sm:px-6">
@@ -143,29 +160,15 @@ export default async function HouseholdOnboardingPage({
                   Add a household name before continuing.
                 </p>
               ) : null}
-              {!session.user.developmentAccessGrantedAt ? (
-                <label className="grid gap-2 text-sm font-semibold text-[#3c413e]">
-                  Access code
-                  <input
-                    autoComplete="off"
-                    className="h-12 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-base font-medium text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
-                    name="accessCode"
-                    placeholder="Enter code"
-                  />
-                </label>
-              ) : null}
-              {hasCodeError ? (
-                <p className="text-sm font-medium text-[#a6543c]">
-                  That access code is not valid.
-                </p>
-              ) : null}
               <button
                 className="h-12 rounded-md bg-[#232323] px-5 text-sm font-semibold text-white transition hover:bg-[#3c413e]"
                 type="submit"
               >
                 Create household
               </button>
-              <p className="text-center text-xs text-[#9ea49f]">Free for 30 days · €15/year after</p>
+              <p className="text-center text-xs text-[#9ea49f]">
+                You&apos;ll build the household after your trial is activated.
+              </p>
             </form>
           </div>
         </section>

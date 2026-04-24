@@ -166,27 +166,36 @@ If the Railway app shows 502s:
 - Confirm `DATABASE_URL` points to Supabase Postgres, not `localhost`.
 - URL-encode special characters in the database password, especially `@`, `#`, `%`, `/`, `:`, `?`, and `&`.
 
-## Trial and Access
+## Billing and Access
 
-Domek uses a 30-day free trial. The trial clock starts when the household is created (`Household.createdAt`). After 30 days without payment, users are redirected to `/trial-ended` and cannot access the app until the household is activated.
+Domek now uses a Paddle-first onboarding flow.
 
-**Trial states** (defined in `src/lib/trial.ts`):
+1. A user logs in.
+2. If they do not already belong to a household, Domek sends them to `/onboarding/payment`.
+3. Paddle Checkout starts the yearly household subscription with a 30-day trial.
+4. Paddle sends `subscription.created` and `subscription.updated` webhooks to `/api/paddle/webhook`.
+5. Domek stores the subscription status in `BillingSubscription`.
+6. Once the status is `TRIALING` or `ACTIVE`, the user can continue to `/onboarding/household` and create the household.
 
-| State | Condition | Effect |
-|---|---|---|
-| `active` | `paidAt` set, or dev access granted | Full access, no banner |
-| `trial` | < 27 days elapsed | No banner (nudge shown after 14 days if 2+ members) |
-| `expiring` | 1–3 days remaining | Warning banner shown in the app |
-| `expired` | > 30 days elapsed, unpaid | Redirected to `/trial-ended` |
+Household creation is now blocked until billing access exists, unless the user has development access.
 
-Activation is tracked via `Household.paidAt`. The `/trial-ended` page has a mock "Continue with Domek" action that sets this directly — replace the server action with a Paddle checkout redirect when payment is wired up.
+**Billing-backed access states:**
 
-**Development access codes** (entered on the household creation screen):
+| State | Effect |
+|---|---|
+| `TRIALING` | User can create a household and access the app |
+| `ACTIVE` | User can create a household and access the app |
+| `PAST_DUE`, `PAUSED`, `CANCELED` | User is redirected back to `/onboarding/payment` |
 
-- `domekappdevelopment` — grants permanent dev access (`User.developmentAccessGrantedAt`), bypasses the trial entirely
-- `domekbeta` — allows household creation as a regular trial user, so the 30-day clock starts normally (useful for testing trial banners and the paywall)
+**Required Paddle environment variables:**
 
-The access code field is hidden automatically once a user already has dev access, so recreating households during development does not require re-entering the code.
+- `PADDLE_CLIENT_TOKEN`
+- `PADDLE_PRICE_ID`
+- `PADDLE_WEBHOOK_SECRET`
+
+**Development access code** (entered on the payment onboarding screen):
+
+- `domekappdevelopment` — grants permanent dev access (`User.developmentAccessGrantedAt`) and bypasses Paddle entirely
 
 ## Database
 

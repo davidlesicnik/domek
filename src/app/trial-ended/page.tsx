@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { requireAppSession } from "@/lib/authz";
-import { prisma } from "@/lib/db";
 
 export const metadata = {
   title: "Trial ended – Domek",
@@ -11,23 +10,8 @@ export const metadata = {
 async function activateAction() {
   "use server";
 
-  const session = await requireAppSession();
-
-  const membership = await prisma.householdMember.findFirst({
-    select: { householdId: true },
-    where: { accountId: session.user.id, household: { deletedAt: null } },
-  });
-
-  if (!membership) {
-    redirect("/onboarding/household");
-  }
-
-  await prisma.household.update({
-    data: { paidAt: new Date() },
-    where: { id: membership.householdId },
-  });
-
-  redirect("/app");
+  await requireAppSession();
+  redirect("/onboarding/payment");
 }
 
 export default function TrialEndedPage() {
@@ -44,8 +28,8 @@ export default function TrialEndedPage() {
                 Keep your household running
               </h1>
               <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
-                Your 30-day trial has ended. Get a plan to keep your lists, calendar, and notes
-                going, one price for the whole household.
+                Paddle now owns trial and subscription access for Domek. Continue to billing to
+                reactivate the household and then return to your board.
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -54,7 +38,7 @@ export default function TrialEndedPage() {
                   className="h-12 w-full rounded-md bg-[#232323] px-5 text-sm font-semibold text-white transition hover:bg-[#3c413e]"
                   type="submit"
                 >
-                  Continue with Domek — €15/year
+                  Continue with Domek billing
                 </button>
               </form>
               <Link
