@@ -234,5 +234,32 @@
     "errorConfirm": "Please check the confirmation box.",
     "errorColor": "Choose one of the household colors.",
     "errorAssignedChores": "Reassign this person's chores before removing them from the household."
+  },
+  "addMemberDialog": {
+    "label": "Household",
+    "title": "Add someone",
+    "subtitle": "How do you want to add them?",
+    "back": "Back",
+    "closeAriaLabel": "Close add person dialog",
+    "inviteTitle": "Invite by email",
+    "inviteDescription": "Send them a link to join with their own account",
+    "memberTitle": "Add child or shared member",
+    "memberDescription": "Create someone without a login for kids or shared devices",
+    "emailLabel": "Email",
+    "inviteHelpText": "They'll receive an email link to join this household. The link expires in 7 days.",
+    "sendInviteButton": "Send invite",
+    "nameLabel": "Name",
+    "avatarTitle": "Avatar",
+    "avatarSubtitle": "Choose how they appear on the board",
+    "avatarPlaceholder": "Household member",
+    "colorLabel": "Color",
+    "emojiLabel": "Emoji",
+    "emojiInitial": "Initial",
+    "addButton": "Add to household",
+    "pendingInvitesTitle": "Pending invites",
+    "revokeButton": "Revoke",
+    "expiryExpired": "Expired",
+    "expiryTomorrow": "Expires tomorrow",
+    "expiryDays": "Expires in {days} days"
   }
 }
