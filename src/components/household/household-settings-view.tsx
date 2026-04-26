@@ -1,4 +1,5 @@
 import type { HouseholdRole } from "@prisma/client";
+import { getTranslations } from "next-intl/server";
 
 import { AddHouseholdMemberDialog } from "@/components/household/add-household-member-dialog";
 import { HouseholdMemberRow } from "@/components/household/household-member-row";
@@ -52,7 +53,7 @@ type HouseholdSettingsViewProps = Readonly<{
   errorMessage: string | null;
 }>;
 
-export function HouseholdSettingsView({
+export async function HouseholdSettingsView({
   householdName,
   members,
   pendingInvites,
@@ -70,11 +71,12 @@ export function HouseholdSettingsView({
   successMessage,
   errorMessage,
 }: HouseholdSettingsViewProps) {
+  const t = await getTranslations("householdPage");
   return (
     <div className="grid gap-6">
       <div>
         <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-          Household
+          {t("label")}
         </p>
         <h1 className="mt-1 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
           {householdName}
@@ -92,15 +94,12 @@ export function HouseholdSettingsView({
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#3c413e]">People in your home</h2>
-            <p className="mt-1 text-xs leading-5 text-[#7b827d]">
-              Everyone on the board lives here, whether they sign in or not.
-            </p>
+            <h2 className="text-sm font-semibold text-[#3c413e]">{t("peopleTitle")}</h2>
           </div>
           {isOwner ? (
             <AddHouseholdMemberDialog
               buttonClassName="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
-              buttonLabel="Add"
+              buttonLabel={t("addButton")}
               createMemberAction={createMemberAction}
               pendingInvites={pendingInvites}
               revokeInviteAction={revokeInviteAction}
@@ -127,10 +126,9 @@ export function HouseholdSettingsView({
       {/* Danger zone */}
       {isOwner ? (
         <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
-          <h2 className="text-sm font-semibold text-[#a6543c]">Delete household</h2>
+          <h2 className="text-sm font-semibold text-[#a6543c]">{t("deleteTitle")}</h2>
           <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
-            This will permanently delete all household data including todos, chores, shopping lists,
-            notes, calendar events, and expenses. All members will lose access.
+            {t("deleteDescription")}
           </p>
           <form action={deleteHouseholdAction} className="mt-4 grid gap-3">
             <label className="flex cursor-pointer items-start gap-2 text-xs text-[#6b3a2d]">
@@ -141,30 +139,30 @@ export function HouseholdSettingsView({
                 type="checkbox"
                 value="yes"
               />
-              I understand this will permanently delete the household and all its data
+              {t("deleteConfirmLabel")}
             </label>
             <div>
               <button
                 className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
                 type="submit"
               >
-                Delete household
+                {t("deleteButton")}
               </button>
             </div>
           </form>
         </section>
       ) : (
         <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
-          <h2 className="text-sm font-semibold text-[#a6543c]">Leave household</h2>
+          <h2 className="text-sm font-semibold text-[#a6543c]">{t("leaveTitle")}</h2>
           <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
-            You will be removed from this household and lose access to all shared data.
+            {t("leaveDescription")}
           </p>
           <form action={leaveHouseholdAction} className="mt-4">
             <button
               className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
               type="submit"
             >
-              Leave household
+              {t("leaveButton")}
             </button>
           </form>
         </section>

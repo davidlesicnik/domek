@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 export async function Footer() {
   const t = await getTranslations("footer");
@@ -16,7 +17,10 @@ export async function Footer() {
   return (
     <footer className="border-t border-[#dfddd6] bg-[#fdfcf8] px-4 pt-6 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-[#9ea49f]">{t("tagline")}</p>
+        <div className="flex items-center gap-4">
+          <p className="text-xs text-[#9ea49f]">{t("tagline")}</p>
+          <LocaleSwitcher />
+        </div>
         <nav aria-label="Legal">
           <ul className="flex flex-wrap gap-x-5 gap-y-1">
             {links.map(({ label, href }) => (

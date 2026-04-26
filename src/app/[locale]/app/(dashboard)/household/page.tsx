@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { redirect } from "@/i18n/server";
 import { requireHouseholdMemberSession } from "@/lib/authz";
@@ -13,10 +14,10 @@ import { listPendingInvites } from "@/lib/invites";
 import { getFirstHouseholdMembership } from "@/lib/users";
 import { HouseholdSettingsView } from "@/components/household/household-settings-view";
 
-export const metadata: Metadata = {
-  title: "Household | Domek",
-  description: "Manage your household members and invites.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("householdPage");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -184,7 +185,10 @@ type HouseholdPageProps = Readonly<{
 }>;
 
 export default async function HouseholdPage({ searchParams }: HouseholdPageProps) {
-  const session = await requireHouseholdMemberSession();
+  const [session, t] = await Promise.all([
+    requireHouseholdMemberSession(),
+    getTranslations("householdPage"),
+  ]);
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership) return await redirect("/onboarding/household");
@@ -217,21 +221,21 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
 
   const successMessage =
     successParam === "removed"
-      ? "Member removed."
+      ? t("successRemoved")
       : successParam === "owner"
-        ? "Owner reassigned."
+        ? t("successOwner")
         : successParam === "color"
-          ? "Avatar updated."
+          ? t("successColor")
           : null;
   const errorMessage =
     errorParam === "forbidden"
-      ? "Only the household owner can manage people."
+      ? t("errorForbidden")
       : errorParam === "confirm"
-        ? "Please check the confirmation box."
+        ? t("errorConfirm")
         : errorParam === "color"
-          ? "Choose one of the household colors."
+          ? t("errorColor")
           : errorParam === "assigned-chores"
-            ? "Reassign this person's chores before removing them from the household."
+            ? t("errorAssignedChores")
             : null;
 
   return (

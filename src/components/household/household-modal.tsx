@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { AddHouseholdMemberDialog } from "@/components/household/add-household-member-dialog";
@@ -80,6 +81,7 @@ export function HouseholdHeaderControls({
   revokeInviteAction,
   sendInviteAction,
 }: HouseholdHeaderControlsProps) {
+  const t = useTranslations("householdPage");
   return (
     <div className="flex items-center gap-1.5 rounded-md border border-[#e2dfd8] bg-[#f4f1ea] px-2 py-1.5">
       {members.map((member) => (
@@ -88,7 +90,7 @@ export function HouseholdHeaderControls({
       {isOwner ? (
         <AddHouseholdMemberDialog
           buttonClassName="flex h-8 items-center gap-1.5 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
-          buttonLabel="Add"
+          buttonLabel={t("addButton")}
           createMemberAction={createMemberAction}
           pendingInvites={pendingInvites}
           revokeInviteAction={revokeInviteAction}

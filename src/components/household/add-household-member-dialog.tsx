@@ -1,9 +1,10 @@
 "use client";
 
 import { ArrowLeft, Mail, UserPlus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
+import { useRouter } from "@/i18n/navigation";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { HouseholdActionState } from "@/lib/actions/household-members";
 import { MEMBER_EMOJI_OPTIONS } from "@/lib/member-avatar";
@@ -30,15 +31,6 @@ type AddHouseholdMemberDialogProps = Readonly<{
   ) => Promise<HouseholdActionState>;
 }>;
 
-function formatExpiry(date: Date): string {
-  const diff = date.getTime() - Date.now();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-  if (days <= 0) return "Expired";
-  if (days === 1) return "Expires tomorrow";
-  return `Expires in ${days} days`;
-}
-
 function previewInitial(name: string) {
   const trimmed = name.trim();
   return (trimmed.slice(0, 1) || "H").toUpperCase();
@@ -52,6 +44,7 @@ export function AddHouseholdMemberDialog({
   revokeInviteAction,
   sendInviteAction,
 }: AddHouseholdMemberDialogProps) {
+  const t = useTranslations("addMemberDialog");
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<"invite" | "member" | null>(null);
@@ -72,6 +65,15 @@ export function AddHouseholdMemberDialog({
   const [memberPending, startMemberTransition] = useTransition();
   const [, startRevokeTransition] = useTransition();
   const memberInitial = previewInitial(memberName);
+
+  function formatExpiry(date: Date): string {
+    const diff = date.getTime() - Date.now();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days <= 0) return t("expiryExpired");
+    if (days === 1) return t("expiryTomorrow");
+    return t("expiryDays", { days });
+  }
 
   function resetDialogState() {
     setMode(null);
@@ -145,14 +147,14 @@ export function AddHouseholdMemberDialog({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-                    Household
+                    {t("label")}
                   </p>
                   <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
-                    Add someone
+                    {t("title")}
                   </h2>
                   {mode === null ? (
                     <p className="mt-2 text-sm leading-6 text-[#686e6a]">
-                      How do you want to add them?
+                      {t("subtitle")}
                     </p>
                   ) : (
                     <button
@@ -161,12 +163,12 @@ export function AddHouseholdMemberDialog({
                       type="button"
                     >
                       <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
-                      <span>Back</span>
+                      <span>{t("back")}</span>
                     </button>
                   )}
                 </div>
                 <button
-                  aria-label="Close add person dialog"
+                  aria-label={t("closeAriaLabel")}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#ddd7cc] text-[#5d635f] transition hover:bg-[#f6f2ea]"
                   onClick={closeDialog}
                   type="button"
@@ -182,9 +184,9 @@ export function AddHouseholdMemberDialog({
                     onClick={() => setMode("invite")}
                     type="button"
                   >
-                    <span className="text-sm font-semibold text-[#202321]">Invite by email</span>
+                    <span className="text-sm font-semibold text-[#202321]">{t("inviteTitle")}</span>
                     <span className="text-sm leading-6 text-[#68706a]">
-                      Send them a link to join with their own account
+                      {t("inviteDescription")}
                     </span>
                   </button>
                   <button
@@ -192,9 +194,9 @@ export function AddHouseholdMemberDialog({
                     onClick={() => setMode("member")}
                     type="button"
                   >
-                    <span className="text-sm font-semibold text-[#202321]">Add child or shared member</span>
+                    <span className="text-sm font-semibold text-[#202321]">{t("memberTitle")}</span>
                     <span className="text-sm leading-6 text-[#68706a]">
-                      Create someone without a login for kids or shared devices
+                      {t("memberDescription")}
                     </span>
                   </button>
                 </div>
@@ -204,7 +206,7 @@ export function AddHouseholdMemberDialog({
                 <form action={handleInviteSubmit} className="mt-5 grid gap-2.5" key={inviteFormKey}>
                   <div className="grid gap-2">
                     <label className="text-sm font-semibold text-[#3c413e]" htmlFor="member-invite-email">
-                      Email
+                      {t("emailLabel")}
                     </label>
                     <div className="flex items-center gap-2 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3">
                       <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
@@ -221,7 +223,7 @@ export function AddHouseholdMemberDialog({
                     </div>
                   </div>
                   <p className="text-xs leading-5 text-[#7a817c]">
-                    They&apos;ll receive an email link to join this household. The link expires in 7 days.
+                    {t("inviteHelpText")}
                   </p>
                   {inviteState.error ? (
                     <p className="text-sm font-medium text-[#a6543c]">{inviteState.error}</p>
@@ -232,7 +234,7 @@ export function AddHouseholdMemberDialog({
                       disabled={invitePending}
                       type="submit"
                     >
-                      Send invite
+                      {t("sendInviteButton")}
                     </button>
                   </div>
                 </form>
@@ -241,7 +243,7 @@ export function AddHouseholdMemberDialog({
                 <form action={handleMemberSubmit} className="mt-5 grid gap-4" key={memberFormKey}>
                   <div className="grid gap-2">
                     <label className="text-sm font-semibold text-[#3c413e]" htmlFor="member-name">
-                      Name
+                      {t("nameLabel")}
                     </label>
                     <input
                       className="h-11 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
@@ -256,9 +258,9 @@ export function AddHouseholdMemberDialog({
 
                   <div className="grid gap-3 rounded-md border border-[#e6e1d7] bg-[#fbfaf6] p-4">
                     <div className="grid gap-1">
-                      <p className="text-sm font-semibold text-[#3c413e]">Avatar</p>
+                      <p className="text-sm font-semibold text-[#3c413e]">{t("avatarTitle")}</p>
                       <p className="text-xs leading-5 text-[#7a817c]">
-                        Choose how they appear on the board
+                        {t("avatarSubtitle")}
                       </p>
                     </div>
 
@@ -267,18 +269,18 @@ export function AddHouseholdMemberDialog({
                         className="flex h-9 w-9 items-center justify-center rounded-md border text-xs font-semibold"
                         color={selectedColor}
                         emoji={selectedEmoji || null}
-                        name={memberName.trim() || "Household member"}
+                        name={memberName.trim() || t("avatarPlaceholder")}
                       />
                       <div className="min-w-0">
                         <p className="truncate text-[13px] font-semibold text-[#202321]">
-                          {memberName.trim() || "Household member"}
+                          {memberName.trim() || t("avatarPlaceholder")}
                         </p>
                       </div>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
                       <div className="grid gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Color</p>
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">{t("colorLabel")}</p>
                         <input name="color" type="hidden" value={selectedColor} />
                         <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
                           {MEMBER_COLOR_KEYS.map((key) => {
@@ -305,12 +307,12 @@ export function AddHouseholdMemberDialog({
                       </div>
 
                       <div className="grid gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">Emoji</p>
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">{t("emojiLabel")}</p>
                         <input name="emoji" type="hidden" value={selectedEmoji} />
                         <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
                           {["", ...MEMBER_EMOJI_OPTIONS].map((emoji) => {
                             const isSelected = emoji === selectedEmoji;
-                            const label = emoji || "Initial";
+                            const label = emoji || t("emojiInitial");
 
                             return (
                               <button
@@ -345,7 +347,7 @@ export function AddHouseholdMemberDialog({
                       disabled={memberPending}
                       type="submit"
                     >
-                      Add to household
+                      {t("addButton")}
                     </button>
                   </div>
                 </form>
@@ -355,7 +357,7 @@ export function AddHouseholdMemberDialog({
               {pendingInvites.length > 0 ? (
                 <div className="mt-6 border-t border-[#ece8df] pt-5">
                   <p className="text-xs font-semibold uppercase tracking-normal text-[#5e655f]">
-                    Pending invites
+                    {t("pendingInvitesTitle")}
                   </p>
                   <ul className="mt-3 grid gap-2">
                     {pendingInvites.map((invite) => (
@@ -373,7 +375,7 @@ export function AddHouseholdMemberDialog({
                             className="h-8 rounded-md border border-[#dfb4a8] px-3 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fff5f1]"
                             type="submit"
                           >
-                            Revoke
+                            {t("revokeButton")}
                           </button>
                         </form>
                       </li>
