@@ -27,7 +27,8 @@
     "termsOfUse": "Terms of use",
     "refundPolicy": "Refund policy",
     "cookiePolicy": "Cookie policy",
-    "contact": "Contact"
+    "contact": "Contact",
+    "langLabel": "Language"
   },
   "accountDropdown": {
     "ariaLabel": "Account",

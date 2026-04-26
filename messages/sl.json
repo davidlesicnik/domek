@@ -27,7 +27,8 @@
     "termsOfUse": "Pogoji uporabe",
     "refundPolicy": "Politika vračil",
     "cookiePolicy": "Politika piškotkov",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "langLabel": "Jezik"
   },
   "accountDropdown": {
     "ariaLabel": "Moj račun",
