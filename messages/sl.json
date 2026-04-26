@@ -209,6 +209,30 @@
     "errorBillingNotConfigured": "Nastavite PADDLE_API_KEY pred brisanjem računa z aktivno naročnino.",
     "errorBillingCancelFailed": "Ni bilo mogoče preklicati naročnine Paddle. Poskusite znova.",
     "errorSubscriptionCancelFailed": "Ni bilo mogoče razporediti preklica naročnine ob koncu zaračunvalnega cikla.",
-    "errorOwnerWithMembers": "Izbrišite ali prenesite gospodinjstvo pred brisanjem računa."
+    "errorOwnerWithMembers": "Izbrišite ali prenesite gospodinjstvo pred brisanjem računa.",
+    "unknownUser": "Neznano",
+    "metaTitle": "Račun | Domek"
+  },
+  "householdPage": {
+    "metaTitle": "Gospodinjstvo | Domek",
+    "metaDescription": "Upravljajte člane gospodinjstva in povabila.",
+    "label": "Gospodinjstvo",
+    "peopleTitle": "Osebe v vašem domu",
+    "peopleSubtitle": "Vsi na tabli živijo tukaj, ne glede na to, ali se prijavijo ali ne.",
+    "addButton": "Dodaj",
+    "deleteTitle": "Izbriši gospodinjstvo",
+    "deleteDescription": "S tem boste trajno izbrisali vse podatke gospodinjstva, vključno z nalogami, opravili, nakupovalnimi seznami, beležkami, dogodki v koledarju in stroški. Vsi člani bodo izgubili dostop.",
+    "deleteConfirmLabel": "Razumem, da bo to trajno izbrisalo gospodinjstvo in vse njegove podatke",
+    "deleteButton": "Izbriši gospodinjstvo",
+    "leaveTitle": "Zapusti gospodinjstvo",
+    "leaveDescription": "Boste odstranjeni iz tega gospodinjstva in izgubili dostop do vseh skupnih podatkov.",
+    "leaveButton": "Zapusti gospodinjstvo",
+    "successRemoved": "Član odstranjen.",
+    "successOwner": "Lastništvo preneseno.",
+    "successColor": "Avatar posodobljen.",
+    "errorForbidden": "Samo lastnik gospodinjstva lahko upravlja osebe.",
+    "errorConfirm": "Prosimo, označite potrditveno polje.",
+    "errorColor": "Izberite eno od barv gospodinjstva.",
+    "errorAssignedChores": "Prerazporedite opravila te osebe, preden jo odstranite iz gospodinjstva."
   }
 }

@@ -209,6 +209,30 @@
     "errorBillingNotConfigured": "Set PADDLE_API_KEY before deleting an account with an active subscription.",
     "errorBillingCancelFailed": "We could not cancel the Paddle subscription. Please try again.",
     "errorSubscriptionCancelFailed": "We could not schedule the subscription to cancel at the end of the billing cycle.",
-    "errorOwnerWithMembers": "Delete or transfer your household before deleting your account."
+    "errorOwnerWithMembers": "Delete or transfer your household before deleting your account.",
+    "unknownUser": "Unknown",
+    "metaTitle": "Account | Domek"
+  },
+  "householdPage": {
+    "metaTitle": "Household | Domek",
+    "metaDescription": "Manage your household members and invites.",
+    "label": "Household",
+    "peopleTitle": "People in your home",
+    "peopleSubtitle": "Everyone on the board lives here, whether they sign in or not.",
+    "addButton": "Add",
+    "deleteTitle": "Delete household",
+    "deleteDescription": "This will permanently delete all household data including todos, chores, shopping lists, notes, calendar events, and expenses. All members will lose access.",
+    "deleteConfirmLabel": "I understand this will permanently delete the household and all its data",
+    "deleteButton": "Delete household",
+    "leaveTitle": "Leave household",
+    "leaveDescription": "You will be removed from this household and lose access to all shared data.",
+    "leaveButton": "Leave household",
+    "successRemoved": "Member removed.",
+    "successOwner": "Owner reassigned.",
+    "successColor": "Avatar updated.",
+    "errorForbidden": "Only the household owner can manage people.",
+    "errorConfirm": "Please check the confirmation box.",
+    "errorColor": "Choose one of the household colors.",
+    "errorAssignedChores": "Reassign this person's chores before removing them from the household."
   }
 }

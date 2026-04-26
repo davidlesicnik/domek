@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BillingSubscriptionStatus } from "@prisma/client";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
@@ -14,33 +15,9 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
-export const metadata: Metadata = {
-  title: "Account | Domek",
-};
-
-const dateFormatter = new Intl.DateTimeFormat("en", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
-function formatDate(date: Date | null | undefined): string | null {
-  return date ? dateFormatter.format(date) : null;
-}
-
-function subscriptionStatusLabel(status: BillingSubscriptionStatus): string {
-  switch (status) {
-    case BillingSubscriptionStatus.TRIALING:
-      return "Trialing";
-    case BillingSubscriptionStatus.ACTIVE:
-      return "Active";
-    case BillingSubscriptionStatus.PAST_DUE:
-      return "Past due";
-    case BillingSubscriptionStatus.PAUSED:
-      return "Paused";
-    case BillingSubscriptionStatus.CANCELED:
-      return "Canceled";
-  }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("accountPage");
+  return { title: t("metaTitle") };
 }
 
 async function cancelSubscriptionAction() {
@@ -190,8 +167,28 @@ type AccountPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
 
+const statusKeys: Record<BillingSubscriptionStatus, string> = {
+  [BillingSubscriptionStatus.TRIALING]: "statusTrialing",
+  [BillingSubscriptionStatus.ACTIVE]: "statusActive",
+  [BillingSubscriptionStatus.PAST_DUE]: "statusPastDue",
+  [BillingSubscriptionStatus.PAUSED]: "statusPaused",
+  [BillingSubscriptionStatus.CANCELED]: "statusCanceled",
+};
+
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const session = await requireAppSession();
+  const [session, t, locale] = await Promise.all([
+    requireAppSession(),
+    getTranslations("accountPage"),
+    getLocale(),
+  ]);
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const formatDate = (date: Date | null | undefined) =>
+    date ? dateFormatter.format(date) : null;
+
   const membership = await getFirstHouseholdMembership(session.user.id);
   const billingSubscription = await prisma.billingSubscription.findUnique({
     select: {
@@ -217,15 +214,15 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   const errorMessage =
     errorParam === "confirm"
-      ? "Please check the confirmation box."
+      ? t("errorConfirm")
       : errorParam === "billing_not_configured"
-        ? "Set PADDLE_API_KEY before deleting an account with an active subscription."
+        ? t("errorBillingNotConfigured")
         : errorParam === "billing_cancel_failed"
-          ? "We could not cancel the Paddle subscription. Please try again."
+          ? t("errorBillingCancelFailed")
           : errorParam === "subscription_cancel_failed"
-            ? "We could not schedule the subscription to cancel at the end of the billing cycle."
+            ? t("errorSubscriptionCancelFailed")
             : errorParam === "owner_with_members"
-              ? "Delete or transfer your household before deleting your account."
+              ? t("errorOwnerWithMembers")
               : null;
 
   const nextPaymentDate =
@@ -242,17 +239,17 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     <div className="grid gap-6">
       <div>
         <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-          Settings
+          {t("settingsLabel")}
         </p>
         <h1 className="mt-1 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
-          Account
+          {t("title")}
         </h1>
       </div>
 
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
-        <h2 className="text-sm font-semibold text-[#3c413e]">Signed in as</h2>
+        <h2 className="text-sm font-semibold text-[#3c413e]">{t("signedInAs")}</h2>
         <p className="mt-2 text-sm font-semibold text-[#202321]">
-          {session.user.name ?? session.user.email ?? "Unknown"}
+          {session.user.name ?? session.user.email ?? t("unknownUser")}
         </p>
         {session.user.name && session.user.email ? (
           <p className="mt-0.5 text-xs text-[#686e6a]">{session.user.email}</p>
@@ -263,29 +260,29 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-[#3c413e]">Subscription</h2>
+              <h2 className="text-sm font-semibold text-[#3c413e]">{t("subscriptionTitle")}</h2>
               <div className="mt-3 flex items-center gap-2">
                 <span className="inline-flex h-7 items-center rounded-full border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#526c56]">
-                  {subscriptionStatusLabel(billingSubscription.status)}
+                  {t(statusKeys[billingSubscription.status] as Parameters<typeof t>[0])}
                 </span>
                 {billingSubscription.scheduledCancellationAt ? (
                   <span className="inline-flex h-7 items-center rounded-full border border-[#dfd8c8] bg-[#fbf7ef] px-3 text-xs font-semibold text-[#7b6d49]">
-                    Ends {formatDate(billingSubscription.scheduledCancellationAt)}
+                    {t("endsDate", { date: formatDate(billingSubscription.scheduledCancellationAt) ?? "" })}
                   </span>
                 ) : null}
               </div>
               <div className="mt-4 grid gap-2 text-xs text-[#686e6a]">
                 <p>
-                  Next payment:{" "}
+                  {t("nextPayment")}{" "}
                   <span className="font-medium text-[#202321]">
                     {billingSubscription.scheduledCancellationAt
-                      ? "No further payment scheduled"
-                      : formatDate(nextPaymentDate) ?? "Not available yet"}
+                      ? t("noFurtherPayment")
+                      : formatDate(nextPaymentDate) ?? t("notAvailable")}
                   </span>
                 </p>
                 {accessEndsDate ? (
                   <p>
-                    Access until:{" "}
+                    {t("accessUntil")}{" "}
                     <span className="font-medium text-[#202321]">{formatDate(accessEndsDate)}</span>
                   </p>
                 ) : null}
@@ -299,39 +296,35 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                   className="inline-flex h-9 items-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
                   type="submit"
                 >
-                  Cancel after billing cycle
+                  {t("cancelAfterBilling")}
                 </button>
               </form>
             ) : null}
           </div>
           <p className="mt-4 text-xs leading-5 text-[#8b918c]">
-            Canceling here stops renewal in Paddle and keeps the account available until the
-            current paid or trial period ends.
+            {t("cancelNote")}
           </p>
         </section>
       ) : null}
 
       <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
-        <h2 className="text-sm font-semibold text-[#a6543c]">Delete account</h2>
+        <h2 className="text-sm font-semibold text-[#a6543c]">{t("deleteTitle")}</h2>
         {isOwnerWithMembers ? (
           <>
             <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
-              You are the owner of a household with other members. Delete the household first before
-              deleting your account.
+              {t("ownerWithMembersNote")}
             </p>
             <Link
               className="mt-3 inline-flex h-9 items-center rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
               href="/app/household"
             >
-              Go to household settings
+              {t("goToHouseholdSettings")}
             </Link>
           </>
         ) : (
           <>
             <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
-              {membership?.role === "OWNER"
-                ? "This will deactivate your account and your household."
-                : "This will deactivate your account."}
+              {membership?.role === "OWNER" ? t("deleteOwnerNote") : t("deleteMemberNote")}
             </p>
             {errorMessage ? (
               <p className="mt-3 text-xs font-medium text-[#a6543c]">{errorMessage}</p>
@@ -345,14 +338,14 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                   type="checkbox"
                   value="yes"
                 />
-                I understand my account will be deactivated
+                {t("confirmCheckbox")}
               </label>
               <div>
                 <button
                   className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
                   type="submit"
                 >
-                  Delete account
+                  {t("deleteButton")}
                 </button>
               </div>
             </form>
