@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const analyticsScriptOrigin = "https://www.googletagmanager.com";
 const analyticsConnectOrigin = "https://www.google-analytics.com";
@@ -34,7 +35,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "form-action 'self'",
   "object-src 'none'",
-  "upgrade-insecure-requests",
+  ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -64,11 +65,17 @@ const securityHeaders = [
   },
 ];
 
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "edge-pouring-poster.ngrok-free.dev",
+    "192.168.10.119",
   ],
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/**": ["./messages/**"],
+  },
   async headers() {
     return [
       {
@@ -79,4 +86,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Banknote,
   ChevronLeft,
@@ -15,26 +14,14 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AccountDropdown } from "@/components/layout/account-dropdown";
 
-const navigation = [
-  { href: "/app", icon: Home, label: "Dashboard" },
-  { href: "/app/todos", icon: ListTodo, label: "To-do" },
-  { href: "/app/shopping", icon: ShoppingCart, label: "Shopping" },
-  { href: "/app/chores", icon: ClipboardCheck, label: "Chores" },
-  { href: "/app/expenses", icon: Banknote, label: "Expenses" },
-  { href: "/app/notes", icon: NotebookPen, label: "Notes" },
-];
-
-const appPrefetchHrefs = [
-  ...navigation.map((item) => item.href),
-  "/app/account",
-  "/app/household",
-];
 const appPrefetchRefreshMs = 4 * 60 * 1000;
 
 function isActiveNavigationItem(href: string, pathname: string) {
-  return href === "/app" ? pathname === "/app" : pathname === href;
+  const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(\/|$)/, "/").replace(/\/+/g, "/");
+  return href === "/app" ? pathWithoutLocale === "/app" : pathWithoutLocale === href;
 }
 
 function isUnmodifiedPrimaryClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -71,7 +58,7 @@ function SidebarFooterLink({
     <Link
       aria-label={collapsed ? label : undefined}
       className="group inline-flex items-center rounded-md px-2 py-2.5 text-[13px] font-medium text-[#7a817d] transition hover:bg-[#f4f1ea] hover:text-[#202321]"
-      href={href}
+      href={href as "/app/household"}
       prefetch={true}
       title={collapsed ? label : undefined}
     >
@@ -133,12 +120,28 @@ export function AppNavigation({
   onToggleCollapsed,
   userName,
 }: AppNavigationProps) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
   const [pendingNavigation, setPendingNavigation] = useState<{
     fromPathname: string;
     href: string;
   } | null>(null);
+
+  const navigation = [
+    { href: "/app", icon: Home, label: t("dashboard") },
+    { href: "/app/todos", icon: ListTodo, label: t("todos") },
+    { href: "/app/shopping", icon: ShoppingCart, label: t("shopping") },
+    { href: "/app/chores", icon: ClipboardCheck, label: t("chores") },
+    { href: "/app/expenses", icon: Banknote, label: t("expenses") },
+    { href: "/app/notes", icon: NotebookPen, label: t("notes") },
+  ] as const;
+
+  const appPrefetchHrefs = [
+    ...navigation.map((item) => item.href),
+    "/app/account" as const,
+    "/app/household" as const,
+  ];
 
   useEffect(() => {
     const warmAppRoute = (href: string) => {
@@ -171,6 +174,7 @@ export function AppNavigation({
       globalThis.clearTimeout(timeoutId);
       globalThis.clearInterval(intervalId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, router]);
 
   function handleNavigationClick(href: string, event: MouseEvent<HTMLAnchorElement>) {
@@ -248,14 +252,14 @@ export function AppNavigation({
                   <ChevronLeft aria-hidden className="h-3.5 w-3.5 shrink-0" />
                 )
               }
-              label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
               onClick={onToggleCollapsed}
             />
             <SidebarFooterLink
               collapsed={collapsed}
               href="/app/household"
               icon={<Settings aria-hidden className="h-4 w-4 shrink-0" />}
-              label="Household settings"
+              label={t("householdSettings")}
             />
             <div className="px-2 pt-2">
               <AccountDropdown

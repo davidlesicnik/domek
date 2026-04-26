@@ -86,6 +86,19 @@ All requests pass through `src/proxy.ts` before reaching any page. It checks the
 
 Current public paths are listed at the top of `src/proxy.ts`. When debugging unexpected redirects to `/login`, check `PUBLIC_PATHS` first.
 
+## Internationalization (i18n)
+
+i18n is a first-class requirement. The app supports English (`en`) and Slovenian (`sl`) via URL path prefixes (`/en/...`, `/sl/...`) using **next-intl**.
+
+Rules that apply to every new feature or page:
+
+- **New pages** must live under `src/app/[locale]/`. Never add a new page outside this segment (except route handlers under `src/app/api/` and `src/app/auth/`).
+- **New user-facing strings** must be added to both `messages/en.json` and `messages/sl.json` before shipping. Do not hardcode display strings in components.
+- **Links and redirects** must use `@/i18n/navigation` (`Link`, `redirect`, `useRouter`, `usePathname`), not `next/link` or `next/navigation`. Exception: route handlers and `src/proxy.ts` keep native Next.js imports.
+- **`Intl` formatting** (dates, numbers) must use the current locale. In Server Components use `await getLocale()` from `next-intl/server`; in Client Components use `useLocale()` from `next-intl`.
+- Translation files live at `messages/en.json` and `messages/sl.json`. Namespace keys by feature area (e.g. `nav`, `footer`, `onboarding`).
+- Legal prose pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only — no Slovenian translation required for them.
+
 ## Security Notes
 
 - Protected app areas should use server-side session checks.

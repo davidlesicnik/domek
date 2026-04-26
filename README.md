@@ -171,9 +171,9 @@ If the Railway app shows 502s:
 Domek now uses a Paddle-first onboarding flow.
 
 1. A user logs in.
-2. If they do not already belong to a household, Domek sends them to `/onboarding/payment`.
+2. If they do not already belong to a household, or if their household subscription is unpaid, paused, or canceled, Domek sends them to `/onboarding/payment`.
 3. Paddle Checkout starts the yearly household subscription with a 30-day trial.
-4. Paddle sends `subscription.created` and `subscription.updated` webhooks to `/api/paddle/webhook`.
+4. Paddle sends subscription lifecycle webhooks to `/api/paddle/webhook`.
 5. Domek stores the subscription status in `BillingSubscription`.
 6. Once the status is `TRIALING` or `ACTIVE`, the user can continue to `/onboarding/household` and create the household.
 
@@ -187,11 +187,171 @@ Household creation is now blocked until billing access exists, unless the user h
 | `ACTIVE` | User can create a household and access the app |
 | `PAST_DUE`, `PAUSED`, `CANCELED` | User is redirected back to `/onboarding/payment` |
 
-**Required Paddle environment variables:**
+### Paddle Environment Variables
+
+Domek expects four Paddle values:
 
 - `PADDLE_CLIENT_TOKEN`
 - `PADDLE_PRICE_ID`
 - `PADDLE_WEBHOOK_SECRET`
+- `PADDLE_API_KEY`
+
+Keep all four in the same Paddle environment:
+
+- sandbox for local testing
+- live for production
+
+Do not mix a sandbox client token with a live price, webhook secret, or API key.
+
+### How To Get The Paddle Variables
+
+#### `PADDLE_CLIENT_TOKEN`
+
+Used by the browser checkout loader in `src/components/billing/paddle-checkout-launcher.tsx`.
+
+Where to get it in Paddle:
+
+- `Developer tools -> Authentication -> Client-side tokens`
+
+Create a client-side token and copy the token value.
+
+Expected format:
+
+- sandbox: starts with `test_`
+- live: starts with `live_`
+
+#### `PADDLE_PRICE_ID`
+
+Used by checkout to open the yearly subscription plan.
+
+Where to get it in Paddle:
+
+- `Catalog -> Products`
+- open the Domek product
+- create or open the recurring yearly price
+- copy the price ID
+
+Expected format:
+
+- starts with `pri_`
+
+Recommended setup for Domek:
+
+- recurring yearly billing
+- 30-day trial
+- one household plan
+
+#### `PADDLE_WEBHOOK_SECRET`
+
+Used to verify signed webhook requests in `src/app/api/paddle/webhook/route.ts`.
+
+Where to get it in Paddle:
+
+- `Developer tools -> Notifications`
+- create or open a notification destination
+- copy the destination endpoint secret key
+
+Expected format:
+
+- starts with `pdl_ntfset_`
+
+Webhook destination URL:
+
+- local/ngrok example:
+  `https://YOUR-NGROK-DOMAIN/api/paddle/webhook`
+- production example:
+  `https://YOUR-PRODUCTION-DOMAIN/api/paddle/webhook`
+
+Minimum events Domek should receive:
+
+- `subscription.created`
+- `subscription.updated`
+
+Recommended events for the current integration:
+
+- `subscription.created`
+- `subscription.updated`
+- `subscription.trialing`
+- `subscription.activated`
+- `subscription.canceled`
+- `subscription.past_due`
+- `subscription.paused`
+- `subscription.resumed`
+
+#### `PADDLE_API_KEY`
+
+Used server-side for billing actions in account settings, such as:
+
+- cancel subscription immediately when deleting an account
+- cancel subscription at the end of the billing cycle from account settings
+
+Where to get it in Paddle:
+
+- `Developer tools -> Authentication -> API keys`
+
+Create a server-side API key and copy the value.
+
+Expected format:
+
+- starts with `pdl_`
+- newer sandbox keys commonly include `_sdbx`
+
+Minimum permission:
+
+- `Subscriptions (Write)`
+
+Recommended permissions:
+
+- `Subscriptions (Write)`
+- `Subscriptions (Read)`
+
+### Local Sandbox Setup
+
+For local testing with ngrok:
+
+1. Start the app on port `3000`.
+2. Start ngrok:
+
+```bash
+ngrok http 3000
+```
+
+3. Set `APP_URL` to the exact HTTPS forwarding URL from ngrok.
+4. In Supabase Auth URL configuration, allow your ngrok callback host. Wildcards are supported, for example:
+
+```text
+https://*.ngrok-free.dev/auth/callback
+https://*.ngrok-free.app/auth/callback
+```
+
+5. In Paddle sandbox, set the notification destination to:
+
+```text
+https://YOUR-NGROK-DOMAIN/api/paddle/webhook
+```
+
+6. Use sandbox versions of:
+
+- `PADDLE_CLIENT_TOKEN`
+- `PADDLE_PRICE_ID`
+- `PADDLE_WEBHOOK_SECRET`
+- `PADDLE_API_KEY`
+
+If your ngrok URL changes, update:
+
+- `APP_URL`
+- the Paddle notification destination URL
+- any Supabase redirect URL entries that are not covered by your wildcard pattern
+
+### Example
+
+```bash
+APP_URL="https://your-ngrok-domain.ngrok-free.dev"
+PADDLE_CLIENT_TOKEN="test_..."
+PADDLE_PRICE_ID="pri_..."
+PADDLE_WEBHOOK_SECRET="pdl_ntfset_..."
+PADDLE_API_KEY="pdl_sdbx_..."
+```
 
 **Development access code** (entered on the payment onboarding screen):
 
@@ -317,6 +477,25 @@ docker compose up
 ```
 
 The web image is built with a multi-stage Dockerfile and runs as a non-root user in the final stage.
+
+## Internationalization
+
+Domek supports English (`en`) and Slovenian (`sl`). The active locale is embedded in the URL path:
+
+- `/en/...` — English
+- `/sl/...` — Slovenian
+
+Visiting `/` redirects to `/en/` by default.
+
+Translation files live at `messages/en.json` and `messages/sl.json`, organized by feature namespace. The library is **next-intl** (`src/i18n/`).
+
+To add a new language:
+
+1. Add the locale code to `src/i18n/routing.ts` (`locales` array).
+2. Create `messages/<locale>.json` with all keys from `messages/en.json`.
+3. Add the same locale to `generateStaticParams` in `src/app/[locale]/layout.tsx` (already covered by the `routing.locales` map).
+
+Legal pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only and do not require translation.
 
 ## Quality And Security
 

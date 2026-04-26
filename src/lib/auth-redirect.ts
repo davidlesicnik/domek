@@ -1,3 +1,9 @@
+const LOCALE_PREFIX_RE = /^\/[a-z]{2}(\/|$)/;
+
+function stripLocalePrefix(value: string): string {
+  return LOCALE_PREFIX_RE.test(value) ? value.replace(/^\/[a-z]{2}/, "") || "/" : value;
+}
+
 function isSafeRelativePath(value: string | null | undefined): value is string {
   return Boolean(value && value.startsWith("/") && !value.startsWith("//"));
 }
@@ -13,7 +19,9 @@ function sanitizeNextPath(value: string | null | undefined, options: SanitizeNex
     return options.fallback;
   }
 
-  if (options.blockedPrefixes.some((prefix) => value.startsWith(prefix))) {
+  const pathWithoutLocale = stripLocalePrefix(value);
+
+  if (options.blockedPrefixes.some((prefix) => pathWithoutLocale.startsWith(prefix))) {
     return options.fallback;
   }
 

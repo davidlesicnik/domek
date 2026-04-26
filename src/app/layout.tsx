@@ -1,31 +1,6 @@
-import type { Metadata } from "next";
+// Root passthrough — html/body and providers live in [locale]/layout.tsx.
 import type { ReactNode } from "react";
-import { Suspense } from "react";
 
-import { CookieBanner } from "@/components/analytics/cookie-banner";
-import { GoogleAnalytics } from "@/components/analytics/google-analytics";
-
-import "./globals.css";
-
-export const metadata: Metadata = {
-  title: "Domek",
-  description: "A household planner for shared calendars, tasks, notes, chores, and expenses.",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
-  return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
-        {children}
-        <CookieBanner enabled={Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID)} />
-        <Suspense fallback={null}>
-          <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-        </Suspense>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return children;
 }

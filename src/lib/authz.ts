@@ -1,3 +1,4 @@
+import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase";
@@ -31,7 +32,8 @@ export async function requireAppSession(): Promise<AppSession> {
   const session = await getCurrentAppSession();
 
   if (!session) {
-    redirect("/login?next=/app");
+    const locale = await getLocale();
+    redirect(`/${locale}/login?next=/${locale}/app`);
   }
 
   return session;
@@ -41,7 +43,8 @@ export async function requireHouseholdMemberSession(): Promise<AppSession> {
   const session = await requireAppSession();
 
   if (!(await hasHouseholdMembership(session.user.id))) {
-    redirect("/onboarding/household");
+    const locale = await getLocale();
+    redirect(`/${locale}/onboarding/household`);
   }
 
   return session;

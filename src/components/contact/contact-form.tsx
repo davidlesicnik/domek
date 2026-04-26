@@ -2,6 +2,7 @@
 
 import { Send } from "lucide-react";
 import { useActionState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 import type { ContactActionState } from "@/lib/actions/contact";
 
@@ -15,6 +16,7 @@ type ContactFormProps = Readonly<{
 }>;
 
 export function ContactForm({ action }: ContactFormProps) {
+  const t = useTranslations("contact");
   const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -32,7 +34,7 @@ export function ContactForm({ action }: ContactFormProps) {
     >
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-[#3c413e]" htmlFor="contact-name">
-          Name <span className="font-normal text-[#9a9e9b]">(optional)</span>
+          {t("formName")} <span className="font-normal text-[#9a9e9b]">{t("formNameOptional")}</span>
         </label>
         <input
           autoComplete="name"
@@ -49,7 +51,7 @@ export function ContactForm({ action }: ContactFormProps) {
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-[#3c413e]" htmlFor="contact-email">
-          Email
+          {t("formEmail")}
         </label>
         <input
           autoComplete="email"
@@ -67,7 +69,7 @@ export function ContactForm({ action }: ContactFormProps) {
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-[#3c413e]" htmlFor="contact-message">
-          Message
+          {t("formMessage")}
         </label>
         <textarea
           className="min-h-36 rounded-md border border-[#d7d4cb] bg-white px-3 py-2.5 text-sm leading-6 text-[#202321] outline-none transition placeholder:text-[#a8aaa5] focus:border-[#5f7f5d] focus:ring-2 focus:ring-[#dce8d8]"
@@ -86,7 +88,7 @@ export function ContactForm({ action }: ContactFormProps) {
           aria-live="polite"
           className={`text-sm font-medium ${state.success ? "text-[#3d6f4a]" : "text-[#b94e3f]"}`}
         >
-          {state.success ? "Message sent. We will reply by email." : state.error}
+          {state.success ? t("formSuccess") : state.error}
         </p>
         <button
           className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#232323] px-4 text-sm font-semibold text-[#fdfcf8] transition hover:bg-[#3a3a37] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
@@ -94,7 +96,7 @@ export function ContactForm({ action }: ContactFormProps) {
           type="submit"
         >
           <Send aria-hidden className="h-4 w-4" />
-          <span>{pending ? "Sending" : "Send message"}</span>
+          <span>{pending ? t("formSending") : t("formSend")}</span>
         </button>
       </div>
     </form>

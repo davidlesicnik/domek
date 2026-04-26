@@ -1,9 +1,11 @@
+import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { billingStatusHasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
+import { routing } from "@/i18n/routing";
 import { upsertSupabaseUser } from "@/lib/users";
 
 type CookieUpdate = Readonly<{
@@ -67,7 +69,7 @@ function redirectWithCookieUpdates(
   return response;
 }
 
-export async function proxy(request: NextRequest) {
+async function authProxy(request: NextRequest, pathnameOverride?: string) {
   let response = NextResponse.next({ request });
   const cookieUpdates: CookieUpdate[] = [];
   const headerUpdates = new Map<string, string>();
@@ -98,7 +100,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
+  const pathname = pathnameOverride ?? request.nextUrl.pathname;
 
   if (!user) {
     if (isPublicPath(pathname)) {
@@ -174,6 +176,74 @@ export async function proxy(request: NextRequest) {
   }
 
   return response;
+}
+
+const intlMiddleware = createIntlMiddleware(routing);
+
+const localePattern = new RegExp(`^/(${routing.locales.join("|")})(\/|$)`);
+
+function stripLocale(pathname: string): string {
+  return pathname.replace(localePattern, "/").replace(/\/+/g, "/");
+}
+
+function prefixLocale(path: string, locale: string): string {
+  if (!path.startsWith("/") || path.startsWith(`/${locale}/`) || path === `/${locale}`) {
+    return path;
+  }
+  return `/${locale}${path}`;
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip intl for API routes, auth route handlers, and Next.js internals
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/_next/")
+  ) {
+    return authProxy(request);
+  }
+
+  const pathnameWithoutLocale = stripLocale(pathname);
+
+  // Detect the current locale from the URL (for redirect prefixing)
+  const localeMatch = pathname.match(localePattern);
+  const currentLocale = localeMatch ? localeMatch[1] : routing.defaultLocale;
+
+  // Run auth/billing checks against the locale-stripped path
+  const proxyResponse = await authProxy(request, pathnameWithoutLocale);
+
+  // If proxy issued a redirect, re-prefix the target with the locale
+  if (proxyResponse.status >= 300 && proxyResponse.status < 400) {
+    const location = proxyResponse.headers.get("location");
+    if (location) {
+      const locationUrl = new URL(location, request.url);
+      const localeStrippedPath = stripLocale(locationUrl.pathname);
+      const prefixedPath = prefixLocale(localeStrippedPath, currentLocale);
+      locationUrl.pathname = prefixedPath;
+
+      const redirectResponse = NextResponse.redirect(locationUrl.toString(), {
+        status: proxyResponse.status,
+      });
+      proxyResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      proxyResponse.headers.forEach((value, key) => {
+        if (key !== "location" && key !== "set-cookie") {
+          redirectResponse.headers.set(key, value);
+        }
+      });
+      return redirectResponse;
+    }
+  }
+
+  // Path permitted by proxy — run intl middleware to handle locale rewriting
+  const intlResponse = intlMiddleware(request);
+  proxyResponse.cookies.getAll().forEach((cookie) => {
+    intlResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+  return intlResponse;
 }
 
 export const config = {

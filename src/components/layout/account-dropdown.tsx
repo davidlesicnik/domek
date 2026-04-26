@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 
+import { Link } from "@/i18n/navigation";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 
 export function AccountDropdown({
@@ -18,6 +19,7 @@ export function AccountDropdown({
   showName?: boolean;
   userName: string | null;
 }) {
+  const t = useTranslations("accountDropdown");
   const [isOpen, setIsOpen] = useState(false);
   const label = userName ?? "Domek";
   const firstName = label.trim().split(/\s+/)[0] ?? "Domek";
@@ -26,7 +28,7 @@ export function AccountDropdown({
     <div className={`relative ${showName ? "w-full" : "w-fit"}`}>
       <button
         aria-expanded={isOpen}
-        aria-label="Account"
+        aria-label={t("ariaLabel")}
         className={`flex cursor-pointer items-center transition ${
           showName
             ? "w-full gap-3 rounded-md py-2.5 pl-0 pr-2 text-left text-[13px] font-medium text-[#7a817d] hover:bg-[#f4f1ea] hover:text-[#202321]"
@@ -60,10 +62,10 @@ export function AccountDropdown({
             }`}
           >
             <p className="text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-              Signed in
+              {t("signedIn")}
             </p>
             <p className="mt-1 break-words text-sm font-semibold text-[#202321]">
-              {userName ?? "Household member"}
+              {userName ?? t("householdMember")}
             </p>
             <Link
               className="mt-3 flex h-9 items-center justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-xs font-semibold text-[#202321] transition hover:bg-[#eef7ef]"
@@ -71,13 +73,14 @@ export function AccountDropdown({
               onClick={() => setIsOpen(false)}
               prefetch={true}
             >
-              Account settings
+              {t("accountSettings")}
             </Link>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               className="mt-2 flex h-9 items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
               href="/api/auth/signout"
             >
-              Sign out
+              {t("signOut")}
             </a>
           </div>
         </>

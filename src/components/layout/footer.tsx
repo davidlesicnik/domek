@@ -1,20 +1,22 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-const links = [
-  { label: "Privacy policy", href: "/privacy" },
-  { label: "Terms of use", href: "/terms" },
-  { label: "Refund policy", href: "/refund-policy" },
-  { label: "Cookie policy", href: "/cookies" },
-  { label: "Contact", href: "/contact" },
-];
+import { Link } from "@/i18n/navigation";
 
-export function Footer() {
+export async function Footer() {
+  const t = await getTranslations("footer");
+
+  const links = [
+    { label: t("privacyPolicy"), href: "/privacy" as const },
+    { label: t("termsOfUse"), href: "/terms" as const },
+    { label: t("refundPolicy"), href: "/refund-policy" as const },
+    { label: t("cookiePolicy"), href: "/cookies" as const },
+    { label: t("contact"), href: "/contact" as const },
+  ];
+
   return (
     <footer className="border-t border-[#dfddd6] bg-[#fdfcf8] px-4 pt-6 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-[#9ea49f]">
-          Domek — a household planner for the people who live there.
-        </p>
+        <p className="text-xs text-[#9ea49f]">{t("tagline")}</p>
         <nav aria-label="Legal">
           <ul className="flex flex-wrap gap-x-5 gap-y-1">
             {links.map(({ label, href }) => (
