@@ -299,5 +299,10 @@
     "addItemButton": "Add",
     "emptyStateHeading": "Nothing here yet.",
     "emptyStateHint": "Create a list on the left to get started."
+  },
+  "shoppingPage": {
+    "title": "Shopping lists",
+    "metaTitle": "Shopping lists | Domek",
+    "metaDescription": "Shared shopping lists for your household."
   }
 }
