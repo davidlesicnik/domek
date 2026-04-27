@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { TodoBoard } from "@/components/todos/todo-board";
 import { getCurrentTodoScope, listAllTodoListsWithItems, listTodoMembers } from "@/lib/todo-lists";
 
-export const metadata: Metadata = {
-  title: "To-do | Domek",
-  description: "Shared todo lists for your household.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("todoPage");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 type TodosPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

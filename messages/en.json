@@ -262,5 +262,42 @@
     "expiryExpired": "Expired",
     "expiryTomorrow": "Expires tomorrow",
     "expiryDays": "Expires in {days} days"
+  },
+  "todoPage": {
+    "title": "To-do lists",
+    "metaTitle": "To-do lists | Domek",
+    "metaDescription": "Shared to-do lists for your household.",
+    "assignedTo": "Assigned to {member}",
+    "assignSomeone": "Assign to someone",
+    "unassigned": "Unassigned",
+    "clearAssignee": "Clear assignee",
+    "noAssignee": "No one assigned",
+    "selected": "Selected",
+    "addDueDate": "Add a due date",
+    "dueDate": "Due {date}",
+    "noDueDate": "No due date",
+    "clearDueDate": "Clear due date",
+    "addButton": "Add",
+    "memberFallback": "Household member",
+    "assigned": "Assigned"
+  },
+  "listBoard": {
+    "listsHeading": "Lists",
+    "noLists": "No lists yet.",
+    "itemsProgress": "{done} of {total} items done",
+    "newListPlaceholder": "New list...",
+    "addListButton": "Add",
+    "backToLists": "Back to lists",
+    "emptyList": "Nothing here yet. Add an item below.",
+    "deleteConfirm": "Delete?",
+    "confirmYes": "Delete",
+    "confirmNo": "Cancel",
+    "deleteListAriaLabel": "Delete {name}",
+    "deleteItemAriaLabel": "Delete item",
+    "completedHeading": "Done",
+    "addItemPlaceholder": "Add an item...",
+    "addItemButton": "Add",
+    "emptyStateHeading": "Nothing here yet.",
+    "emptyStateHint": "Create a list on the left to get started."
   }
 }
