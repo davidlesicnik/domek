@@ -2,6 +2,7 @@
 
 import type { ReactNode, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
@@ -110,6 +111,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
   renderComposerFooter,
   renderItemMeta,
 }: ListBoardProps<TItem, TCreateItemInput>) {
+  const t = useTranslations("listBoard");
   const [lists, setLists] = useState<ListView<TItem>[]>(initialLists);
   const [selectedListId, setSelectedListId] = useState<string | null>(
     initialLists[0]?.id ?? null,
@@ -359,13 +361,13 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
         >
           <div className="border-b border-[#e0dcd4] px-4 py-3">
             <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#6a5b52]">
-              Lists
+              {t("listsHeading")}
             </h2>
           </div>
 
           <ul className="flex-1 overflow-y-auto">
             {lists.length === 0 && (
-              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">No lists yet.</li>
+              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">{t("noLists")}</li>
             )}
             {lists.map((list) => {
               const doneCount = list.items.filter((i) => i.done).length;
@@ -418,32 +420,32 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                           />
                         </span>
                         <span className="sr-only">
-                          {doneCount} of {totalCount} items completed
+                          {t("itemsProgress", { done: doneCount, total: totalCount })}
                         </span>
                       </span>
                     )}
                   </button>
                   {confirmDeleteListId === list.id ? (
                     <div className="mr-2 flex shrink-0 flex-wrap items-center justify-end gap-1 py-2">
-                      <span className="text-xs text-[#5d635f]">Delete?</span>
+                      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                       <button
                         className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                         onClick={() => handleDeleteList(list.id)}
                         type="button"
                       >
-                        Yes
+                        {t("confirmYes")}
                       </button>
                       <button
                         className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                         onClick={() => setConfirmDeleteListId(null)}
                         type="button"
                       >
-                        No
+                        {t("confirmNo")}
                       </button>
                     </div>
                   ) : (
                     <button
-                      aria-label={`Delete ${list.name}`}
+                      aria-label={t("deleteListAriaLabel", { name: list.name })}
                       className="mr-2 mt-1.5 shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0"
                       onClick={() => setConfirmDeleteListId(list.id)}
                       type="button"
@@ -465,7 +467,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9"
               disabled={isSavingList}
               onChange={(e) => setNewListName(e.target.value)}
-              placeholder="New list…"
+              placeholder={t("newListPlaceholder")}
               type="text"
               value={newListName}
             />
@@ -474,7 +476,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               disabled={isSavingList || !newListName.trim()}
               type="submit"
             >
-              Add
+              {t("addListButton")}
             </button>
           </form>
         </aside>
@@ -489,7 +491,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
             <>
               <div className="flex items-center gap-3 border-b border-[#e0dcd4] px-4 py-3 sm:px-5">
                 <button
-                  aria-label="Back to lists"
+                  aria-label={t("backToLists")}
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
                   onClick={() => setIsMobileListOpen(false)}
                   type="button"
@@ -504,7 +506,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               <ul className="flex-1 overflow-y-auto">
                 {selectedList.items.length === 0 && (
                   <li className="m-4 rounded-md border border-dashed border-[#d8d2c8] px-4 py-8 text-center text-sm text-[#9a9e9b] sm:m-5 sm:px-5">
-                    Nothing here yet. Add an item below.
+                    {t("emptyList")}
                   </li>
                 )}
                 {activeItems.map((item) => (
@@ -530,25 +532,25 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                     </span>
                     {confirmDeleteItemId === item.id ? (
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                        <span className="text-xs text-[#5d635f]">Delete?</span>
+                        <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                         <button
                           className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                           onClick={() => handleDeleteItem(selectedList.id, item.id)}
                           type="button"
                         >
-                          Yes
+                          {t("confirmYes")}
                         </button>
                         <button
                           className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                           onClick={() => setConfirmDeleteItemId(null)}
                           type="button"
                         >
-                          No
+                          {t("confirmNo")}
                         </button>
                       </div>
                     ) : (
                       <button
-                        aria-label="Delete item"
+                        aria-label={t("deleteItemAriaLabel")}
                         className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
                         onClick={() => setConfirmDeleteItemId(item.id)}
                         type="button"
@@ -562,7 +564,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                   <>
                     <li className="border-b border-[#f0ede6] bg-[#fbfaf6] px-4 py-2 sm:px-5">
                       <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8b908c]">
-                        Completed
+                        {t("completedHeading")}
                       </span>
                     </li>
                     {completedItems.map((item, index) => (
@@ -588,25 +590,25 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                         </span>
                         {confirmDeleteItemId === item.id ? (
                           <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                            <span className="text-xs text-[#5d635f]">Delete?</span>
+                            <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                             <button
                               className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                               onClick={() => handleDeleteItem(selectedList.id, item.id)}
                               type="button"
                             >
-                              Yes
+                              {t("confirmYes")}
                             </button>
                             <button
                               className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                               onClick={() => setConfirmDeleteItemId(null)}
                               type="button"
                             >
-                              No
+                              {t("confirmNo")}
                             </button>
                           </div>
                         ) : (
                           <button
-                            aria-label="Delete item"
+                            aria-label={t("deleteItemAriaLabel")}
                             className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
                             onClick={() => setConfirmDeleteItemId(item.id)}
                             type="button"
@@ -646,7 +648,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                     className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:outline-none sm:h-9"
                     disabled={isSavingItem}
                     onChange={(e) => setNewItemText(e.target.value)}
-                    placeholder="Add an item…"
+                    placeholder={t("addItemPlaceholder")}
                     type="text"
                     value={newItemText}
                   />
@@ -664,7 +666,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       disabled={isSavingItem || !newItemText.trim()}
                       type="submit"
                     >
-                      Add
+                      {t("addItemButton")}
                     </button>
                   </div>
                 )}
@@ -672,8 +674,8 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
-              <p className="font-serif text-lg text-[#5d635f]">Nothing here yet.</p>
-              <p className="mt-1 text-sm text-[#9a9e9b]">Create a list on the left to get started.</p>
+              <p className="font-serif text-lg text-[#5d635f]">{t("emptyStateHeading")}</p>
+              <p className="mt-1 text-sm text-[#9a9e9b]">{t("emptyStateHint")}</p>
             </div>
           )}
         </div>

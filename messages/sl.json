@@ -262,5 +262,47 @@
     "expiryExpired": "Poteklo",
     "expiryTomorrow": "Poteče jutri",
     "expiryDays": "Poteče čez {days} dni"
+  },
+  "todoPage": {
+    "title": "Opravila",
+    "metaTitle": "Opravila | Domek",
+    "metaDescription": "Skupni seznami opravil za vaš dom.",
+    "assignedTo": "Dodeljeno: {member}",
+    "assignSomeone": "Dodeli nekomu",
+    "unassigned": "Brez dodelitve",
+    "clearAssignee": "Odstrani dodelitev",
+    "noAssignee": "Nikomur ni dodeljeno",
+    "selected": "Izbrano",
+    "addDueDate": "Dodaj rok",
+    "dueDate": "Rok: {date}",
+    "noDueDate": "Brez roka",
+    "clearDueDate": "Odstrani rok",
+    "addButton": "Dodaj",
+    "memberFallback": "Član gospodinjstva",
+    "assigned": "Dodeljeno"
+  },
+  "listBoard": {
+    "listsHeading": "Seznami",
+    "noLists": "Zaenkrat ni seznamov.",
+    "itemsProgress": "{done} od {total} opravljenih",
+    "newListPlaceholder": "Nov seznam...",
+    "addListButton": "Dodaj",
+    "backToLists": "Nazaj na sezname",
+    "emptyList": "Tu še ni ničesar. Spodaj dodajte opravilo.",
+    "deleteConfirm": "Izbrišem?",
+    "confirmYes": "Izbriši",
+    "confirmNo": "Prekliči",
+    "deleteListAriaLabel": "Izbriši {name}",
+    "deleteItemAriaLabel": "Izbriši opravilo",
+    "completedHeading": "Opravljeno",
+    "addItemPlaceholder": "Dodaj opravilo...",
+    "addItemButton": "Dodaj",
+    "emptyStateHeading": "Tu še ni ničesar.",
+    "emptyStateHint": "Za začetek ustvarite seznam na levi."
+  },
+  "shoppingPage": {
+    "title": "Nakupovalni seznami",
+    "metaTitle": "Nakupovalni seznami | Domek",
+    "metaDescription": "Skupni nakupovalni seznami za vaš dom."
   }
 }

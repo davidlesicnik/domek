@@ -1,7 +1,8 @@
 "use client";
 
 import { CalendarDays, UserRound, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ListBoard } from "@/components/list-board/list-board";
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -24,34 +25,21 @@ type TodoQuickAddControlsProps = Readonly<{
   selectedMemberId: string | null;
 }>;
 
-const compactDateFormatter = new Intl.DateTimeFormat("en", {
-  day: "numeric",
-  month: "short",
-});
-
-const fullDateFormatter = new Intl.DateTimeFormat("en", {
-  day: "numeric",
-  month: "short",
-  weekday: "short",
-});
-
 function padDatePart(value: number) {
   return value.toString().padStart(2, "0");
 }
 
-function memberLabel(member: TodoMemberView) {
-  return member.name ?? member.email ?? "Member";
+function memberDisplayLabel(member: TodoMemberView, fallback: string) {
+  return member.name ?? member.email ?? fallback;
 }
 
 function todayDateKey() {
   const today = new Date();
-
   return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(today.getDate())}`;
 }
 
 function formatDateLabel(dateKey: string, formatter: Intl.DateTimeFormat) {
   const [year, month, day] = dateKey.split("-").map(Number);
-
   return formatter.format(new Date(year, month - 1, day));
 }
 
@@ -65,15 +53,25 @@ function TodoQuickAddControls({
   selectedDueDate,
   selectedMemberId,
 }: TodoQuickAddControlsProps) {
+  const t = useTranslations("todoPage");
+  const locale = useLocale();
+  const compactDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }),
+    [locale],
+  );
+  const fullDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", weekday: "short" }),
+    [locale],
+  );
   const [activePopover, setActivePopover] = useState<"member" | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const dueDateInputRef = useRef<HTMLInputElement | null>(null);
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
+  const memberFallback = t("memberFallback");
+  const currentMemberLabel = selectedMember ? memberDisplayLabel(selectedMember, memberFallback) : null;
 
   useEffect(() => {
-    if (!activePopover) {
-      return;
-    }
+    if (!activePopover) return;
 
     function handlePointerDown(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -82,9 +80,7 @@ function TodoQuickAddControls({
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActivePopover(null);
-      }
+      if (event.key === "Escape") setActivePopover(null);
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -107,7 +103,11 @@ function TodoQuickAddControls({
           <div className="relative">
             <button
               aria-expanded={activePopover === "member"}
-              aria-label={selectedMember ? `Assigned to ${memberLabel(selectedMember)}` : "Assign someone"}
+              aria-label={
+                currentMemberLabel
+                  ? t("assignedTo", { member: currentMemberLabel })
+                  : t("assignSomeone")
+              }
               className={`flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm transition ${
                 selectedMember
                   ? "border-[#bfd0c1] bg-[#eef6ef] pr-8 text-[#45614c] hover:bg-[#e2f0e4]"
@@ -130,11 +130,11 @@ function TodoQuickAddControls({
                   <UserRound aria-hidden className="h-4 w-4" />
                 </span>
               )}
-              <span>{selectedMember ? memberLabel(selectedMember) : "Unassigned"}</span>
+              <span>{currentMemberLabel ?? t("unassigned")}</span>
             </button>
             {selectedMember ? (
               <button
-                aria-label="Clear assignee"
+                aria-label={t("clearAssignee")}
                 className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[#dbe9dd] text-[#45614c] transition hover:bg-[#cfe2d2]"
                 onClick={(event) => {
                   event.stopPropagation();
@@ -162,8 +162,10 @@ function TodoQuickAddControls({
                   <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#8a908c]">
                     <UserRound aria-hidden className="h-4 w-4" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate">No assignee</span>
-                  {selectedMemberId === null ? <span className="text-xs font-semibold text-[#45614c]">Selected</span> : null}
+                  <span className="min-w-0 flex-1 truncate">{t("noAssignee")}</span>
+                  {selectedMemberId === null ? (
+                    <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
+                  ) : null}
                 </button>
                 <div className="my-2 border-t border-[#eee9df]" />
                 <div className="grid gap-1">
@@ -188,8 +190,12 @@ function TodoQuickAddControls({
                         emoji={member.emoji}
                         name={member.name}
                       />
-                      <span className="min-w-0 flex-1 truncate">{memberLabel(member)}</span>
-                      {selectedMemberId === member.id ? <span className="text-xs font-semibold text-[#45614c]">Selected</span> : null}
+                      <span className="min-w-0 flex-1 truncate">
+                        {memberDisplayLabel(member, memberFallback)}
+                      </span>
+                      {selectedMemberId === member.id ? (
+                        <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
+                      ) : null}
                     </button>
                   ))}
                 </div>
@@ -199,7 +205,11 @@ function TodoQuickAddControls({
 
           <div className="relative">
             <button
-              aria-label={selectedDueDate ? `Due ${formatDateLabel(selectedDueDate, fullDateFormatter)}` : "Add due date"}
+              aria-label={
+                selectedDueDate
+                  ? t("dueDate", { date: formatDateLabel(selectedDueDate, fullDateFormatter) })
+                  : t("addDueDate")
+              }
               className={`flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm transition ${
                 selectedDueDate
                   ? "border-[#ded3a1] bg-[#fbf4cf] pr-8 text-[#64571f] hover:bg-[#f6eab5]"
@@ -208,28 +218,26 @@ function TodoQuickAddControls({
               disabled={disabled}
               onClick={() => {
                 const input = dueDateInputRef.current;
-
-                if (!input) {
-                  return;
-                }
-
+                if (!input) return;
                 input.focus();
-
                 if (typeof input.showPicker === "function") {
                   input.showPicker();
                   return;
                 }
-
                 input.click();
               }}
               type="button"
             >
               <CalendarDays aria-hidden className="h-4 w-4" />
-              <span>{selectedDueDate ? formatDateLabel(selectedDueDate, compactDateFormatter) : "No due date"}</span>
+              <span>
+                {selectedDueDate
+                  ? formatDateLabel(selectedDueDate, compactDateFormatter)
+                  : t("noDueDate")}
+              </span>
             </button>
             {selectedDueDate ? (
               <button
-                aria-label="Clear due date"
+                aria-label={t("clearDueDate")}
                 className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[#efe6b3] text-[#64571f] transition hover:bg-[#e5db9e]"
                 onClick={(event) => {
                   event.stopPropagation();
@@ -257,15 +265,20 @@ function TodoQuickAddControls({
           disabled={disabled || !canSubmit}
           type="submit"
         >
-          Add
+          {t("addButton")}
         </button>
       </div>
-
     </div>
   );
 }
 
 function TodoItemMeta({ item }: { item: TodoItemView }) {
+  const t = useTranslations("todoPage");
+  const locale = useLocale();
+  const fullDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", weekday: "short" }),
+    [locale],
+  );
   const todayKey = todayDateKey();
   const isOverdue = Boolean(item.dueDate && !item.done && item.dueDate < todayKey);
   const isDueToday = Boolean(item.dueDate && !item.done && item.dueDate === todayKey);
@@ -284,7 +297,7 @@ function TodoItemMeta({ item }: { item: TodoItemView }) {
             email={item.assignedHouseholdMemberEmail}
             emoji={item.assignedHouseholdMemberEmoji}
             name={item.assignedHouseholdMemberName}
-            title={item.assignedHouseholdMemberName ?? item.assignedHouseholdMemberEmail ?? "Assigned"}
+            title={item.assignedHouseholdMemberName ?? item.assignedHouseholdMemberEmail ?? t("assigned")}
           />
         </span>
       ) : null}
@@ -308,20 +321,17 @@ function TodoItemMeta({ item }: { item: TodoItemView }) {
 }
 
 export function TodoBoard({ autoOpenComposer = false, initialLists, members }: TodoBoardProps) {
+  const t = useTranslations("todoPage");
   const [composerResetKey, setComposerResetKey] = useState(0);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedDueDate, setSelectedDueDate] = useState<string | null>(null);
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
 
   useEffect(() => {
-    if (!autoOpenComposer) {
-      return;
-    }
-
+    if (!autoOpenComposer) return;
     const composerInput = document.querySelector<HTMLInputElement>(
       'form[data-list-board-composer="true"] input[type="text"]',
     );
-
     composerInput?.focus();
   }, [autoOpenComposer]);
 
@@ -367,7 +377,7 @@ export function TodoBoard({ autoOpenComposer = false, initialLists, members }: T
         />
       )}
       renderItemMeta={(item) => <TodoItemMeta item={item} />}
-      title="To-do"
+      title={t("title")}
     />
   );
 }
