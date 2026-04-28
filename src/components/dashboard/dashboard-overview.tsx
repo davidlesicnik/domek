@@ -1,8 +1,9 @@
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { DashboardPlanner } from "@/components/dashboard/dashboard-planner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { MemberAvatar } from "@/components/ui/member-avatar";
+import { Link } from "@/i18n/navigation";
 import type { DashboardData } from "@/lib/dashboard";
 
 type DashboardOverviewProps = Readonly<{
@@ -15,18 +16,18 @@ type HeroState = Readonly<{
   summary: string;
 }>;
 
-function formatSignedAmount(amount: number) {
+function formatSignedAmount(amount: number, locale: string) {
   const sign = amount > 0 ? "+" : amount < 0 ? "−" : "";
   const absoluteAmount = Math.abs(amount);
 
-  return `${sign}${absoluteAmount.toLocaleString("en", {
+  return `${sign}${absoluteAmount.toLocaleString(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   })}`;
 }
 
-function formatExpenseDate(date: string) {
-  return new Intl.DateTimeFormat("en", {
+function formatExpenseDate(date: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
@@ -37,47 +38,50 @@ function countAgendaItems(data: DashboardData) {
   return data.agendaDays.reduce((sum, day) => sum + day.items.length, 0);
 }
 
-function heroState(data: DashboardData): HeroState {
+function formatMonthLabel(dateKey: string, locale: string) {
+  const [year, month] = dateKey.split("-").map(Number);
+
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function heroState(data: DashboardData, t: Awaited<ReturnType<typeof getTranslations>>): HeroState {
   const upcomingCount = countAgendaItems(data);
 
   if (data.actionSummary.overdueChores > 0) {
-    const title =
-      data.actionSummary.overdueChores === 1
-        ? "1 chore needs attention"
-        : `${data.actionSummary.overdueChores} chores need attention`;
-    const summary =
-      upcomingCount > 0
-        ? `${upcomingCount} more things are coming up this week. Start with what has slipped.`
-        : "Start with what has slipped, then settle the rest of the board.";
-
     return {
-      eyebrow: "Needs attention",
-      summary,
-      title,
+      eyebrow: t("heroNeedsAttentionEyebrow"),
+      summary:
+        upcomingCount > 0
+          ? t("heroOverdueWithUpcoming", { count: upcomingCount })
+          : t("heroOverdueOnly"),
+      title: t("heroOverdueChores", { count: data.actionSummary.overdueChores }),
     };
   }
 
   if (upcomingCount > 0) {
-    const title =
-      upcomingCount === 1 ? "1 thing is coming up next" : `${upcomingCount} things are coming up next`;
-
     return {
-      eyebrow: "This week",
-      summary: "Nothing is urgent, but the next few days are taking shape.",
-      title,
+      eyebrow: t("heroThisWeekEyebrow"),
+      summary: t("heroUpcomingSummary"),
+      title: t("heroUpcoming", { count: upcomingCount }),
     };
   }
 
   return {
-    eyebrow: "All clear",
-    summary: "Nothing is overdue and nothing is scheduled for the next 7 days.",
-    title: "Everything is under control this week.",
+    eyebrow: t("heroAllClearEyebrow"),
+    summary: t("heroAllClearSummary"),
+    title: t("heroAllClearTitle"),
   };
 }
 
-export function DashboardOverview({ data }: DashboardOverviewProps) {
+export async function DashboardOverview({ data }: DashboardOverviewProps) {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations("dashboardPage")]);
   const { actionSummary, agendaDays, expenseSnapshot, monthItemCountsByDate, todayKey } = data;
-  const summaryState = heroState(data);
+  const summaryState = heroState(data, t);
+  const monthLabel = formatMonthLabel(todayKey, locale);
   const hasExpenseActivity =
     expenseSnapshot.entries.length > 0 ||
     expenseSnapshot.stats.income !== 0 ||
@@ -100,7 +104,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
                   {actionSummary.todosThisWeek}
                 </span>
                 <span className="text-sm font-medium sm:text-[15px]">
-                  {actionSummary.todosThisWeek === 1 ? "task due" : "tasks due"}
+                  {t("tasksDue", { count: actionSummary.todosThisWeek })}
                 </span>
               </span>
               <span aria-hidden className="h-1 w-1 rounded-full bg-[#c9ceca]" />
@@ -109,7 +113,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
                   {actionSummary.calendarThisWeek}
                 </span>
                 <span className="text-sm font-medium sm:text-[15px]">
-                  {actionSummary.calendarThisWeek === 1 ? "event" : "events"}
+                  {t("events", { count: actionSummary.calendarThisWeek })}
                 </span>
               </span>
               <span aria-hidden className="h-1 w-1 rounded-full bg-[#c9ceca]" />
@@ -118,7 +122,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
                   {actionSummary.overdueChores}
                 </span>
                 <span className="text-sm font-medium sm:text-[15px]">
-                  {actionSummary.overdueChores === 1 ? "overdue chore" : "overdue chores"}
+                  {t("overdueChores", { count: actionSummary.overdueChores })}
                 </span>
               </span>
             </div>
@@ -140,41 +144,41 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-                Money this month
+                {t("moneyThisMonth")}
               </p>
               <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
-                {expenseSnapshot.monthLabel}
+                {monthLabel}
               </h2>
               <p className="mt-2 max-w-lg text-sm leading-6 text-[#6c726e]">
-                A lighter read on income, spending, and the latest entries on the board.
+                {t("moneySummary")}
               </p>
             </div>
             <Link
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
               href="/app/expenses"
             >
-              Open expenses
+              {t("openExpenses")}
             </Link>
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <StatCard
               accent="sage"
-              detail="Income"
-              label="In"
-              value={formatSignedAmount(expenseSnapshot.stats.income)}
+              detail={t("incomeDetail")}
+              label={t("incomeLabel")}
+              value={formatSignedAmount(expenseSnapshot.stats.income, locale)}
             />
             <StatCard
               accent="rose"
-              detail="Spending"
-              label="Out"
-              value={formatSignedAmount(-expenseSnapshot.stats.expenses)}
+              detail={t("spendingDetail")}
+              label={t("spendingLabel")}
+              value={formatSignedAmount(-expenseSnapshot.stats.expenses, locale)}
             />
             <StatCard
               accent="sun"
-              detail="This month"
-              label="Net"
-              value={formatSignedAmount(expenseSnapshot.stats.net)}
+              detail={t("netDetail")}
+              label={t("netLabel")}
+              value={formatSignedAmount(expenseSnapshot.stats.net, locale)}
             />
           </div>
 
@@ -204,7 +208,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
                         ) : null}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#717874]">
-                        <span>{formatExpenseDate(expense.date)}</span>
+                        <span>{formatExpenseDate(expense.date, locale)}</span>
                         {expense.householdMemberName ? (
                           <>
                             <span aria-hidden>·</span>
@@ -228,7 +232,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
                       }`}
                     >
                       {expense.type === "INCOME" ? "+" : "−"}
-                      {formatSignedAmount(expense.amount).replace(/^[+−]/, "")}
+                      {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
                     </p>
                   </div>
                 ))}
@@ -241,20 +245,20 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-                Money this month
+                {t("moneyThisMonth")}
               </p>
               <h2 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]">
-                No expenses this month
+                {t("noExpensesTitle")}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#6c726e]">
-                Nothing to track yet. Add spending when the month starts to fill up.
+                {t("noExpensesSummary")}
               </p>
             </div>
             <Link
               className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
               href="/app/expenses"
             >
-              Add expense
+              {t("addExpense")}
             </Link>
           </div>
         </section>
