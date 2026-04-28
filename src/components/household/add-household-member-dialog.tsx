@@ -61,13 +61,14 @@ export function AddHouseholdMemberDialog({
     error: null,
     success: false,
   });
+  const [currentTime] = useState(() => Date.now());
   const [invitePending, startInviteTransition] = useTransition();
   const [memberPending, startMemberTransition] = useTransition();
   const [, startRevokeTransition] = useTransition();
   const memberInitial = previewInitial(memberName);
 
   function formatExpiry(date: Date): string {
-    const diff = date.getTime() - Date.now();
+    const diff = date.getTime() - currentTime;
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
     if (days <= 0) return t("expiryExpired");

@@ -4,8 +4,6 @@ import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import {
   Banknote,
-  ChevronLeft,
-  ChevronRight,
   ClipboardCheck,
   Home,
   ListTodo,
@@ -36,88 +34,37 @@ function isUnmodifiedPrimaryClick(event: MouseEvent<HTMLAnchorElement>) {
 }
 
 type AppNavigationProps = Readonly<{
-  collapsed: boolean;
   memberColor: string | null;
   memberEmoji: string | null;
-  onToggleCollapsed: () => void;
   userName: string | null;
 }>;
 
 function SidebarFooterLink({
-  collapsed,
   href,
   icon,
   label,
 }: Readonly<{
-  collapsed: boolean;
   href: string;
   icon: ReactNode;
   label: string;
 }>) {
   return (
     <Link
-      aria-label={collapsed ? label : undefined}
       className="group inline-flex items-center rounded-md px-2 py-2.5 text-[13px] font-medium text-[#7a817d] transition hover:bg-[#f4f1ea] hover:text-[#202321]"
       href={href as "/app/household"}
       prefetch={true}
-      title={collapsed ? label : undefined}
     >
       <span className="inline-flex w-4 shrink-0 justify-center text-[#b0b6b1]/70 transition group-hover:text-[#8f9691]">
         {icon}
       </span>
-      <span
-        aria-hidden={collapsed}
-        className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-200 ease-out ${
-          collapsed ? "ml-0 max-w-0 opacity-0" : "ml-3 max-w-[10rem] opacity-100"
-        }`}
-      >
-        {label}
-      </span>
-      {collapsed ? <span className="sr-only">{label}</span> : null}
+      <span className="ml-3 overflow-hidden whitespace-nowrap">{label}</span>
     </Link>
   );
 }
 
-function SidebarUtilityButton({
-  collapsed,
-  icon,
-  label,
-  onClick,
-}: Readonly<{
-  collapsed: boolean;
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}>) {
-  return (
-    <button
-      aria-label={collapsed ? label : undefined}
-      className="group inline-flex items-center rounded-md px-2 py-2 text-xs font-medium text-[#949a96] transition hover:bg-[#f4f1ea] hover:text-[#5d635f]"
-      onClick={onClick}
-      title={collapsed ? label : undefined}
-      type="button"
-    >
-      <span className="inline-flex w-4 shrink-0 justify-center text-[#babfbb]/70 transition group-hover:text-[#949a96]">
-        {icon}
-      </span>
-      <span
-        aria-hidden={collapsed}
-        className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-200 ease-out ${
-          collapsed ? "ml-0 max-w-0 opacity-0" : "ml-3 max-w-[10rem] opacity-100"
-        }`}
-      >
-        {label}
-      </span>
-      {collapsed ? <span className="sr-only">{label}</span> : null}
-    </button>
-  );
-}
-
 export function AppNavigation({
-  collapsed,
   memberColor,
   memberEmoji,
-  onToggleCollapsed,
   userName,
 }: AppNavigationProps) {
   const t = useTranslations("nav");
@@ -187,15 +134,9 @@ export function AppNavigation({
     <>
       <nav
         aria-label="Primary"
-        className={`hidden transition-[width] duration-200 ease-out sm:sticky sm:top-8 sm:block sm:self-start ${
-          collapsed ? "sm:w-[4.5rem]" : "sm:w-56"
-        }`}
+        className="hidden sm:sticky sm:top-8 sm:block sm:w-56 sm:self-start"
       >
-        <div
-          className={`flex w-full flex-col border-l border-[#ebe7de] transition-[padding] duration-200 ease-out ${
-            collapsed ? "gap-2 pl-2" : "gap-2 pl-3"
-          }`}
-        >
+        <div className="flex w-full flex-col gap-2 border-l border-[#ebe7de] pl-3">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = isActiveNavigationItem(item.href, pathname);
@@ -211,52 +152,27 @@ export function AppNavigation({
             const iconClassName = `h-4 w-4 shrink-0 transition ${
               isVisuallyActive
                 ? "text-[#5f816e]"
-                : collapsed
-                  ? "text-[#666d69] group-hover:text-[#202321]"
-                  : "text-[#aab0ac]/70 group-hover:text-[#888f8a]"
+                : "text-[#aab0ac]/70 group-hover:text-[#888f8a]"
             }`;
 
             return (
               <Link
                 aria-current={isActive ? "page" : undefined}
-                aria-label={collapsed ? item.label : undefined}
                 className={`${className} group items-center px-2 py-3 transition-all duration-200 ease-out`}
                 href={item.href}
                 key={item.label}
                 onClick={(event) => handleNavigationClick(item.href, event)}
                 prefetch={true}
-                title={collapsed ? item.label : undefined}
               >
                 <span className="inline-flex w-4 shrink-0 justify-center">
                   <Icon aria-hidden className={iconClassName} />
                 </span>
-                <span
-                  aria-hidden={collapsed}
-                  className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-200 ease-out ${
-                    collapsed ? "ml-0 max-w-0 opacity-0" : "ml-3 max-w-[10rem] opacity-100"
-                  }`}
-                >
-                  {item.label}
-                </span>
-                {collapsed ? <span className="sr-only">{item.label}</span> : null}
+                <span className="ml-3 overflow-hidden whitespace-nowrap">{item.label}</span>
               </Link>
             );
           })}
           <div className="mt-8 border-t border-[#ebe7de] pt-4">
-            <SidebarUtilityButton
-              collapsed={collapsed}
-              icon={
-                collapsed ? (
-                  <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0" />
-                ) : (
-                  <ChevronLeft aria-hidden className="h-3.5 w-3.5 shrink-0" />
-                )
-              }
-              label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-              onClick={onToggleCollapsed}
-            />
             <SidebarFooterLink
-              collapsed={collapsed}
               href="/app/household"
               icon={<Settings aria-hidden className="h-4 w-4 shrink-0" />}
               label={t("householdSettings")}
@@ -266,7 +182,7 @@ export function AppNavigation({
                 align="left"
                 memberColor={memberColor}
                 memberEmoji={memberEmoji}
-                showName={!collapsed}
+                showName={true}
                 userName={userName}
               />
             </div>
