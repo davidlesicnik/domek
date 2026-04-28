@@ -26,12 +26,8 @@ function formatSignedAmount(amount: number, locale: string) {
   })}`;
 }
 
-function formatExpenseDate(date: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  }).format(new Date(date));
+function formatExpenseDate(date: string) {
+  return date.slice(0, 10);
 }
 
 function countAgendaItems(data: DashboardData) {
@@ -208,7 +204,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                         ) : null}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#717874]">
-                        <span>{formatExpenseDate(expense.date, locale)}</span>
+                        <span>{formatExpenseDate(expense.date)}</span>
                         {expense.householdMemberName ? (
                           <>
                             <span aria-hidden>·</span>

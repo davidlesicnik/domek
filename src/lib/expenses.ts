@@ -22,6 +22,15 @@ export type ExpenseView = {
   householdMemberName: string | null;
   householdMemberColor: string | null;
   householdMemberEmoji: string | null;
+  splits: ExpenseSplitView[];
+};
+
+export type ExpenseSplitView = {
+  id: string;
+  householdMemberId: string | null;
+  householdMemberName: string | null;
+  householdMemberColor: string | null;
+  householdMemberEmoji: string | null;
 };
 
 export type CategoryView = { id: string; color: string; name: string };
@@ -118,6 +127,16 @@ const expenseSelect = {
   householdMember: {
     select: { color: true, emoji: true, name: true, account: { select: { email: true } } },
   },
+  splits: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      householdMemberId: true,
+      householdMember: {
+        select: { color: true, emoji: true, name: true, account: { select: { email: true } } },
+      },
+    },
+  },
 } satisfies Prisma.ExpenseSelect;
 
 type RawExpense = {
@@ -137,6 +156,16 @@ type RawExpense = {
     name: string;
     account: { email: string | null } | null;
   } | null;
+  splits: {
+    id: string;
+    householdMemberId: string | null;
+    householdMember: {
+      color: string;
+      emoji: string | null;
+      name: string;
+      account: { email: string | null } | null;
+    } | null;
+  }[];
 };
 
 function toExpenseView(e: RawExpense): ExpenseView {
@@ -145,7 +174,7 @@ function toExpenseView(e: RawExpense): ExpenseView {
     name: e.name,
     amount: Number(e.amount),
     type: e.type,
-    date: e.date.toISOString(),
+    date: e.date.toISOString().slice(0, 10),
     notes: e.notes,
     memberName: e.memberName,
     categoryId: e.categoryId,
@@ -160,6 +189,18 @@ function toExpenseView(e: RawExpense): ExpenseView {
       : e.memberName,
     householdMemberColor: e.householdMember?.color ?? null,
     householdMemberEmoji: e.householdMember?.emoji ?? null,
+    splits: e.splits.map((split) => ({
+      id: split.id,
+      householdMemberId: split.householdMemberId,
+      householdMemberName: split.householdMember
+        ? getHouseholdMemberName({
+            accountEmail: split.householdMember.account?.email,
+            name: split.householdMember.name,
+          })
+        : null,
+      householdMemberColor: split.householdMember?.color ?? null,
+      householdMemberEmoji: split.householdMember?.emoji ?? null,
+    })),
   };
 }
 
@@ -214,6 +255,43 @@ export const expenseInputSchema = z
     memberName: z.string().trim().max(120).optional().nullable(),
     categoryId: z.string().cuid().optional().nullable(),
     householdMemberId: z.string().cuid().optional().nullable(),
+    splitHouseholdMemberIds: z.array(z.string().cuid()).max(100).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const splitIds = data.splitHouseholdMemberIds ?? [];
+    const uniqueSplitIds = new Set(splitIds);
+
+    if (splitIds.length !== uniqueSplitIds.size) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Use each split member once.",
+        path: ["splitHouseholdMemberIds"],
+      });
+    }
+
+    if (data.type === "INCOME" && splitIds.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Income entries cannot be split.",
+        path: ["splitHouseholdMemberIds"],
+      });
+    }
+
+    if (data.type === "EXPENSE" && splitIds.length === 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Choose at least two people to split an expense.",
+        path: ["splitHouseholdMemberIds"],
+      });
+    }
+
+    if (data.type === "EXPENSE" && splitIds.length > 0 && !data.householdMemberId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Choose who paid before splitting an expense.",
+        path: ["householdMemberId"],
+      });
+    }
   })
   .strict();
 
@@ -221,8 +299,13 @@ export function parseExpenseInput(input: unknown) {
   return expenseInputSchema.parse(input);
 }
 
+function splitHouseholdMemberIds(data: z.infer<typeof expenseInputSchema>): string[] {
+  return data.type === "EXPENSE" ? [...new Set(data.splitHouseholdMemberIds ?? [])] : [];
+}
+
 async function expenseReferencesExist(data: z.infer<typeof expenseInputSchema>, scope: ExpenseScope) {
-  const [category, householdMember] = await Promise.all([
+  const splitIds = splitHouseholdMemberIds(data);
+  const [category, householdMember, splitMemberCount] = await Promise.all([
     data.categoryId
       ? prisma.expenseCategory.findFirst({
           select: { id: true },
@@ -235,9 +318,14 @@ async function expenseReferencesExist(data: z.infer<typeof expenseInputSchema>, 
           where: { householdId: scope.householdId, id: data.householdMemberId },
         })
       : Promise.resolve(data.householdMemberId ? null : { id: null }),
+    splitIds.length > 0
+      ? prisma.householdMember.count({
+          where: { householdId: scope.householdId, id: { in: splitIds } },
+        })
+      : Promise.resolve(0),
   ]);
 
-  if (!category || !householdMember) {
+  if (!category || !householdMember || splitMemberCount !== splitIds.length) {
     return false;
   }
 
@@ -249,6 +337,7 @@ export async function createExpense(
   scope: ExpenseScope,
 ): Promise<ExpenseView | null> {
   if (!(await expenseReferencesExist(data, scope))) return null;
+  const splitIds = splitHouseholdMemberIds(data);
 
   const create: Prisma.ExpenseUncheckedCreateInput = {
     name: data.name,
@@ -263,7 +352,19 @@ export async function createExpense(
     householdId: scope.householdId,
   };
 
-  const expense = await prisma.expense.create({ data: create, select: expenseSelect });
+  const expense = await prisma.$transaction(async (tx) => {
+    const createdExpense = await tx.expense.create({ data: create, select: { id: true } });
+    if (splitIds.length > 0) {
+      await tx.expenseSplit.createMany({
+        data: splitIds.map((householdMemberId) => ({
+          expenseId: createdExpense.id,
+          householdId: scope.householdId,
+          householdMemberId,
+        })),
+      });
+    }
+    return tx.expense.findUniqueOrThrow({ select: expenseSelect, where: { id: createdExpense.id } });
+  });
   return toExpenseView(expense);
 }
 
@@ -278,20 +379,34 @@ export async function updateExpense(
   });
 
   if (!existing || !(await expenseReferencesExist(data, scope))) return null;
+  const splitIds = splitHouseholdMemberIds(data);
 
-  const expense = await prisma.expense.update({
-    data: {
-      name: data.name,
-      amount: data.amount,
-      type: data.type,
-      date: new Date(`${data.date}T00:00:00.000Z`),
-      notes: data.notes ?? null,
-      memberName: data.householdMemberId ? null : (data.memberName ?? null),
-      categoryId: data.categoryId ?? null,
-      householdMemberId: data.householdMemberId ?? null,
-    },
-    select: expenseSelect,
-    where: { id },
+  const expense = await prisma.$transaction(async (tx) => {
+    await tx.expense.update({
+      data: {
+        name: data.name,
+        amount: data.amount,
+        type: data.type,
+        date: new Date(`${data.date}T00:00:00.000Z`),
+        notes: data.notes ?? null,
+        memberName: data.householdMemberId ? null : (data.memberName ?? null),
+        categoryId: data.categoryId ?? null,
+        householdMemberId: data.householdMemberId ?? null,
+      },
+      select: { id: true },
+      where: { id },
+    });
+    await tx.expenseSplit.deleteMany({ where: { expenseId: id, householdId: scope.householdId } });
+    if (splitIds.length > 0) {
+      await tx.expenseSplit.createMany({
+        data: splitIds.map((householdMemberId) => ({
+          expenseId: id,
+          householdId: scope.householdId,
+          householdMemberId,
+        })),
+      });
+    }
+    return tx.expense.findUniqueOrThrow({ select: expenseSelect, where: { id } });
   });
 
   return toExpenseView(expense);

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
 import { trackAnalyticsEvent } from "@/lib/analytics";
+import { getMemberColor } from "@/lib/member-colors";
 
 type ExpenseView = {
   id: string;
@@ -19,6 +20,15 @@ type ExpenseView = {
   categoryId: string | null;
   categoryColor: string | null;
   categoryName: string | null;
+  householdMemberId: string | null;
+  householdMemberName: string | null;
+  householdMemberColor: string | null;
+  householdMemberEmoji: string | null;
+  splits: ExpenseSplitView[];
+};
+
+type ExpenseSplitView = {
+  id: string;
   householdMemberId: string | null;
   householdMemberName: string | null;
   householdMemberColor: string | null;
@@ -47,6 +57,22 @@ type CategorySlice = {
   label: string;
   offset: number;
   percent: number;
+};
+type ExpenseMixView = "category" | "payee";
+type SettleUpTransfer = {
+  amount: number;
+  from: SettlementMember;
+  to: SettlementMember;
+};
+type SettlementMember = {
+  id: string;
+  name: string;
+  color: string | null;
+  emoji: string | null;
+};
+type SettlementBalance = {
+  cents: number;
+  member: SettlementMember;
 };
 
 type Props = {
@@ -90,14 +116,8 @@ function formatShortMonthDay(year: number, month: number, day: number, locale: s
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function formatExpenseDate(date: string, locale: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  if (!year || !month || !day) return date;
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, day)));
+function formatExpenseDate(date: string): string {
+  return date.slice(0, 10);
 }
 
 function todayISO(): string {
@@ -216,7 +236,10 @@ function buildCategorySlices(expenses: ExpenseView[], t: ExpensesTranslator): Ca
     });
   }
 
-  const entries = Array.from(totals.entries()).sort((a, b) => b[1].amount - a[1].amount);
+  return toSlices(Array.from(totals.entries()).sort((a, b) => b[1].amount - a[1].amount));
+}
+
+function toSlices(entries: [string, { amount: number; color: string; label: string }][]): CategorySlice[] {
   const total = entries.reduce((sum, [, entry]) => sum + entry.amount, 0);
   let offset = 0;
 
@@ -235,6 +258,113 @@ function buildCategorySlices(expenses: ExpenseView[], t: ExpensesTranslator): Ca
     offset += length;
     return slice;
   });
+}
+
+function buildPayeeSlices(expenses: ExpenseView[], t: ExpensesTranslator): CategorySlice[] {
+  const totals = new Map<string, { amount: number; color: string; label: string }>();
+
+  for (const expense of expenses) {
+    if (expense.type !== "EXPENSE") continue;
+    const key = expense.householdMemberId ?? "__unspecified__";
+    const previous = totals.get(key);
+    totals.set(key, {
+      amount: (previous?.amount ?? 0) + expense.amount,
+      color: expense.householdMemberColor ? getMemberColor(expense.householdMemberColor).hex : UNCATEGORIZED_COLOR,
+      label: expense.householdMemberName ?? t("unspecified"),
+    });
+  }
+
+  return toSlices(Array.from(totals.entries()).sort((a, b) => b[1].amount - a[1].amount));
+}
+
+function amountToCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+function centsToAmount(cents: number): number {
+  return cents / 100;
+}
+
+function splitAmountCents(totalCents: number, shares: number): number[] {
+  const baseShare = Math.trunc(totalCents / shares);
+  const remainder = totalCents - baseShare * shares;
+
+  return Array.from({ length: shares }, (_value, index) => baseShare + (index < remainder ? 1 : 0));
+}
+
+function buildSettleUpTransfers(expenses: ExpenseView[]): SettleUpTransfer[] {
+  const balances = new Map<string, number>();
+  const memberById = new Map<string, SettlementMember>();
+
+  function rememberMember(member: SettlementMember) {
+    if (!memberById.has(member.id)) memberById.set(member.id, member);
+  }
+
+  for (const expense of expenses) {
+    if (expense.type !== "EXPENSE" || !expense.householdMemberId || expense.splits.length < 2) continue;
+
+    const payer: SettlementMember = {
+      id: expense.householdMemberId,
+      name: expense.householdMemberName ?? "",
+      color: expense.householdMemberColor,
+      emoji: expense.householdMemberEmoji,
+    };
+
+    const splitMembers = expense.splits.filter(
+      (split): split is ExpenseSplitView & { householdMemberId: string } => Boolean(split.householdMemberId),
+    );
+    if (splitMembers.length < 2) continue;
+
+    rememberMember(payer);
+    const totalCents = amountToCents(expense.amount);
+    balances.set(payer.id, (balances.get(payer.id) ?? 0) + totalCents);
+
+    const shares = splitAmountCents(totalCents, splitMembers.length);
+    splitMembers.forEach((split, index) => {
+      rememberMember({
+        id: split.householdMemberId,
+        name: split.householdMemberName ?? "",
+        color: split.householdMemberColor,
+        emoji: split.householdMemberEmoji,
+      });
+      balances.set(split.householdMemberId, (balances.get(split.householdMemberId) ?? 0) - shares[index]);
+    });
+  }
+
+  const creditors = Array.from(balances.entries())
+    .filter(([, cents]) => cents > 0)
+    .map(([id, cents]) => ({ cents, member: memberById.get(id) }))
+    .filter((entry): entry is SettlementBalance => Boolean(entry.member))
+    .sort((a, b) => b.cents - a.cents);
+  const debtors = Array.from(balances.entries())
+    .filter(([, cents]) => cents < 0)
+    .map(([id, cents]) => ({ cents: -cents, member: memberById.get(id) }))
+    .filter((entry): entry is SettlementBalance => Boolean(entry.member))
+    .sort((a, b) => b.cents - a.cents);
+  const transfers: SettleUpTransfer[] = [];
+  let debtorIndex = 0;
+  let creditorIndex = 0;
+
+  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+    const debtor = debtors[debtorIndex];
+    const creditor = creditors[creditorIndex];
+    const cents = Math.min(debtor.cents, creditor.cents);
+
+    if (cents > 0) {
+      transfers.push({
+        amount: centsToAmount(cents),
+        from: debtor.member,
+        to: creditor.member,
+      });
+    }
+
+    debtor.cents -= cents;
+    creditor.cents -= cents;
+    if (debtor.cents <= 0) debtorIndex += 1;
+    if (creditor.cents <= 0) creditorIndex += 1;
+  }
+
+  return transfers;
 }
 
 function calculateStats(expenses: ExpenseView[], carryover: number): MonthStats {
@@ -261,6 +391,10 @@ function compareExpensesByDateDesc(a: ExpenseView, b: ExpenseView): number {
 }
 
 function formFromExpense(expense: ExpenseView): FormState {
+  const splitHouseholdMemberIds = expense.splits
+    .map((split) => split.householdMemberId)
+    .filter((id): id is string => Boolean(id));
+
   return {
     name: expense.name,
     amount: String(expense.amount),
@@ -271,6 +405,8 @@ function formFromExpense(expense: ExpenseView): FormState {
     householdMemberId: expense.householdMemberId ?? "",
     memberName: expense.memberName ?? (!expense.householdMemberId ? expense.householdMemberName ?? "" : ""),
     notes: expense.notes ?? "",
+    splitEnabled: splitHouseholdMemberIds.length > 0,
+    splitHouseholdMemberIds,
   };
 }
 
@@ -284,6 +420,8 @@ type FormState = {
   householdMemberId: string;
   memberName: string;
   notes: string;
+  splitEnabled: boolean;
+  splitHouseholdMemberIds: string[];
 };
 
 type CategoryFormState = {
@@ -308,6 +446,8 @@ const defaultForm: FormState = {
   householdMemberId: "",
   memberName: "",
   notes: "",
+  splitEnabled: false,
+  splitHouseholdMemberIds: [],
 };
 
 function defaultFormForMonth(year: number, month: number): FormState {
@@ -472,6 +612,7 @@ export function ExpensesBoard({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [hoveredCategoryKey, setHoveredCategoryKey] = useState<string | null>(null);
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string | null>(null);
+  const [expenseMixView, setExpenseMixView] = useState<ExpenseMixView>("category");
   const activeCategoryKey = hoveredCategoryKey ?? selectedCategoryKey;
   const donutRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -555,6 +696,62 @@ export function ExpensesBoard({
 
   function updateForm(patch: Partial<FormState>) {
     setForm((prev) => ({ ...prev, ...patch }));
+  }
+
+  function memberDisplayName(member: MemberView): string {
+    return member.name ?? member.email ?? t("memberFallback");
+  }
+
+  function toggleSplitEnabled() {
+    setForm((prev) => {
+      const nextEnabled = !prev.splitEnabled;
+      return {
+        ...prev,
+        splitEnabled: nextEnabled,
+        splitHouseholdMemberIds: nextEnabled
+          ? prev.splitHouseholdMemberIds.length > 0
+            ? prev.splitHouseholdMemberIds
+            : prev.householdMemberId
+              ? [prev.householdMemberId]
+              : []
+          : [],
+      };
+    });
+  }
+
+  function toggleSplitMember(memberId: string) {
+    setForm((prev) => {
+      const selected = new Set(prev.splitHouseholdMemberIds);
+      if (selected.has(memberId)) {
+        selected.delete(memberId);
+      } else {
+        selected.add(memberId);
+      }
+      return { ...prev, splitHouseholdMemberIds: Array.from(selected) };
+    });
+  }
+
+  function selectHouseholdMember(value: string) {
+    setForm((prev) => ({
+      ...prev,
+      householdMemberId: value,
+      splitHouseholdMemberIds:
+        prev.splitEnabled && (prev.splitHouseholdMemberIds.length === 0 ||
+          (prev.splitHouseholdMemberIds.length === 1 && prev.splitHouseholdMemberIds[0] === prev.householdMemberId))
+          ? value
+            ? [value]
+            : []
+          : prev.splitHouseholdMemberIds,
+    }));
+  }
+
+  function selectExpenseType(entryType: "INCOME" | "EXPENSE") {
+    setForm((prev) => ({
+      ...prev,
+      type: entryType,
+      splitEnabled: entryType === "EXPENSE" ? prev.splitEnabled : false,
+      splitHouseholdMemberIds: entryType === "EXPENSE" ? prev.splitHouseholdMemberIds : [],
+    }));
   }
 
   function resetForm() {
@@ -647,6 +844,15 @@ export function ExpensesBoard({
         setFormError(t("errorPositiveAmount"));
         return;
       }
+      const splitHouseholdMemberIds = form.type === "EXPENSE" && form.splitEnabled ? form.splitHouseholdMemberIds : [];
+      if (form.splitEnabled && form.type === "EXPENSE" && splitHouseholdMemberIds.length < 2) {
+        setFormError(t("errorSplitMembers"));
+        return;
+      }
+      if (splitHouseholdMemberIds.length > 0 && !form.householdMemberId) {
+        setFormError(t("errorSplitPayer"));
+        return;
+      }
 
       let categoryId: string | null = form.categoryId === "__new__" ? null : (form.categoryId || null);
 
@@ -685,6 +891,7 @@ export function ExpensesBoard({
           categoryId,
           householdMemberId: form.householdMemberId || null,
           memberName: null,
+          splitHouseholdMemberIds,
         }),
       });
 
@@ -700,6 +907,7 @@ export function ExpensesBoard({
         trackAnalyticsEvent("expense_added", {
           has_category: Boolean(data.expense.categoryId),
           has_member: Boolean(data.expense.householdMemberId),
+          has_split: data.expense.splits.length > 0,
           type: data.expense.type.toLowerCase(),
         });
       }
@@ -798,6 +1006,9 @@ export function ExpensesBoard({
 
   const netChart = buildNetChart(allExpenses, year, month, stats.carryover);
   const categorySlices = buildCategorySlices(allExpenses, t);
+  const payeeSlices = buildPayeeSlices(allExpenses, t);
+  const expenseMixSlices = expenseMixView === "category" ? categorySlices : payeeSlices;
+  const settleUpTransfers = buildSettleUpTransfers(allExpenses);
   const netSign = stats.net >= 0 ? "+" : "";
   const monthLabel = formatMonthLabel(year, month, locale);
   const monthName = formatMonthName(year, month, locale);
@@ -821,7 +1032,7 @@ export function ExpensesBoard({
   const filterCategoryOptions = [{ label: t("allCategories"), value: "" }, ...categoryOptions];
   const memberOptions = [
     { label: t("unspecified"), value: "" },
-    ...members.map((member) => ({ label: member.name ?? member.email ?? t("memberFallback"), value: member.id })),
+    ...members.map((member) => ({ label: memberDisplayName(member), value: member.id })),
   ];
   const selectedColorGroup =
     EXPENSE_CATEGORY_COLOR_GROUPS.find((group) => group.name === selectedColorGroupName) ??
@@ -1231,20 +1442,46 @@ export function ExpensesBoard({
         </div>
 
         <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <div className="mb-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
               {t("expenseMix")}
             </p>
+            <div className="inline-flex rounded-md border border-[#dfddd6] bg-[#f7f5f0] p-0.5" role="group">
+              {(["category", "payee"] as const).map((view) => (
+                <button
+                  className={`rounded px-2 py-1 text-xs font-medium transition ${
+                    expenseMixView === view
+                      ? "bg-white text-[#2a2e2b] shadow-sm"
+                      : "text-[#686e6a] hover:text-[#2a2e2b]"
+                  }`}
+                  key={view}
+                  onClick={() => {
+                    setExpenseMixView(view);
+                    setHoveredCategoryKey(null);
+                    setSelectedCategoryKey(null);
+                  }}
+                  type="button"
+                >
+                  {view === "category" ? t("categoryView") : t("payeeView")}
+                </button>
+              ))}
+            </div>
           </div>
-          {categorySlices.length === 0 ? (
+          {expenseMixSlices.length === 0 ? (
             <div className="flex grow min-h-48 items-center justify-center rounded-md border border-dashed border-[#dfddd6] px-4 text-center text-sm text-[#9da39f]">
-              {t("noExpenseBreakdown", { month: monthLabel })}
+              {expenseMixView === "category"
+                ? t("noExpenseBreakdown", { month: monthLabel })
+                : t("noPayeeBreakdown", { month: monthLabel })}
             </div>
           ) : (
             <div className="flex grow items-center justify-center p-3">
               <div className="relative w-full max-w-[180px] sm:max-w-[320px] aspect-square" ref={donutRef}>
                 <svg
-                  aria-label={t("categoryChartAria", { month: monthLabel })}
+                  aria-label={
+                    expenseMixView === "category"
+                      ? t("categoryChartAria", { month: monthLabel })
+                      : t("payeeChartAria", { month: monthLabel })
+                  }
                   className="h-full w-full"
                   onMouseLeave={() => setHoveredCategoryKey(null)}
                   role="img"
@@ -1259,7 +1496,7 @@ export function ExpensesBoard({
                     y="0"
                   />
                   <circle cx="60" cy="60" fill="none" r="42" stroke="#ece8df" strokeWidth="18" />
-                  {categorySlices.map((slice) => (
+                  {expenseMixSlices.map((slice) => (
                     <circle
                       cx="60"
                       cy="60"
@@ -1294,7 +1531,7 @@ export function ExpensesBoard({
                   </text>
                 </svg>
                 {(() => {
-                  const activeSlice = activeCategoryKey ? categorySlices.find((s) => s.key === activeCategoryKey) : null;
+                  const activeSlice = activeCategoryKey ? expenseMixSlices.find((s) => s.key === activeCategoryKey) : null;
                   if (!activeSlice) return null;
                   return (
                     <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2 z-20 w-44 rounded-md border border-[#d8d2c8] bg-[#fffdf8] px-3 py-2 shadow-[0_8px_24px_rgba(31,35,30,0.15)]">
@@ -1320,6 +1557,59 @@ export function ExpensesBoard({
         </div>
       </section>
 
+      <section
+        aria-label={t("settleUp")}
+        className={`mb-6 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+              {t("settleUp")}
+            </p>
+            <p className="mt-1 text-xs text-[#686e6a]">{t("settleUpFor", { month: monthLabel })}</p>
+          </div>
+        </div>
+        {settleUpTransfers.length === 0 ? (
+          <div className="rounded-md border border-dashed border-[#dfddd6] px-4 py-3 text-sm text-[#9da39f]">
+            {t("nothingToSettle", { month: monthLabel })}
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {settleUpTransfers.map((transfer) => (
+              <div
+                className="flex items-center justify-between gap-3 rounded-md border border-[#e8e4dc] bg-[#fbfaf6] px-3 py-2"
+                key={`${transfer.from.id}-${transfer.to.id}-${transfer.amount}`}
+              >
+                <div className="min-w-0 flex items-center gap-2">
+                  <MemberAvatar
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border font-serif text-xs font-semibold"
+                    color={transfer.from.color}
+                    emoji={transfer.from.emoji}
+                    fallbackLabel={transfer.from.name}
+                    name={transfer.from.name}
+                    title={transfer.from.name}
+                  />
+                  <span className="min-w-0 truncate text-sm text-[#4d5451]">
+                    {t("pays")}
+                  </span>
+                  <MemberAvatar
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border font-serif text-xs font-semibold"
+                    color={transfer.to.color}
+                    emoji={transfer.to.emoji}
+                    fallbackLabel={transfer.to.name}
+                    name={transfer.to.name}
+                    title={transfer.to.name}
+                  />
+                </div>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-[#8d3028]">
+                  {formatAmount(transfer.amount, locale)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Filter bar + add button */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <CustomSelect
@@ -1336,29 +1626,42 @@ export function ExpensesBoard({
           onClick={openCreateForm}
           type="button"
         >
-          {showForm ? (
-            <X aria-hidden className="h-4 w-4" />
-          ) : (
-            <Plus aria-hidden className="h-4 w-4" />
-          )}
-          {showForm && editingId ? t("cancelEdit") : showForm ? t("cancel") : t("addExpense")}
+          <Plus aria-hidden className="h-4 w-4" />
+          {t("addExpense")}
         </button>
       </div>
 
       {showForm && (
-        <form
-          className="mb-6 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-5 shadow-[0_4px_12px_rgba(31,35,30,0.06)]"
-          onSubmit={(e) => void handleSubmit(e)}
+        <div
+          aria-labelledby="expense-entry-dialog-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+          role="dialog"
         >
-          <h2 className="mb-4 font-serif text-lg font-semibold text-[#171a18]">
-            {editingId ? t("editEntry") : t("newEntry")}
-          </h2>
+          <form
+            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)]"
+            onSubmit={(e) => void handleSubmit(e)}
+          >
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <h2 className="font-serif text-lg font-semibold text-[#171a18]" id="expense-entry-dialog-title">
+                {editingId ? t("editEntry") : t("newEntry")}
+              </h2>
+              <button
+                aria-label={t("cancel")}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                disabled={isSubmitting}
+                onClick={resetForm}
+                type="button"
+              >
+                <X aria-hidden className="h-4 w-4" />
+              </button>
+            </div>
 
-          {formError && (
-            <p className="mb-4 rounded-md bg-[#f3e4e2] px-3 py-2 text-sm text-[#8d3028]">
-              {formError}
-            </p>
-          )}
+            {formError && (
+              <p className="mb-4 rounded-md bg-[#f3e4e2] px-3 py-2 text-sm text-[#8d3028]">
+                {formError}
+              </p>
+            )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Name */}
@@ -1416,7 +1719,7 @@ export function ExpensesBoard({
                         : "border-[#dfddd6] bg-white text-[#4d5451] hover:border-[#c8c4bb]"
                     }`}
                     key={entryType}
-                    onClick={() => updateForm({ type: entryType })}
+                    onClick={() => selectExpenseType(entryType)}
                     type="button"
                   >
                     {entryType === "INCOME" ? t("income") : t("expense")}
@@ -1494,11 +1797,74 @@ export function ExpensesBoard({
               <CustomSelect
                 buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
                 id="exp-member"
-                onChange={(value) => updateForm({ householdMemberId: value })}
+                onChange={selectHouseholdMember}
                 options={memberOptions}
                 value={form.householdMemberId}
               />
             </div>
+
+            {form.type === "EXPENSE" ? (
+              <div className="sm:col-span-2 rounded-md border border-[#e8e4dc] bg-[#fbfaf6]">
+                <button
+                  aria-expanded={form.splitEnabled}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
+                  onClick={toggleSplitEnabled}
+                  type="button"
+                >
+                  <span>
+                    <span className="block text-sm font-medium text-[#2a2e2b]">{t("splitThisExpense")}</span>
+                    <span className="block text-xs text-[#686e6a]">{t("splitThisExpenseHint")}</span>
+                  </span>
+                  <ChevronRight
+                    aria-hidden
+                    className={`h-4 w-4 shrink-0 text-[#8e948f] transition-transform ${form.splitEnabled ? "rotate-90" : ""}`}
+                  />
+                </button>
+                {form.splitEnabled ? (
+                  <div className="border-t border-[#e8e4dc] p-3">
+                    <p className="mb-2 text-xs font-medium text-[#545b57]">{t("splitWith")}</p>
+                    {members.length === 0 ? (
+                      <p className="text-sm text-[#9da39f]">{t("noSplitMembers")}</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {members.map((member) => {
+                          const name = memberDisplayName(member);
+                          const checked = form.splitHouseholdMemberIds.includes(member.id);
+
+                          return (
+                            <label
+                              className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
+                                checked
+                                  ? "border-[#6e9274] bg-[#e8efe9] text-[#2d4f34]"
+                                  : "border-[#dfddd6] bg-white text-[#4d5451] hover:border-[#c8c4bb]"
+                              }`}
+                              key={member.id}
+                            >
+                              <input
+                                checked={checked}
+                                className="sr-only"
+                                onChange={() => toggleSplitMember(member.id)}
+                                type="checkbox"
+                              />
+                              <MemberAvatar
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border font-serif text-[10px] font-semibold"
+                                color={member.color}
+                                email={member.email}
+                                emoji={member.emoji}
+                                fallbackLabel={name}
+                                name={member.name}
+                                title={name}
+                              />
+                              <span className="max-w-32 truncate">{name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {/* Notes */}
             <div className="sm:col-span-2">
@@ -1536,7 +1902,8 @@ export function ExpensesBoard({
               {t("cancel")}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       )}
 
       {/* Expense list */}
@@ -1565,6 +1932,9 @@ export function ExpensesBoard({
                     <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] md:table-cell">
                       {t("paidBy")}
                     </th>
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] lg:table-cell">
+                      {t("splitWith")}
+                    </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-[#545b57]">
                       {t("amountLabel")}
                     </th>
@@ -1575,7 +1945,7 @@ export function ExpensesBoard({
                   {displayedExpenses.map((expense) => (
                     <tr key={expense.id} className="transition-colors hover:bg-[#f7f5f0]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {formatExpenseDate(expense.date, locale)}
+                        {formatExpenseDate(expense.date)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{expense.name}</span>
@@ -1623,6 +1993,32 @@ export function ExpensesBoard({
                             onMouseLeave={() => setMemberTooltip(null)}
                             title={expense.householdMemberName}
                           />
+                        ) : (
+                          <span className="text-[#c8c4bb]">—</span>
+                        )}
+                      </td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        {expense.splits.length > 0 ? (
+                          <div className="flex -space-x-1.5">
+                            {expense.splits.map((split) =>
+                              split.householdMemberName ? (
+                                <MemberAvatar
+                                  className="flex h-7 w-7 cursor-default items-center justify-center rounded-md border-2 border-[#fffdf8] font-serif text-xs font-semibold"
+                                  color={split.householdMemberColor}
+                                  emoji={split.householdMemberEmoji}
+                                  fallbackLabel={split.householdMemberName}
+                                  key={split.id}
+                                  name={split.householdMemberName}
+                                  onMouseEnter={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setMemberTooltip({ name: split.householdMemberName!, x: rect.left + rect.width / 2, y: rect.bottom });
+                                  }}
+                                  onMouseLeave={() => setMemberTooltip(null)}
+                                  title={split.householdMemberName}
+                                />
+                              ) : null,
+                            )}
+                          </div>
                         ) : (
                           <span className="text-[#c8c4bb]">—</span>
                         )}
@@ -1688,7 +2084,7 @@ export function ExpensesBoard({
                   {showCarryoverRow ? (
                     <tr className="bg-[#fbfaf6]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`, locale)}
+                        {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{t("startingBalance")}</span>
@@ -1702,6 +2098,7 @@ export function ExpensesBoard({
                         </span>
                       </td>
                       <td className="hidden px-4 py-3 text-[#c8c4bb] md:table-cell">—</td>
+                      <td className="hidden px-4 py-3 text-[#c8c4bb] lg:table-cell">—</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
                         <span
                           className={`font-medium tabular-nums ${
