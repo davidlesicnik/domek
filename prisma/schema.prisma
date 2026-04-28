@@ -95,6 +95,7 @@ model Household {
   shoppingLists     ShoppingList[]
   notes             Note[]
   expenseCategories ExpenseCategory[]
+  expenseSplits     ExpenseSplit[]
   choreCategories   ChoreCategory[]
   expenses          Expense[]
   chores            Chore[]
@@ -141,9 +142,10 @@ model HouseholdMember {
   createdBy       User?         @relation("HouseholdMemberCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   linkedInvites   HouseholdInvite[] @relation("HouseholdInviteLinkedMember")
 
-  expenses  Expense[]
-  chores    Chore[]
-  todoItems TodoItem[]
+  expenses      Expense[]
+  expenseSplits ExpenseSplit[]
+  chores        Chore[]
+  todoItems     TodoItem[]
 
   @@index([householdId])
   @@index([createdByUserId])
@@ -332,11 +334,28 @@ model Expense {
   category          ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   household         Household?       @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdBy         User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  splits            ExpenseSplit[]
 
   @@index([householdId])
   @@index([householdId, date])
   @@index([categoryId])
   @@index([createdByUserId])
+}
+
+model ExpenseSplit {
+  id                String           @id @default(cuid())
+  expenseId         String
+  householdId       String
+  householdMemberId String?
+  createdAt         DateTime         @default(now())
+  expense           Expense          @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  household         Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  householdMember   HouseholdMember? @relation(fields: [householdMemberId], references: [id], onDelete: SetNull)
+
+  @@unique([expenseId, householdMemberId])
+  @@index([expenseId])
+  @@index([householdId])
+  @@index([householdMemberId])
 }
 
 model ContactMessage {

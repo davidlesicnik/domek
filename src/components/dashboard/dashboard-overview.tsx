@@ -27,11 +27,14 @@ function formatSignedAmount(amount: number, locale: string) {
 }
 
 function formatExpenseDate(date: string, locale: string) {
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return date;
   return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
+    day: "2-digit",
+    month: "2-digit",
     timeZone: "UTC",
-  }).format(new Date(date));
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function countAgendaItems(data: DashboardData) {
