@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
@@ -36,16 +37,17 @@ export async function sendHouseholdMemberInviteAction(
   _prevState: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations("householdPage")]);
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership || membership.role !== "OWNER") {
-    return { success: false, error: "Only the household owner can add people." };
+    return { success: false, error: t("errorAddPeopleOwnerOnly") };
   }
 
   const parsedEmail = inviteEmailSchema.safeParse(formData.get("email"));
   if (!parsedEmail.success) {
-    return { success: false, error: "Enter a valid email address." };
+    return { success: false, error: t("errorValidEmail") };
   }
 
   const rawMemberId = formData.get("memberId");
@@ -59,7 +61,7 @@ export async function sendHouseholdMemberInviteAction(
   if (!household || !getOptionalEmailConfig()) {
     return {
       success: false,
-      error: "We couldn't send the invite right now. Please try again in a bit.",
+      error: t("errorInviteSend"),
     };
   }
 
@@ -75,7 +77,7 @@ export async function sendHouseholdMemberInviteAction(
   });
 
   if (existingMember?.memberships.length) {
-    return { success: false, error: "That person is already in this household." };
+    return { success: false, error: t("errorAlreadyInHousehold") };
   }
 
   if (targetMemberId) {
@@ -89,7 +91,7 @@ export async function sendHouseholdMemberInviteAction(
     });
 
     if (!targetMember) {
-      return { success: false, error: "This person already has an account linked." };
+      return { success: false, error: t("errorAccountAlreadyLinked") };
     }
   }
 
@@ -108,13 +110,14 @@ export async function sendHouseholdMemberInviteAction(
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      locale,
     });
   } catch (error) {
     console.error("[sendHouseholdMemberInviteAction] email failed:", error);
     return {
       success: false,
-      error: "We couldn't send the invite right now. Please try again in a bit.",
+      error: t("errorInviteSend"),
     };
   }
 
@@ -126,31 +129,32 @@ export async function createPassiveHouseholdMemberAction(
   _prevState: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
+  const t = await getTranslations("householdPage");
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership || membership.role !== "OWNER") {
-    return { success: false, error: "Only the household owner can add people." };
+    return { success: false, error: t("errorAddPeopleOwnerOnly") };
   }
 
   const parsedName = memberNameSchema.safeParse(formData.get("name"));
   if (!parsedName.success) {
-    return { success: false, error: "Add a name for this person." };
+    return { success: false, error: t("errorNameRequired") };
   }
 
   const parsedColor = memberColorSchema.safeParse(formData.get("color"));
   if (!parsedColor.success) {
-    return { success: false, error: "Choose one of the household colors." };
+    return { success: false, error: t("errorColor") };
   }
 
   const rawEmoji = formData.get("emoji");
   if (typeof rawEmoji !== "string") {
-    return { success: false, error: "Choose one emoji or leave it blank." };
+    return { success: false, error: t("errorEmoji") };
   }
 
   const emoji = rawEmoji === "" ? null : normalizeMemberEmoji(rawEmoji);
   if (rawEmoji !== "" && !emoji) {
-    return { success: false, error: "Choose one emoji or leave it blank." };
+    return { success: false, error: t("errorEmoji") };
   }
 
   await prisma.householdMember.create({
@@ -184,20 +188,21 @@ export async function revokeHouseholdMemberInviteAction(formData: FormData): Pro
 export async function updateHouseholdMemberAction(
   formData: FormData,
 ): Promise<UpdateHouseholdMemberResult> {
+  const t = await getTranslations("householdPage");
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership) {
-    return { success: false, error: "Join a household first." };
+    return { success: false, error: t("errorJoinHouseholdFirst") };
   }
 
   const memberId = formData.get("memberId");
   if (typeof memberId !== "string" || !memberId) {
-    return { success: false, error: "Choose a household member." };
+    return { success: false, error: t("errorChooseMember") };
   }
 
   if (memberId !== membership.id && membership.role !== "OWNER") {
-    return { success: false, error: "Only the household owner can manage people." };
+    return { success: false, error: t("errorForbidden") };
   }
 
   const data: { color?: string; emoji?: string | null; name?: string } = {};
@@ -205,7 +210,7 @@ export async function updateHouseholdMemberAction(
   if (formData.has("name")) {
     const parsedName = memberNameSchema.safeParse(formData.get("name"));
     if (!parsedName.success) {
-      return { success: false, error: "Add a name for this person." };
+      return { success: false, error: t("errorNameRequired") };
     }
     data.name = parsedName.data;
   }
@@ -213,7 +218,7 @@ export async function updateHouseholdMemberAction(
   if (formData.has("color")) {
     const parsedColor = memberColorSchema.safeParse(formData.get("color"));
     if (!parsedColor.success) {
-      return { success: false, error: "Choose one of the household colors." };
+      return { success: false, error: t("errorColor") };
     }
     data.color = parsedColor.data;
   }
@@ -221,19 +226,19 @@ export async function updateHouseholdMemberAction(
   if (formData.has("emoji")) {
     const rawEmoji = formData.get("emoji");
     if (typeof rawEmoji !== "string") {
-      return { success: false, error: "Choose one emoji or leave it blank." };
+      return { success: false, error: t("errorEmoji") };
     }
 
     const emoji = rawEmoji === "" ? null : normalizeMemberEmoji(rawEmoji);
     if (rawEmoji !== "" && !emoji) {
-      return { success: false, error: "Choose one emoji or leave it blank." };
+      return { success: false, error: t("errorEmoji") };
     }
 
     data.emoji = emoji;
   }
 
   if (Object.keys(data).length === 0) {
-    return { success: false, error: "No changes to save." };
+    return { success: false, error: t("errorNoChanges") };
   }
 
   await prisma.householdMember.updateMany({

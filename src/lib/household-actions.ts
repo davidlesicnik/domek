@@ -1,5 +1,6 @@
 "use server";
 
+import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
@@ -65,13 +66,15 @@ export async function sendHouseholdInvite(
 
   const { appUrl } = getAppRuntimeConfig();
   const origin = appUrl ?? "http://localhost:3000";
+  const locale = await getLocale();
 
   try {
     await sendInviteEmail({
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      locale,
     });
   } catch (err) {
     console.error("[sendHouseholdInvite] email failed:", err);

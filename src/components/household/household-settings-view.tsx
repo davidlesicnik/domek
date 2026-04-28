@@ -112,6 +112,7 @@ export async function HouseholdSettingsView({
             <HouseholdMemberRow
               currentMemberId={currentMemberId}
               isOwner={isOwner}
+              label={t("label")}
               key={m.id}
               linkAccountAction={linkAccountAction}
               member={m}

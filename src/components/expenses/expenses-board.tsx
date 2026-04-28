@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -57,16 +58,46 @@ type Props = {
   initialMonth: number;
 };
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+type ExpensesTranslator = ReturnType<typeof useTranslations>;
 const UNCATEGORIZED_COLOR = "#c8c4bb";
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * 42;
 const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
-function formatAmount(n: number): string {
-  return n.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatAmount(n: number, locale: string): string {
+  return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatMonthLabel(year: number, month: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function formatMonthName(year: number, month: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function formatShortMonthDay(year: number, month: number, day: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function formatExpenseDate(date: string, locale: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) return date;
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function todayISO(): string {
@@ -92,6 +123,31 @@ function findCategoryColorGroup(color: string) {
       group.shades.some((shade) => shade.toLowerCase() === color.toLowerCase()),
     ) ?? EXPENSE_CATEGORY_COLOR_GROUPS[0]
   );
+}
+
+function colorGroupLabel(name: string, t: ExpensesTranslator): string {
+  switch (name) {
+    case "Rose":
+      return t("colorRose");
+    case "Clay":
+      return t("colorClay");
+    case "Gold":
+      return t("colorGold");
+    case "Green":
+      return t("colorGreen");
+    case "Teal":
+      return t("colorTeal");
+    case "Blue":
+      return t("colorBlue");
+    case "Violet":
+      return t("colorViolet");
+    case "Mauve":
+      return t("colorMauve");
+    case "Stone":
+      return t("colorStone");
+    default:
+      return name;
+  }
 }
 
 function buildNetChart(expenses: ExpenseView[], year: number, month: number, carryover: number): NetChart {
@@ -146,7 +202,7 @@ function buildNetChart(expenses: ExpenseView[], year: number, month: number, car
   };
 }
 
-function buildCategorySlices(expenses: ExpenseView[]): CategorySlice[] {
+function buildCategorySlices(expenses: ExpenseView[], t: ExpensesTranslator): CategorySlice[] {
   const totals = new Map<string, { amount: number; color: string; label: string }>();
 
   for (const expense of expenses) {
@@ -156,7 +212,7 @@ function buildCategorySlices(expenses: ExpenseView[]): CategorySlice[] {
     totals.set(key, {
       amount: (previous?.amount ?? 0) + expense.amount,
       color: expense.categoryColor ?? UNCATEGORIZED_COLOR,
-      label: expense.categoryName ?? "Unsorted",
+      label: expense.categoryName ?? t("uncategorized"),
     });
   }
 
@@ -398,6 +454,8 @@ export function ExpensesBoard({
   initialYear,
   initialMonth,
 }: Props) {
+  const t = useTranslations("expensesPage");
+  const locale = useLocale();
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [allExpenses, setAllExpenses] = useState(initialExpenses);
@@ -586,7 +644,7 @@ export function ExpensesBoard({
     try {
       const amount = parseFloat(form.amount);
       if (!isFinite(amount) || amount <= 0) {
-        setFormError("Enter a valid positive amount.");
+        setFormError(t("errorPositiveAmount"));
         return;
       }
 
@@ -595,7 +653,7 @@ export function ExpensesBoard({
       if (form.categoryId === "__new__") {
         const trimmed = form.newCategoryName.trim();
         if (!trimmed) {
-          setFormError("Enter a name for the new category.");
+          setFormError(t("errorNewCategoryName"));
           return;
         }
         const catRes = await fetch("/api/expenses/categories", {
@@ -604,7 +662,7 @@ export function ExpensesBoard({
           body: JSON.stringify({ name: trimmed }),
         });
         if (!catRes.ok) {
-          setFormError("Failed to create category.");
+          setFormError(t("errorCreateCategory"));
           return;
         }
         const catData = (await catRes.json()) as { category: CategoryView };
@@ -632,7 +690,7 @@ export function ExpensesBoard({
 
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as Record<string, string>;
-        setFormError(err.error ?? "Failed to add expense.");
+        setFormError(err.error ?? t("errorSaveEntry"));
         return;
       }
 
@@ -674,15 +732,15 @@ export function ExpensesBoard({
 
     const name = categoryForm.name.trim();
     if (!categoryForm.id) {
-      setCategoryError("Choose a category to edit.");
+      setCategoryError(t("errorChooseCategory"));
       return;
     }
     if (!name) {
-      setCategoryError("Enter a category name.");
+      setCategoryError(t("errorCategoryName"));
       return;
     }
     if (!HEX_COLOR_PATTERN.test(categoryForm.color)) {
-      setCategoryError("Choose a valid category color.");
+      setCategoryError(t("errorCategoryColor"));
       return;
     }
 
@@ -695,7 +753,7 @@ export function ExpensesBoard({
       });
 
       if (!res.ok) {
-        setCategoryError("Failed to update category.");
+        setCategoryError(t("errorUpdateCategory"));
         return;
       }
 
@@ -739,10 +797,13 @@ export function ExpensesBoard({
     : allExpenses;
 
   const netChart = buildNetChart(allExpenses, year, month, stats.carryover);
-  const categorySlices = buildCategorySlices(allExpenses);
+  const categorySlices = buildCategorySlices(allExpenses, t);
   const netSign = stats.net >= 0 ? "+" : "";
-  const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;
-  const previousMonthLabel = month === 1 ? `${MONTH_NAMES[11]} ${year - 1}` : `${MONTH_NAMES[month - 2]} ${year}`;
+  const monthLabel = formatMonthLabel(year, month, locale);
+  const monthName = formatMonthName(year, month, locale);
+  const previousMonthLabel = month === 1
+    ? formatMonthLabel(year - 1, 12, locale)
+    : formatMonthLabel(year, month - 1, locale);
   const showCarryoverRow = !filterCategoryId && stats.carryover !== 0;
   const hasExpenseRows = displayedExpenses.length > 0 || showCarryoverRow;
   const currentMonth = currentYearMonth();
@@ -753,14 +814,14 @@ export function ExpensesBoard({
     value: category.id,
   }));
   const expenseCategoryOptions = [
-    { label: "No category", value: "" },
+    { label: t("noCategory"), value: "" },
     ...categoryOptions,
-    { label: "+ New category...", value: "__new__" },
+    { label: t("newCategoryOption"), value: "__new__" },
   ];
-  const filterCategoryOptions = [{ label: "All categories", value: "" }, ...categoryOptions];
+  const filterCategoryOptions = [{ label: t("allCategories"), value: "" }, ...categoryOptions];
   const memberOptions = [
-    { label: "Unspecified", value: "" },
-    ...members.map((member) => ({ label: member.name ?? member.email ?? member.id, value: member.id })),
+    { label: t("unspecified"), value: "" },
+    ...members.map((member) => ({ label: member.name ?? member.email ?? t("memberFallback"), value: member.id })),
   ];
   const selectedColorGroup =
     EXPENSE_CATEGORY_COLOR_GROUPS.find((group) => group.name === selectedColorGroupName) ??
@@ -771,7 +832,7 @@ export function ExpensesBoard({
       {/* Month picker */}
       <div className="mb-6 flex items-center gap-3">
         <button
-          aria-label="Previous month"
+          aria-label={t("previousMonth")}
           className="flex h-8 w-8 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
           onClick={prevMonth}
           type="button"
@@ -779,14 +840,14 @@ export function ExpensesBoard({
           <ChevronLeft aria-hidden className="h-4 w-4" />
         </button>
         <h1 className="font-serif text-2xl font-semibold text-[#171a18] sm:text-3xl">
-          {MONTH_NAMES[month - 1]} {year}
+          {monthLabel}
         </h1>
         <label className="sr-only" htmlFor="expense-month">
-          Month
+          {t("monthLabel")}
         </label>
         <div className="relative h-8 w-8">
           <input
-            aria-label="Choose month"
+            aria-label={t("chooseMonth")}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             id="expense-month"
             max="2100-12"
@@ -803,7 +864,7 @@ export function ExpensesBoard({
           </span>
         </div>
         <button
-          aria-label="Next month"
+          aria-label={t("nextMonth")}
           className="flex h-8 w-8 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
           onClick={nextMonth}
           type="button"
@@ -816,7 +877,7 @@ export function ExpensesBoard({
             onClick={jumpToCurrentMonth}
             type="button"
           >
-            Today
+            {t("today")}
           </button>
         ) : null}
         <button
@@ -826,7 +887,7 @@ export function ExpensesBoard({
           type="button"
         >
           <Settings aria-hidden className="h-4 w-4" />
-          <span className="hidden sm:inline">Categories</span>
+          <span className="hidden sm:inline">{t("categories")}</span>
         </button>
       </div>
 
@@ -844,17 +905,17 @@ export function ExpensesBoard({
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                  Expenses
+                  {t("label")}
                 </p>
                 <h2
                   className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
                   id="expense-category-dialog-title"
                 >
-                  Edit category
+                  {t("editCategory")}
                 </h2>
               </div>
               <button
-                aria-label="Close category dialog"
+                aria-label={t("closeCategoryDialog")}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
                 disabled={isSavingCategory}
                 onClick={closeCategoryDialog}
@@ -873,7 +934,7 @@ export function ExpensesBoard({
             <div className="grid gap-4">
               <div>
                 <label className="mb-1 block text-xs font-medium text-[#545b57]" htmlFor="category-edit-select">
-                  Category
+                  {t("categoryLabel")}
                 </label>
                 <CustomSelect
                   buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
@@ -886,7 +947,7 @@ export function ExpensesBoard({
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-[#545b57]" htmlFor="category-edit-name">
-                  Name
+                  {t("nameLabel")}
                 </label>
                 <input
                   className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
@@ -901,17 +962,17 @@ export function ExpensesBoard({
 
               <div>
                 <p className="mb-2 text-xs font-medium text-[#545b57]">
-                  Color
+                  {t("colorLabel")}
                 </p>
                 <div className="grid gap-3 rounded-md border border-[#dfddd6] bg-white p-3">
                   <div>
                     <p className="mb-2 text-xs text-[#686e6a]">
-                      Family
+                      {t("colorFamily")}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                     {EXPENSE_CATEGORY_COLOR_GROUPS.map((group) => (
                       <button
-                        aria-label={`Show ${group.name} shades`}
+                        aria-label={t("showColorShades", { color: colorGroupLabel(group.name, t) })}
                         className={`h-8 w-8 rounded-md border transition ${
                           selectedColorGroup.name === group.name
                             ? "border-[#171a18] ring-2 ring-[#171a18]/15"
@@ -923,7 +984,7 @@ export function ExpensesBoard({
                           setCategoryForm((prev) => ({ ...prev, color: group.base }));
                         }}
                         style={{ backgroundColor: group.base }}
-                        title={group.name}
+                        title={colorGroupLabel(group.name, t)}
                         type="button"
                       />
                     ))}
@@ -931,12 +992,12 @@ export function ExpensesBoard({
                   </div>
                   <div className="border-t border-[#ece8df] pt-3">
                     <p className="mb-2 text-xs text-[#686e6a]">
-                      {selectedColorGroup.name} shades
+                      {t("colorShades", { color: colorGroupLabel(selectedColorGroup.name, t) })}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {selectedColorGroup.shades.map((color) => (
                         <button
-                          aria-label={`Use ${selectedColorGroup.name} shade ${color}`}
+                          aria-label={t("useColorShade", { color: colorGroupLabel(selectedColorGroup.name, t), value: color })}
                           className={`h-8 w-8 rounded-md border transition ${
                             categoryForm.color.toLowerCase() === color.toLowerCase()
                               ? "border-[#171a18] ring-2 ring-[#171a18]/15"
@@ -954,7 +1015,7 @@ export function ExpensesBoard({
                     className="flex items-center gap-2 border-t border-[#ece8df] pt-3 text-xs text-[#686e6a]"
                     htmlFor="category-edit-color"
                   >
-                    <span>Custom</span>
+                    <span>{t("customColor")}</span>
                     <input
                       className="h-8 w-12 rounded-md border border-[#dfddd6] bg-white p-1 focus:border-[#c85b45] focus:outline-none"
                       id="category-edit-color"
@@ -978,14 +1039,14 @@ export function ExpensesBoard({
                 onClick={closeCategoryDialog}
                 type="button"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 className="rounded-md bg-[#c85b45] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b94e3f] disabled:opacity-50"
                 disabled={isSavingCategory || !categoryForm.id}
                 type="submit"
               >
-                {isSavingCategory ? "Saving…" : "Save category"}
+                {isSavingCategory ? t("saving") : t("saveCategory")}
               </button>
             </div>
           </form>
@@ -997,49 +1058,48 @@ export function ExpensesBoard({
         className={`mb-6 grid grid-cols-3 gap-2 sm:gap-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
         <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#6e9274]">Income</p>
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#6e9274]">{t("income")}</p>
           <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#2d4f34] truncate">
-            {formatAmount(stats.income)}
+            {formatAmount(stats.income, locale)}
           </p>
         </div>
         <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-            Expenses
+            {t("expenses")}
           </p>
           <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#8d3028] truncate">
-            {formatAmount(stats.expenses)}
+            {formatAmount(stats.expenses, locale)}
           </p>
         </div>
         <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-            Net
+            {t("net")}
           </p>
           <p
             className={`mt-1 font-serif text-lg sm:text-2xl font-semibold truncate ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
           >
             {netSign}
-            {formatAmount(stats.net)}
+            {formatAmount(stats.net, locale)}
           </p>
           <p className="mt-1 text-[10px] sm:text-xs text-[#686e6a] truncate">
-            {stats.carryover >= 0 ? "+" : ""}
-            {formatAmount(stats.carryover)} carried in
+            {t("carriedIn", { amount: `${stats.carryover >= 0 ? "+" : ""}${formatAmount(stats.carryover, locale)}` })}
           </p>
         </div>
       </div>
 
       <section
-        aria-label={`Statistics for ${monthLabel}`}
+        aria-label={t("statisticsFor", { month: monthLabel })}
         className={`mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.85fr)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
         <div className="hidden sm:flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <div className="mb-4">
             <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              Net balance
+              {t("netBalance")}
             </p>
           </div>
           <div className="relative grow">
             <svg
-              aria-label={`Daily net balance line for ${monthLabel}`}
+              aria-label={t("netChartAria", { month: monthLabel })}
               className="h-full min-h-48 w-full overflow-visible"
               onPointerLeave={() => setHoveredNetPoint(null)}
               onPointerMove={handleNetChartPointerMove}
@@ -1119,11 +1179,11 @@ export function ExpensesBoard({
               >
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <p className="font-medium text-[#171a18]">
-                    {MONTH_NAMES[month - 1].slice(0, 3)} {hoveredNetPoint.day}
+                    {formatShortMonthDay(year, month, hoveredNetPoint.day, locale)}
                   </p>
                   <p className={`font-semibold tabular-nums ${hoveredNetPoint.value >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
                     {hoveredNetPoint.value >= 0 ? "+" : ""}
-                    {formatAmount(hoveredNetPoint.value)}
+                    {formatAmount(hoveredNetPoint.value, locale)}
                   </p>
                 </div>
                 {hoveredNetPoint.entries.length > 0 ? (
@@ -1152,18 +1212,18 @@ export function ExpensesBoard({
                             <p className="truncate font-medium text-[#2a2e2b]">{entry.name}</p>
                             <p className={`tabular-nums ${entry.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
                               {entry.type === "INCOME" ? "+" : "−"}
-                              {formatAmount(entry.amount)}
+                              {formatAmount(entry.amount, locale)}
                             </p>
                           </div>
                         </div>
                       );
                     })}
                     {hoveredNetPoint.entries.length > 3 ? (
-                      <p className="pl-1 text-[#9da39f]">+{hoveredNetPoint.entries.length - 3} more</p>
+                      <p className="pl-1 text-[#9da39f]">{t("moreEntries", { count: hoveredNetPoint.entries.length - 3 })}</p>
                     ) : null}
                   </div>
                 ) : (
-                  <p className="text-[#9da39f]">No change recorded.</p>
+                  <p className="text-[#9da39f]">{t("noChangeRecorded")}</p>
                 )}
               </div>
             ) : null}
@@ -1173,18 +1233,18 @@ export function ExpensesBoard({
         <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <div className="mb-4">
             <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              Expense mix
+              {t("expenseMix")}
             </p>
           </div>
           {categorySlices.length === 0 ? (
             <div className="flex grow min-h-48 items-center justify-center rounded-md border border-dashed border-[#dfddd6] px-4 text-center text-sm text-[#9da39f]">
-              No expenses to break down for {monthLabel}.
+              {t("noExpenseBreakdown", { month: monthLabel })}
             </div>
           ) : (
             <div className="flex grow items-center justify-center p-3">
               <div className="relative w-full max-w-[180px] sm:max-w-[320px] aspect-square" ref={donutRef}>
                 <svg
-                  aria-label={`Expense category ratios for ${monthLabel}`}
+                  aria-label={t("categoryChartAria", { month: monthLabel })}
                   className="h-full w-full"
                   onMouseLeave={() => setHoveredCategoryKey(null)}
                   role="img"
@@ -1227,10 +1287,10 @@ export function ExpensesBoard({
                     x="60"
                     y="58"
                   >
-                    {formatAmount(stats.expenses)}
+                    {formatAmount(stats.expenses, locale)}
                   </text>
                   <text fill="#686e6a" fontSize="9" textAnchor="middle" x="60" y="72">
-                    total
+                    {t("total")}
                   </text>
                 </svg>
                 {(() => {
@@ -1249,7 +1309,7 @@ export function ExpensesBoard({
                         </span>
                       </div>
                       <p className="mt-1 tabular-nums text-xs text-[#686e6a]">
-                        {activeSlice.percent.toFixed(0)}% · {formatAmount(activeSlice.amount)}
+                        {activeSlice.percent.toFixed(0)}% · {formatAmount(activeSlice.amount, locale)}
                       </p>
                     </div>
                   );
@@ -1281,7 +1341,7 @@ export function ExpensesBoard({
           ) : (
             <Plus aria-hidden className="h-4 w-4" />
           )}
-          {showForm && editingId ? "Cancel edit" : showForm ? "Cancel" : "Add expense"}
+          {showForm && editingId ? t("cancelEdit") : showForm ? t("cancel") : t("addExpense")}
         </button>
       </div>
 
@@ -1291,7 +1351,7 @@ export function ExpensesBoard({
           onSubmit={(e) => void handleSubmit(e)}
         >
           <h2 className="mb-4 font-serif text-lg font-semibold text-[#171a18]">
-            {editingId ? "Edit entry" : "New entry"}
+            {editingId ? t("editEntry") : t("newEntry")}
           </h2>
 
           {formError && (
@@ -1307,14 +1367,14 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-name"
               >
-                Name
+                {t("nameLabel")}
               </label>
               <input
                 autoFocus
                 className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
                 id="exp-name"
                 onChange={(e) => updateForm({ name: e.target.value })}
-                placeholder="e.g. Grocery run"
+                placeholder={t("namePlaceholder")}
                 required
                 type="text"
                 value={form.name}
@@ -1327,7 +1387,7 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-amount"
               >
-                Amount
+                {t("amountLabel")}
               </label>
               <input
                 className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
@@ -1344,22 +1404,22 @@ export function ExpensesBoard({
 
             {/* Type */}
             <div>
-              <p className="mb-1 text-xs font-medium text-[#545b57]">Type</p>
+              <p className="mb-1 text-xs font-medium text-[#545b57]">{t("typeLabel")}</p>
               <div className="flex gap-2">
-                {(["EXPENSE", "INCOME"] as const).map((t) => (
+                {(["EXPENSE", "INCOME"] as const).map((entryType) => (
                   <button
                     className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition ${
-                      form.type === t
-                        ? t === "INCOME"
+                      form.type === entryType
+                        ? entryType === "INCOME"
                           ? "border-[#6e9274] bg-[#e8efe9] text-[#2d4f34]"
                           : "border-[#c85b45] bg-[#f7ecea] text-[#8d3028]"
                         : "border-[#dfddd6] bg-white text-[#4d5451] hover:border-[#c8c4bb]"
                     }`}
-                    key={t}
-                    onClick={() => updateForm({ type: t })}
+                    key={entryType}
+                    onClick={() => updateForm({ type: entryType })}
                     type="button"
                   >
-                    {t === "INCOME" ? "Income" : "Expense"}
+                    {entryType === "INCOME" ? t("income") : t("expense")}
                   </button>
                 ))}
               </div>
@@ -1371,7 +1431,7 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-date"
               >
-                Date
+                {t("dateLabel")}
               </label>
               <input
                 className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] focus:border-[#c85b45] focus:outline-none"
@@ -1389,7 +1449,7 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-category"
               >
-                Category
+                {t("categoryLabel")}
               </label>
               {form.categoryId === "__new__" ? (
                 <div className="flex gap-2">
@@ -1398,18 +1458,18 @@ export function ExpensesBoard({
                     className="min-w-0 flex-1 rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
                     id="exp-category"
                     onChange={(e) => updateForm({ newCategoryName: e.target.value })}
-                    placeholder="New category name"
+                    placeholder={t("newCategoryPlaceholder")}
                     required
                     type="text"
                     value={form.newCategoryName}
                   />
                   <button
-                    aria-label="Cancel new category"
+                    aria-label={t("cancelNewCategory")}
                     className="shrink-0 rounded-md border border-[#dfddd6] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
                     onClick={() => updateForm({ categoryId: "", newCategoryName: "" })}
                     type="button"
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               ) : (
@@ -1429,7 +1489,7 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-member"
               >
-                Household member
+                {t("householdMemberLabel")}
               </label>
               <CustomSelect
                 buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
@@ -1446,14 +1506,14 @@ export function ExpensesBoard({
                 className="mb-1 block text-xs font-medium text-[#545b57]"
                 htmlFor="exp-notes"
               >
-                Notes{" "}
-                <span className="font-normal text-[#9da39f]">(optional)</span>
+                {t("notesLabel")}{" "}
+                <span className="font-normal text-[#9da39f]">{t("optionalLabel")}</span>
               </label>
               <textarea
                 className="w-full resize-none rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
                 id="exp-notes"
                 onChange={(e) => updateForm({ notes: e.target.value })}
-                placeholder="Any details…"
+                placeholder={t("notesPlaceholder")}
                 rows={2}
                 value={form.notes}
               />
@@ -1466,14 +1526,14 @@ export function ExpensesBoard({
               disabled={isSubmitting}
               type="submit"
             >
-              {isSubmitting ? "Saving…" : editingId ? "Save changes" : "Save"}
+              {isSubmitting ? t("saving") : editingId ? t("saveChanges") : t("save")}
             </button>
             <button
               className="rounded-md border border-[#dfddd6] px-4 py-2 text-sm text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
               onClick={resetForm}
               type="button"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
         </form>
@@ -1484,8 +1544,8 @@ export function ExpensesBoard({
         {!hasExpenseRows ? (
           <div className="rounded-md border border-dashed border-[#dfddd6] p-8 text-center text-sm text-[#9da39f]">
             {filterCategoryId
-              ? "No entries for this category in " + MONTH_NAMES[month - 1] + "."
-              : "Nothing recorded for " + MONTH_NAMES[month - 1] + " " + year + "."}
+              ? t("noEntriesForCategory", { month: monthName })
+              : t("nothingRecorded", { month: monthLabel })}
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border border-[#e0dcd4] bg-[#fffdf8] shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
@@ -1494,19 +1554,19 @@ export function ExpensesBoard({
                 <thead>
                   <tr className="border-b border-[#e0dcd4] bg-[#f7f5f0]">
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-                      Date
+                      {t("dateLabel")}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-                      Name
+                      {t("nameLabel")}
                     </th>
                     <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] sm:table-cell">
-                      Category
+                      {t("categoryLabel")}
                     </th>
                     <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] md:table-cell">
-                      Paid by
+                      {t("paidBy")}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-[#545b57]">
-                      Amount
+                      {t("amountLabel")}
                     </th>
                     <th className="w-32 px-2 py-3" />
                   </tr>
@@ -1515,7 +1575,7 @@ export function ExpensesBoard({
                   {displayedExpenses.map((expense) => (
                     <tr key={expense.id} className="transition-colors hover:bg-[#f7f5f0]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {expense.date.slice(8, 10)}.{expense.date.slice(5, 7)}
+                        {formatExpenseDate(expense.date, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{expense.name}</span>
@@ -1574,21 +1634,21 @@ export function ExpensesBoard({
                           }`}
                         >
                           {expense.type === "INCOME" ? "+" : "−"}
-                          {formatAmount(expense.amount)}
+                          {formatAmount(expense.amount, locale)}
                         </span>
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
                         <div className="flex justify-end gap-1">
                           {confirmDeleteId === expense.id ? (
                             <div className="flex shrink-0 items-center justify-end gap-1">
-                              <span className="text-xs text-[#5d635f]">Delete?</span>
+                              <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                               <button
                                 className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                                 disabled={deletingId === expense.id}
                                 onClick={() => void handleDelete(expense.id)}
                                 type="button"
                               >
-                                Yes
+                                {t("confirmDelete")}
                               </button>
                               <button
                                 className="h-7 rounded bg-[#ebe8de] px-1.5 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
@@ -1596,13 +1656,13 @@ export function ExpensesBoard({
                                 onClick={() => setConfirmDeleteId(null)}
                                 type="button"
                               >
-                                No
+                                {t("cancelDelete")}
                               </button>
                             </div>
                           ) : (
                             <>
                               <button
-                                aria-label={`Edit ${expense.name}`}
+                                aria-label={t("editEntryAria", { name: expense.name })}
                                 className="flex h-7 w-7 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] disabled:opacity-40"
                                 disabled={deletingId === expense.id || isSubmitting}
                                 onClick={() => openEditForm(expense)}
@@ -1611,7 +1671,7 @@ export function ExpensesBoard({
                                 <Pencil aria-hidden className="h-3.5 w-3.5" />
                               </button>
                               <button
-                                aria-label={`Delete ${expense.name}`}
+                                aria-label={t("deleteEntryAria", { name: expense.name })}
                                 className="flex h-7 w-7 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] disabled:opacity-40"
                                 disabled={deletingId === expense.id}
                                 onClick={() => setConfirmDeleteId(expense.id)}
@@ -1628,17 +1688,17 @@ export function ExpensesBoard({
                   {showCarryoverRow ? (
                     <tr className="bg-[#fbfaf6]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        01.{String(month).padStart(2, "0")}
+                        {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`, locale)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-[#171a18]">Starting balance</span>
+                        <span className="font-medium text-[#171a18]">{t("startingBalance")}</span>
                         <span className="ml-1.5 hidden text-xs text-[#9da39f] sm:inline">
-                          · Carried in from {previousMonthLabel}
+                          {t("carriedInFrom", { month: previousMonthLabel })}
                         </span>
                       </td>
                       <td className="hidden px-4 py-3 sm:table-cell">
                         <span className="inline-flex items-center rounded-full border border-[#d8d2c8] bg-[#f4f1ea] px-2.5 py-0.5 text-xs text-[#545b57]">
-                          Carryover
+                          {t("carryover")}
                         </span>
                       </td>
                       <td className="hidden px-4 py-3 text-[#c8c4bb] md:table-cell">—</td>
@@ -1649,11 +1709,11 @@ export function ExpensesBoard({
                           }`}
                         >
                           {stats.carryover >= 0 ? "+" : "−"}
-                          {formatAmount(Math.abs(stats.carryover))}
+                          {formatAmount(Math.abs(stats.carryover), locale)}
                         </span>
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
-                        <span className="text-xs text-[#9da39f]">Automatic</span>
+                        <span className="text-xs text-[#9da39f]">{t("automatic")}</span>
                       </td>
                     </tr>
                   ) : null}

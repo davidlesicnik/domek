@@ -1,10 +1,36 @@
+import { getTranslations } from "next-intl/server";
 import { Resend } from "resend";
 
 import { getEmailConfig } from "@/lib/env";
 
+type EmailLocale = "en" | "sl";
+
+type InviteEmailCopy = Readonly<{
+  acceptInvite: string;
+  inviteBody: string;
+  inviteExpiry: string;
+  inviteHeading: string;
+  inviteSubject: string;
+  inviteTextAccept: string;
+  inviteTextExpiry: string;
+  inviteTextIntro: string;
+  someone: string;
+}>;
+
 function getResend() {
   const config = getEmailConfig();
   return { resend: new Resend(config.resendApiKey), from: config.fromEmail };
+}
+
+function normalizeEmailLocale(locale: string | null | undefined): EmailLocale {
+  return locale === "sl" ? "sl" : "en";
+}
+
+function formatMessage(
+  template: string,
+  values: Record<string, string>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
 }
 
 export async function sendInviteEmail({
@@ -12,21 +38,37 @@ export async function sendInviteEmail({
   inviterName,
   householdName,
   inviteUrl,
+  locale,
 }: {
   toEmail: string;
   inviterName: string | null;
   householdName: string;
   inviteUrl: string;
+  locale?: string | null;
 }): Promise<void> {
   const { resend, from } = getResend();
-  const sender = inviterName ?? "Someone";
+  const emailLocale = normalizeEmailLocale(locale);
+  const t = await getTranslations({ locale: emailLocale, namespace: "emails" });
+  const copy: InviteEmailCopy = {
+    acceptInvite: t("acceptInvite"),
+    inviteBody: t("inviteBody"),
+    inviteExpiry: t("inviteExpiry"),
+    inviteHeading: t("inviteHeading"),
+    inviteSubject: t("inviteSubject"),
+    inviteTextAccept: t("inviteTextAccept"),
+    inviteTextExpiry: t("inviteTextExpiry"),
+    inviteTextIntro: t("inviteTextIntro"),
+    someone: t("someone"),
+  };
+  const sender = inviterName ?? copy.someone;
+  const values = { householdName, inviteUrl, sender };
 
   const { error } = await resend.emails.send({
     from,
     to: toEmail,
-    subject: `${sender} invited you to join ${householdName} on Domek`,
-    html: buildInviteHtml({ inviterName: sender, householdName, inviteUrl }),
-    text: buildInviteText({ inviterName: sender, householdName, inviteUrl }),
+    subject: formatMessage(copy.inviteSubject, values),
+    html: buildInviteHtml({ copy, householdName, inviteUrl, locale: emailLocale, sender }),
+    text: buildInviteText({ copy, householdName, inviteUrl, sender }),
   });
 
   if (error) {
@@ -61,12 +103,19 @@ export async function sendContactMessageEmail({
 }
 
 function buildInviteHtml(opts: {
-  inviterName: string;
+  copy: InviteEmailCopy;
   householdName: string;
   inviteUrl: string;
+  locale: EmailLocale;
+  sender: string;
 }): string {
+  const values = {
+    householdName: escapeHtml(opts.householdName),
+    inviteUrl: opts.inviteUrl,
+    sender: escapeHtml(opts.sender),
+  };
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${opts.locale}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f1ea;font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
@@ -74,12 +123,12 @@ function buildInviteHtml(opts: {
       <table width="100%" style="max-width:480px;background:#fdfcf8;border:1px solid #dfddd6;border-radius:8px;padding:40px 36px;">
         <tr><td>
           <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#c85b45;">Domek</p>
-          <h1 style="margin:0 0 20px;font-size:22px;font-weight:600;color:#171a18;">You're invited to join ${escapeHtml(opts.householdName)}</h1>
+          <h1 style="margin:0 0 20px;font-size:22px;font-weight:600;color:#171a18;">${formatMessage(opts.copy.inviteHeading, values)}</h1>
           <p style="margin:0 0 28px;font-size:14px;line-height:1.6;color:#4d5451;">
-            ${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.householdName)}</strong> on Domek — a shared home board for lists, notes, and everyday money.
+            ${formatMessage(opts.copy.inviteBody, values)}
           </p>
-          <a href="${opts.inviteUrl}" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">Accept invite</a>
-          <p style="margin:28px 0 0;font-size:12px;color:#9a9e9b;">This link expires in 7 days. If you weren't expecting this, you can safely ignore it.</p>
+          <a href="${opts.inviteUrl}" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">${opts.copy.acceptInvite}</a>
+          <p style="margin:28px 0 0;font-size:12px;color:#9a9e9b;">${opts.copy.inviteExpiry}</p>
         </td></tr>
       </table>
     </td></tr>
@@ -128,14 +177,20 @@ function buildContactText(opts: {
 }
 
 function buildInviteText(opts: {
-  inviterName: string;
+  copy: InviteEmailCopy;
   householdName: string;
   inviteUrl: string;
+  sender: string;
 }): string {
+  const values = {
+    householdName: opts.householdName,
+    inviteUrl: opts.inviteUrl,
+    sender: opts.sender,
+  };
   return [
-    `${opts.inviterName} invited you to join "${opts.householdName}" on Domek.`,
-    `Accept here: ${opts.inviteUrl}`,
-    `This link expires in 7 days. If you weren't expecting this, ignore this email.`,
+    formatMessage(opts.copy.inviteTextIntro, values),
+    formatMessage(opts.copy.inviteTextAccept, values),
+    opts.copy.inviteTextExpiry,
   ].join("\n\n");
 }
 

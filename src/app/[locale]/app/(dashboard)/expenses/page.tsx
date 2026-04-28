@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { ExpensesBoard } from "@/components/expenses/expenses-board";
 import {
@@ -9,10 +10,10 @@ import {
   listMembers,
 } from "@/lib/expenses";
 
-export const metadata: Metadata = {
-  title: "Expenses | Domek",
-  description: "Household income and spending for the month.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("expensesPage");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 export default async function ExpensesPage() {
   const now = new Date();

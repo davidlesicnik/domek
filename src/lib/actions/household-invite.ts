@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { requireHouseholdMemberSession } from "@/lib/authz";
@@ -18,18 +19,19 @@ export async function sendTopBarInviteAction(
   _prevState: InviteActionState,
   formData: FormData,
 ): Promise<InviteActionState> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations("householdPage")]);
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
   if (!membership || membership.role !== "OWNER") {
-    return { success: false, error: "Only the household owner can invite people." };
+    return { success: false, error: t("errorInvitePeopleOwnerOnly") };
   }
 
   const raw = formData.get("email");
   const parsed = inviteEmailSchema.safeParse(typeof raw === "string" ? raw : "");
 
   if (!parsed.success) {
-    return { success: false, error: "Enter a valid email address." };
+    return { success: false, error: t("errorValidEmail") };
   }
 
   const household = await prisma.household.findUnique({
@@ -37,12 +39,12 @@ export async function sendTopBarInviteAction(
     select: { name: true },
   });
 
-  if (!household) return { success: false, error: "Household not found." };
+  if (!household) return { success: false, error: t("errorHouseholdNotFound") };
 
   if (!getOptionalEmailConfig()) {
     return {
       success: false,
-      error: "We couldn't send the invite right now. Please try again in a bit.",
+      error: t("errorInviteSend"),
     };
   }
 
@@ -57,7 +59,7 @@ export async function sendTopBarInviteAction(
   });
 
   if (existingMember?.memberships.length) {
-    return { success: false, error: "That person is already in this household." };
+    return { success: false, error: t("errorAlreadyInHousehold") };
   }
 
   const invite = await createInvite({
@@ -68,21 +70,21 @@ export async function sendTopBarInviteAction(
 
   const { appUrl } = getAppRuntimeConfig();
   const origin = appUrl ?? "http://localhost:3000";
-  const inviteUrl = `${origin}/invite/${invite.token}`;
 
   try {
     await sendInviteEmail({
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      locale,
     });
   } catch (error) {
     console.error("[sendTopBarInviteAction] email failed:", error);
 
     return {
       success: false,
-      error: "We couldn't send the invite right now. Please try again in a bit.",
+      error: t("errorInviteSend"),
     };
   }
 

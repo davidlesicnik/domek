@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -32,6 +33,17 @@ type MemberColorPickerProps = Readonly<{
   updateMemberAction: (formData: FormData) => Promise<UpdateMemberAvatarResult>;
 }>;
 
+const MEMBER_COLOR_LABEL_KEYS = {
+  blue: "colorBlue",
+  clay: "colorClay",
+  gold: "colorGold",
+  green: "colorGreen",
+  mauve: "colorMauve",
+  rose: "colorRose",
+  teal: "colorTeal",
+  violet: "colorViolet",
+} as const satisfies Record<MemberColorKey, string>;
+
 export function MemberColorPicker({
   memberEmail,
   memberId,
@@ -45,6 +57,7 @@ export function MemberColorPicker({
   storageKey,
   updateMemberAction,
 }: MemberColorPickerProps) {
+  const t = useTranslations("householdPage");
   const currentColor = getMemberColor(selectedColor).key;
   const [previewColor, setPreviewColor] = useState<MemberColorKey | null>(null);
   const [previewEmoji, setPreviewEmoji] = useState<string | null | undefined>(undefined);
@@ -124,7 +137,7 @@ export function MemberColorPicker({
         .catch(() => {
           onSelectedColorChange(previousColor);
           onSelectedEmojiChange(previousEmoji);
-          setError("Could not save avatar changes.");
+          setError(t("errorAvatarSave"));
         });
     });
   }
@@ -134,7 +147,7 @@ export function MemberColorPicker({
       <button
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        aria-label={`Edit avatar for ${memberLabel}`}
+        aria-label={t("editAvatarAria", { name: memberLabel })}
         className="group relative rounded-md transition hover:scale-[1.03] disabled:opacity-60"
         disabled={isPending}
         onClick={() => {
@@ -149,7 +162,7 @@ export function MemberColorPicker({
           color={previewColor ?? selectedColor}
           email={memberEmail}
           emoji={previewEmoji === undefined ? selectedEmoji : previewEmoji}
-          fallbackLabel="Unknown"
+          fallbackLabel={t("unknownMember")}
           name={memberName}
         />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-[#202321]/0 text-white opacity-0 transition-[background-color,opacity] group-hover:bg-[#202321]/18 group-hover:opacity-100">
@@ -159,26 +172,26 @@ export function MemberColorPicker({
 
       {showOnboarding ? (
         <OnboardingTooltip className="absolute left-full top-1/2 z-30 ml-4 -translate-y-1/2">
-          Tap to change avatar
+          {t("avatarOnboardingHint")}
         </OnboardingTooltip>
       ) : null}
 
       {isOpen ? (
         <div
-          aria-label={`Avatar options for ${memberLabel}`}
+          aria-label={t("avatarOptionsAria", { name: memberLabel })}
           className="absolute left-0 top-full z-20 mt-2 w-[228px] rounded-md border border-[#dcd6ca] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)]"
           role="dialog"
         >
           <div className="mb-3">
             <p className="text-center text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              Avatar
+              {t("avatarTitle")}
             </p>
           </div>
 
           <div className="grid gap-3">
             <div className="grid grid-cols-4 gap-1.5">
               <button
-                aria-label={`Use initial for ${memberLabel}`}
+                aria-label={t("useInitialAria", { name: memberLabel })}
                 aria-pressed={selectedEmoji === null}
                 className={`flex h-11 items-center justify-center rounded-md border text-[11px] font-semibold transition ${
                   selectedEmoji === null
@@ -196,7 +209,7 @@ export function MemberColorPicker({
               </button>
               {MEMBER_EMOJI_OPTIONS.map((emoji) => (
                 <button
-                  aria-label={`Use ${emoji} for ${memberLabel}`}
+                  aria-label={t("useEmojiAria", { emoji, name: memberLabel })}
                   aria-pressed={selectedEmoji === emoji}
                   className={`relative flex h-11 items-center justify-center rounded-md border text-xl transition ${
                     selectedEmoji === emoji
@@ -226,11 +239,12 @@ export function MemberColorPicker({
             <div className="grid grid-cols-4 gap-1.5">
               {MEMBER_COLOR_KEYS.map((key) => {
                 const color = MEMBER_COLORS[key];
+                const colorName = t(MEMBER_COLOR_LABEL_KEYS[key]);
                 const isSelected = key === currentColor;
 
                 return (
                   <button
-                    aria-label={`Use ${color.name} for ${memberLabel}`}
+                    aria-label={t("useColorAria", { color: colorName, name: memberLabel })}
                     aria-pressed={isSelected}
                     className={`relative flex h-11 w-11 items-center justify-center rounded-md border transition hover:scale-[1.03] ${
                       isSelected
@@ -247,7 +261,7 @@ export function MemberColorPicker({
                       backgroundColor: color.hex,
                       borderColor: isSelected ? "#202321" : color.border,
                     }}
-                    title={color.name}
+                    title={colorName}
                     type="button"
                   >
                     {isSelected ? (
@@ -255,7 +269,7 @@ export function MemberColorPicker({
                         ✓
                       </span>
                     ) : null}
-                    <span className="sr-only">{color.name}</span>
+                    <span className="sr-only">{colorName}</span>
                   </button>
                 );
               })}

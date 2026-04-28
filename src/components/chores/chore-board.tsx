@@ -2,6 +2,7 @@
 
 import type { ChoreAssignmentType, ChoreIntervalUnit, ChoreRecurrenceType } from "@prisma/client";
 import { Check, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -36,16 +37,19 @@ type TouchedState = {
 type ChoreDueGroup = "overdue" | "today" | "upcoming";
 
 const WEEKDAY_OPTIONS = [
-  { value: 0, short: "Sun", long: "Sunday" },
-  { value: 1, short: "Mon", long: "Monday" },
-  { value: 2, short: "Tue", long: "Tuesday" },
-  { value: 3, short: "Wed", long: "Wednesday" },
-  { value: 4, short: "Thu", long: "Thursday" },
-  { value: 5, short: "Fri", long: "Friday" },
-  { value: 6, short: "Sat", long: "Saturday" },
+  { key: "sunday", value: 0 },
+  { key: "monday", value: 1 },
+  { key: "tuesday", value: 2 },
+  { key: "wednesday", value: 3 },
+  { key: "thursday", value: 4 },
+  { key: "friday", value: 5 },
+  { key: "saturday", value: 6 },
 ] as const;
 
 const DEFAULT_CUSTOM_INTERVAL_UNIT: ChoreIntervalUnit = "WEEKS";
+type WeekdayKey = (typeof WEEKDAY_OPTIONS)[number]["key"];
+type WeekdayLabels = Record<WeekdayKey, { long: string; short: string }>;
+type ChoresTranslator = ReturnType<typeof useTranslations>;
 
 function todayDateInputValue(): string {
   const now = new Date();
@@ -71,52 +75,57 @@ function defaultForm(): CreateChoreFormState {
   };
 }
 
-function displayNameForMember(member: ChoreMemberView): string {
-  return member.name ?? member.email ?? "Household member";
+function displayNameForMember(member: ChoreMemberView, fallback: string): string {
+  return member.name ?? member.email ?? fallback;
 }
 
-function firstNameForMember(member: ChoreMemberView): string {
-  const label = displayNameForMember(member).trim();
+function firstNameForMember(member: ChoreMemberView, fallback: string): string {
+  const label = displayNameForMember(member, fallback).trim();
   const [firstToken] = label.split(/\s+/);
   return firstToken || label;
 }
 
-function joinNatural(items: string[]): string {
+function joinNatural(items: string[], locale: string): string {
   if (items.length === 0) return "";
-  if (items.length === 1) return items[0] ?? "";
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+  return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(items);
 }
 
-function formatWeekdays(weekdays: number[]): string {
+function formatWeekdays(weekdays: number[], locale: string, weekdayLabels: WeekdayLabels): string {
   const labels: string[] = [];
 
   [...new Set(weekdays)]
     .sort((a, b) => a - b)
     .forEach((day) => {
-      const label = WEEKDAY_OPTIONS.find((option) => option.value === day)?.long;
+      const key = WEEKDAY_OPTIONS.find((option) => option.value === day)?.key;
+      const label = key ? weekdayLabels[key].long : null;
       if (label) labels.push(label);
     });
 
-  return joinNatural(labels);
+  return joinNatural(labels, locale);
 }
 
 function formatCompactIntervalLabel(
   chore: Pick<ChoreView, "recurrenceType" | "weeklyDays" | "intervalValue" | "intervalUnit">,
+  t: ChoresTranslator,
+  weekdayLabels: WeekdayLabels,
 ) {
-  if (chore.recurrenceType === "DAILY") return "Daily";
-  if (chore.recurrenceType === "MONTHLY") return "Monthly";
+  if (chore.recurrenceType === "DAILY") return t("recurrenceDaily");
+  if (chore.recurrenceType === "MONTHLY") return t("recurrenceMonthly");
   if (chore.recurrenceType === "WEEKLY") {
     const labels = [...new Set(chore.weeklyDays)]
       .sort((a, b) => a - b)
-      .map((day) => WEEKDAY_OPTIONS.find((option) => option.value === day)?.short)
-      .filter((label): label is Exclude<(typeof WEEKDAY_OPTIONS)[number]["short"], undefined> => label !== undefined);
+      .map((day) => {
+        const key = WEEKDAY_OPTIONS.find((option) => option.value === day)?.key;
+        return key ? weekdayLabels[key].short : undefined;
+      })
+      .filter((label): label is string => label !== undefined);
 
     return labels.join(" · ");
   }
 
-  const singular = chore.intervalUnit === "DAYS" ? "day" : chore.intervalUnit === "WEEKS" ? "week" : "month";
-  return `Every ${chore.intervalValue} ${chore.intervalValue === 1 ? singular : `${singular}s`}`;
+  if (chore.intervalUnit === "DAYS") return t("customIntervalDays", { count: chore.intervalValue });
+  if (chore.intervalUnit === "MONTHS") return t("customIntervalMonths", { count: chore.intervalValue });
+  return t("customIntervalWeeks", { count: chore.intervalValue });
 }
 
 function startOfTodayUtc(): Date {
@@ -129,23 +138,23 @@ function startOfDayUtc(dateIso: string): Date {
   return new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate()));
 }
 
-function dueDateLabel(dateIso: string) {
+function dueDateLabel(dateIso: string, t: ChoresTranslator) {
   const dueDate = startOfDayUtc(dateIso);
   const daysDiff = Math.floor((dueDate.getTime() - startOfTodayUtc().getTime()) / (24 * 60 * 60 * 1000));
 
   if (daysDiff < 0) {
-    return `${Math.abs(daysDiff)} ${Math.abs(daysDiff) === 1 ? "day" : "days"} overdue`;
+    return t("daysOverdue", { count: Math.abs(daysDiff) });
   }
 
   if (daysDiff === 0) {
-    return "Due today";
+    return t("dueToday");
   }
 
   if (daysDiff === 1) {
-    return "Due tomorrow";
+    return t("dueTomorrow");
   }
 
-  return `Due in ${daysDiff} days`;
+  return t("dueInDays", { count: daysDiff });
 }
 
 function dueGroup(dateIso: string): ChoreDueGroup {
@@ -156,16 +165,17 @@ function dueGroup(dateIso: string): ChoreDueGroup {
   return "upcoming";
 }
 
-function dueDateTone(dateIso: string) {
+function dueDateTone(dateIso: string, t: ChoresTranslator) {
   const dueDate = startOfDayUtc(dateIso);
   const daysDiff = Math.floor((dueDate.getTime() - startOfTodayUtc().getTime()) / (24 * 60 * 60 * 1000));
 
   if (daysDiff < 0) {
+    const overdueLabel = t("daysOverdue", { count: Math.abs(daysDiff) });
     return {
       emphasis: "strong" as const,
       badge: "border-[#e7c9c2] bg-[#fbefeb] text-[#8d3028]",
-      label: `${Math.abs(daysDiff)} ${Math.abs(daysDiff) === 1 ? "day" : "days"} overdue`.toUpperCase(),
-      text: `${Math.abs(daysDiff)} ${Math.abs(daysDiff) === 1 ? "day" : "days"} overdue`,
+      label: overdueLabel,
+      text: overdueLabel,
       row: "bg-[#fffaf8]",
     };
   }
@@ -174,17 +184,18 @@ function dueDateTone(dateIso: string) {
     return {
       emphasis: "strong" as const,
       badge: "border-[#e5dcc5] bg-[#fbf7ea] text-[#735316]",
-      label: "DUE TODAY",
-      text: "Due today",
+      label: t("dueToday"),
+      text: t("dueToday"),
       row: "bg-[#fffdf7]",
     };
   }
 
+  const label = dueDateLabel(dateIso, t);
   return {
     emphasis: "soft" as const,
     badge: "border-[#dde2dc] bg-[#f7f9f6] text-[#6b736d]",
-    label: dueDateLabel(dateIso),
-    text: dueDateLabel(dateIso).replace(/^Due /, "").toLowerCase(),
+    label,
+    text: label,
     row: "",
   };
 }
@@ -244,11 +255,11 @@ function alignDateInputToWeeklyDays(value: string, weeklyDays: number[]): string
   return value;
 }
 
-function formatDateInputForMessage(value: string): string {
+function formatDateInputForMessage(value: string, locale: string): string {
   const date = parseDateInput(value);
   if (!date) return value;
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
@@ -259,52 +270,61 @@ function previewDueDate(form: CreateChoreFormState): Date | null {
   return parseDateInput(form.startsAt);
 }
 
-function formatPreviewDate(date: Date | null): string {
-  if (!date) return "when you choose a schedule";
+function formatPreviewDate(date: Date | null, locale: string, t: ChoresTranslator): string {
+  if (!date) return t("previewDateFallback");
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "long",
     day: "numeric",
     timeZone: "UTC",
   }).format(date);
 }
 
-function previewAssignment(form: CreateChoreFormState, membersById: Map<string, ChoreMemberView>): string {
+function previewAssignment(
+  form: CreateChoreFormState,
+  membersById: Map<string, ChoreMemberView>,
+  memberFallback: string,
+  locale: string,
+  t: ChoresTranslator,
+): string {
   if (form.assignmentType === "UNASSIGNED") {
-    return "Unassigned";
+    return t("unassigned");
   }
 
   if (form.assignmentType === "FIXED") {
     const member = form.assignedHouseholdMemberId ? membersById.get(form.assignedHouseholdMemberId) : null;
-    if (!member) return "Choose who will do this";
-    return `${firstNameForMember(member)} does this`;
+    if (!member) return t("previewChooseFixed");
+    return t("previewFixed", { name: firstNameForMember(member, memberFallback) });
   }
 
   const names = form.rotationMemberIds
     .map((memberId) => membersById.get(memberId))
     .filter((member): member is ChoreMemberView => Boolean(member))
-    .map(firstNameForMember);
+    .map((member) => firstNameForMember(member, memberFallback));
 
-  if (names.length === 0) return "Choose who this rotates between";
-  return `Rotates between ${joinNatural(names)}`;
+  if (names.length === 0) return t("previewChooseRotation");
+  return t("previewRotating", { names: joinNatural(names, locale) });
 }
 
-function previewSchedule(form: CreateChoreFormState): string {
-  if (form.recurrenceType === "DAILY") return "Every day";
-  if (form.recurrenceType === "MONTHLY") return "Every month";
+function previewSchedule(form: CreateChoreFormState, locale: string, t: ChoresTranslator, weekdayLabels: WeekdayLabels): string {
+  if (form.recurrenceType === "DAILY") return t("previewDaily");
+  if (form.recurrenceType === "MONTHLY") return t("previewMonthly");
   if (form.recurrenceType === "WEEKLY") {
-    return form.weeklyDays.length > 0 ? `Every ${formatWeekdays(form.weeklyDays)}` : "Every chosen weekday";
+    return form.weeklyDays.length > 0
+      ? t("previewWeekly", { weekdays: formatWeekdays(form.weeklyDays, locale, weekdayLabels) })
+      : t("previewWeeklyFallback");
   }
 
   const intervalValue = Number(form.intervalValue);
-  if (!Number.isInteger(intervalValue) || intervalValue < 1) return "On your custom cadence";
+  if (!Number.isInteger(intervalValue) || intervalValue < 1) return t("previewCustomFallback");
 
-  const singular = form.intervalUnit === "DAYS" ? "day" : form.intervalUnit === "WEEKS" ? "week" : "month";
-  return `Every ${intervalValue} ${intervalValue === 1 ? singular : `${singular}s`}`;
+  if (form.intervalUnit === "DAYS") return t("customIntervalDays", { count: intervalValue });
+  if (form.intervalUnit === "MONTHS") return t("customIntervalMonths", { count: intervalValue });
+  return t("customIntervalWeeks", { count: intervalValue });
 }
 
-function validateName(value: string): string | null {
-  return value.trim() ? null : "Add a chore name.";
+function validateName(value: string, t: ChoresTranslator): string | null {
+  return value.trim() ? null : t("errorNameRequired");
 }
 
 function formFromChore(chore: ChoreView): CreateChoreFormState {
@@ -428,24 +448,29 @@ function CustomSelect({
   );
 }
 
-function compactAssignmentLabel(chore: ChoreView, membersById: Map<string, ChoreMemberView>): string {
-  if (chore.assignmentType === "UNASSIGNED") return "Unassigned";
+function compactAssignmentLabel(
+  chore: ChoreView,
+  membersById: Map<string, ChoreMemberView>,
+  memberFallback: string,
+  t: ChoresTranslator,
+): string {
+  if (chore.assignmentType === "UNASSIGNED") return t("unassigned");
 
   if (chore.assignmentType === "FIXED") {
     const member = chore.assignedHouseholdMemberId ? membersById.get(chore.assignedHouseholdMemberId) : null;
-    if (member) return firstNameForMember(member);
+    if (member) return firstNameForMember(member, memberFallback);
 
-    const fallback = chore.assignedHouseholdMemberName?.trim() ?? "Assigned";
+    const fallback = chore.assignedHouseholdMemberName?.trim() ?? t("assigned");
     return fallback.split(/\s+/)[0] ?? fallback;
   }
 
   const member = chore.assignedHouseholdMemberId ? membersById.get(chore.assignedHouseholdMemberId) : null;
-  if (member) return `Next: ${firstNameForMember(member)}`;
+  if (member) return t("nextAssignee", { name: firstNameForMember(member, memberFallback) });
 
   const fallback = chore.assignedHouseholdMemberName?.trim();
-  if (fallback) return `Next: ${fallback.split(/\s+/)[0] ?? fallback}`;
+  if (fallback) return t("nextAssignee", { name: fallback.split(/\s+/)[0] ?? fallback });
 
-  return "Rotating";
+  return t("rotating");
 }
 
 export function ChoreBoard({
@@ -455,6 +480,8 @@ export function ChoreBoard({
   initialChores,
   members,
 }: ChoreBoardProps) {
+  const t = useTranslations("choresPage");
+  const locale = useLocale();
   const [chores, setChores] = useState<ChoreView[]>(initialChores);
   const [categories, setCategories] = useState<ChoreCategoryView[]>(initialCategories);
   const [form, setForm] = useState<CreateChoreFormState>(() => defaultForm());
@@ -480,21 +507,34 @@ export function ChoreBoard({
     [orderedChores],
   );
   const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+  const memberFallback = t("memberFallback");
+  const weekdayLabels = useMemo<WeekdayLabels>(
+    () => ({
+      friday: { long: t("weekdayFridayLong"), short: t("weekdayFridayShort") },
+      monday: { long: t("weekdayMondayLong"), short: t("weekdayMondayShort") },
+      saturday: { long: t("weekdaySaturdayLong"), short: t("weekdaySaturdayShort") },
+      sunday: { long: t("weekdaySundayLong"), short: t("weekdaySundayShort") },
+      thursday: { long: t("weekdayThursdayLong"), short: t("weekdayThursdayShort") },
+      tuesday: { long: t("weekdayTuesdayLong"), short: t("weekdayTuesdayShort") },
+      wednesday: { long: t("weekdayWednesdayLong"), short: t("weekdayWednesdayShort") },
+    }),
+    [t],
+  );
   const categoryOptions = useMemo<SelectOption[]>(
     () => [
-      { label: "No category", value: "" },
+      { label: t("noCategory"), value: "" },
       ...categories.map((category) => ({ label: category.name, value: category.name })),
-      { label: "+ New category...", value: "__new__" },
+      { label: t("newCategoryOption"), value: "__new__" },
     ],
-    [categories],
+    [categories, t],
   );
-  const previewAssignmentText = previewAssignment(form, membersById);
-  const nameError = touched.name ? validateName(form.name) : null;
+  const previewAssignmentText = previewAssignment(form, membersById, memberFallback, locale, t);
+  const nameError = touched.name ? validateName(form.name, t) : null;
   const submitDisabled = isSubmitting || !form.name.trim();
   const headerSummary =
     groupedChores.today.length === 0
-      ? `Nothing due today · ${groupedChores.upcoming.length} upcoming`
-      : `${groupedChores.today.length} due today · ${groupedChores.upcoming.length} upcoming`;
+      ? t("headerSummaryNoneToday", { count: groupedChores.upcoming.length })
+      : t("headerSummaryDueToday", { today: groupedChores.today.length, upcoming: groupedChores.upcoming.length });
 
   useEffect(() => {
     if (!autoOpenEditId || consumedAutoOpenEditIdRef.current === autoOpenEditId) {
@@ -572,7 +612,7 @@ export function ChoreBoard({
 
       setWeeklyDateAdjustmentMessage(
         startsAt !== current.startsAt
-          ? `Moved to ${formatDateInputForMessage(startsAt)} to match your selected day(s).`
+          ? t("weeklyDateAdjusted", { date: formatDateInputForMessage(startsAt, locale) })
           : null,
       );
 
@@ -590,7 +630,7 @@ export function ChoreBoard({
 
     const intervalValue = Number(form.intervalValue);
 
-    const nextNameError = validateName(form.name);
+    const nextNameError = validateName(form.name, t);
     if (nextNameError) {
       setTouched((current) => ({ ...current, name: true }));
       setError(nextNameError);
@@ -598,17 +638,17 @@ export function ChoreBoard({
     }
 
     if (form.assignmentType === "FIXED" && !form.assignedHouseholdMemberId) {
-      setError("Choose who this belongs to, or leave it unassigned.");
+      setError(t("errorFixedAssignee"));
       return;
     }
 
     if (form.assignmentType === "ROTATING" && form.rotationMemberIds.length === 0) {
-      setError("Choose at least one person for rotation.");
+      setError(t("errorRotationMembers"));
       return;
     }
 
     if (form.recurrenceType === "WEEKLY" && form.weeklyDays.length === 0) {
-      setError("Choose at least one day of the week.");
+      setError(t("errorWeeklyDays"));
       return;
     }
 
@@ -617,19 +657,19 @@ export function ChoreBoard({
       form.weeklyDays.length > 0 &&
       !form.weeklyDays.includes(weekdayForDateInput(form.startsAt) ?? -1)
     ) {
-      setError("Start date has to match one of the selected weekly days.");
+      setError(t("errorWeeklyStartDate"));
       return;
     }
 
     if (form.recurrenceType === "CUSTOM" && (!Number.isInteger(intervalValue) || intervalValue < 1)) {
-      setError("Set a repeat interval of at least 1.");
+      setError(t("errorInterval"));
       return;
     }
 
     startSubmitTransition(async () => {
       const startsAt = parseDateInput(form.startsAt);
       if (!startsAt) {
-        setError("Choose when this starts.");
+        setError(t("errorStartsAt"));
         return;
       }
 
@@ -637,7 +677,7 @@ export function ChoreBoard({
         form.categoryId === "__new__" ? form.newCategoryName.trim() || null : (form.categoryId || null);
 
       if (form.categoryId === "__new__" && !categoryName) {
-        setError("Enter a name for the new category.");
+        setError(t("errorNewCategory"));
         return;
       }
 
@@ -659,7 +699,7 @@ export function ChoreBoard({
       });
 
       if (!response.ok) {
-        setError(editingId ? "Could not update chore. Please try again." : "Could not create chore. Please try again.");
+        setError(editingId ? t("errorUpdate") : t("errorCreate"));
         return;
       }
 
@@ -692,7 +732,7 @@ export function ChoreBoard({
         });
 
         if (!response.ok) {
-          setError("Could not mark chore complete. Please try again.");
+          setError(t("errorComplete"));
           return;
         }
 
@@ -714,7 +754,7 @@ export function ChoreBoard({
       });
 
       if (!response.ok) {
-        setError("Could not delete chore. Please try again.");
+        setError(t("errorDelete"));
         return;
       }
 
@@ -730,7 +770,7 @@ export function ChoreBoard({
       <section>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">Chores</h1>
+            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">{t("title")}</h1>
             <p className="mt-0.5 text-sm text-[#6d746f]">{headerSummary}</p>
           </div>
 
@@ -740,13 +780,13 @@ export function ChoreBoard({
             onClick={openCreateDialog}
             type="button"
           >
-            Add chore
+            {t("addChore")}
           </button>
         </div>
 
         {members.length === 0 ? (
           <p className="mt-2 text-xs text-[#686e6a]">
-            No people added yet. You can still add chores now and leave them unassigned.
+            {t("noPeopleNote")}
           </p>
         ) : null}
 
@@ -767,17 +807,17 @@ export function ChoreBoard({
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                  Chores
+                  {t("label")}
                 </p>
                 <h2
                   className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
                   id="chore-create-dialog-title"
                 >
-                  {editingId ? "Edit chore" : "Add a chore"}
+                  {editingId ? t("editTitle") : t("addTitle")}
                 </h2>
               </div>
               <button
-                aria-label="Close add chore dialog"
+                aria-label={t("closeDialog")}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
                 disabled={isSubmitting}
                 onClick={closeCreateDialog}
@@ -794,7 +834,7 @@ export function ChoreBoard({
             <div className="grid gap-6">
               <section>
                 <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-name">
-                  Name
+                  {t("nameLabel")}
                 </label>
                 <input
                   aria-describedby={nameError ? "chore-name-error" : undefined}
@@ -808,7 +848,7 @@ export function ChoreBoard({
                   maxLength={200}
                   onBlur={() => setTouched((current) => ({ ...current, name: true }))}
                   onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Unload the dishwasher"
+                  placeholder={t("namePlaceholder")}
                   required
                   value={form.name}
                 />
@@ -819,7 +859,7 @@ export function ChoreBoard({
                 ) : null}
                 <div className="mt-3">
                   <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-category">
-                    Category
+                    {t("categoryLabel")}
                   </label>
                   {form.categoryId === "__new__" ? (
                     <div className="flex gap-2">
@@ -828,18 +868,18 @@ export function ChoreBoard({
                         className="min-w-0 flex-1 rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 py-2 text-sm text-[#202321] placeholder:text-[#9da39f] focus:border-[#6e9274] focus:bg-white focus:outline-none"
                         id="chore-category"
                         onChange={(event) => setForm((current) => ({ ...current, newCategoryName: event.target.value }))}
-                        placeholder="New category name"
+                        placeholder={t("newCategoryPlaceholder")}
                         required
                         type="text"
                         value={form.newCategoryName}
                       />
                       <button
-                        aria-label="Cancel new category"
+                        aria-label={t("cancelNewCategory")}
                         className="shrink-0 rounded-md border border-[#dfe6e0] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
                         onClick={() => setForm((current) => ({ ...current, categoryId: "", newCategoryName: "" }))}
                         type="button"
                       >
-                        Cancel
+                        {t("cancel")}
                       </button>
                     </div>
                   ) : (
@@ -847,7 +887,7 @@ export function ChoreBoard({
                       id="chore-category"
                       onChange={(value) => setForm((current) => ({ ...current, categoryId: value, newCategoryName: "" }))}
                       options={categoryOptions}
-                      placeholder="No category"
+                      placeholder={t("noCategory")}
                       value={form.categoryId}
                     />
                   )}
@@ -855,12 +895,12 @@ export function ChoreBoard({
               </section>
 
               <section className="border-t border-[#ece6db] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">Who does it?</h3>
+                <h3 className="text-sm font-semibold text-[#202321]">{t("assignmentHeading")}</h3>
                 <div className="mt-3 grid grid-cols-1 gap-1 rounded-md border border-[#e6e0d6] bg-[#f7f4ed] p-1 sm:grid-cols-3">
                   {[
-                    { value: "UNASSIGNED", label: "Unassigned" },
-                    { value: "FIXED", label: "Fixed person" },
-                    { value: "ROTATING", label: "Rotate between people" },
+                    { value: "UNASSIGNED", label: t("assignmentUnassigned") },
+                    { value: "FIXED", label: t("assignmentFixed") },
+                    { value: "ROTATING", label: t("assignmentRotating") },
                   ].map((option) => {
                     const disabled = members.length === 0 && option.value !== "UNASSIGNED";
 
@@ -892,14 +932,14 @@ export function ChoreBoard({
 
                 {form.assignmentType === "UNASSIGNED" ? (
                   <p className="mt-3 text-xs text-[#7b817d]">
-                    No one is assigned yet. You can assign it later.
+                    {t("unassignedHelp")}
                   </p>
                 ) : null}
 
                 {form.assignmentType === "FIXED" ? (
                   <div className="mt-4">
                     <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-person">
-                      Who
+                      {t("whoLabel")}
                     </label>
                     <select
                       className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
@@ -909,10 +949,10 @@ export function ChoreBoard({
                       }
                       value={form.assignedHouseholdMemberId}
                     >
-                      <option value="">Choose someone</option>
+                      <option value="">{t("chooseSomeone")}</option>
                       {members.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {displayNameForMember(member)}
+                          {displayNameForMember(member, memberFallback)}
                         </option>
                       ))}
                     </select>
@@ -921,7 +961,7 @@ export function ChoreBoard({
 
                 {form.assignmentType === "ROTATING" ? (
                   <div className="mt-4">
-                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">People</p>
+                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">{t("peopleLabel")}</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {members.map((member) => {
                         const selected = form.rotationMemberIds.includes(member.id);
@@ -944,32 +984,32 @@ export function ChoreBoard({
                               name={member.name}
                             />
                             <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#202321]">
-                              {displayNameForMember(member)}
+                              {displayNameForMember(member, memberFallback)}
                             </span>
                             {selected ? <Check aria-hidden className="h-4 w-4 shrink-0 text-[#45614c]" /> : null}
                           </button>
                         );
                       })}
                     </div>
-                    <p className="mt-2 text-xs text-[#7b817d]">The first selected person starts the rotation.</p>
+                    <p className="mt-2 text-xs text-[#7b817d]">{t("rotationHelp")}</p>
                   </div>
                 ) : null}
 
                 {members.length === 0 ? (
                   <p className="mt-3 text-xs text-[#7b817d]">
-                    Add household members later if you want fixed or rotating chores.
+                    {t("addMembersLater")}
                   </p>
                 ) : null}
               </section>
 
               <section className="border-t border-[#ece6db] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">When?</h3>
+                <h3 className="text-sm font-semibold text-[#202321]">{t("scheduleHeading")}</h3>
                 <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   {[
-                    { value: "DAILY", label: "Daily" },
-                    { value: "WEEKLY", label: "Weekly" },
-                    { value: "MONTHLY", label: "Monthly" },
-                    { value: "CUSTOM", label: "Custom" },
+                    { value: "DAILY", label: t("recurrenceDaily") },
+                    { value: "WEEKLY", label: t("recurrenceWeekly") },
+                    { value: "MONTHLY", label: t("recurrenceMonthly") },
+                    { value: "CUSTOM", label: t("recurrenceCustom") },
                   ].map((option) => (
                     <button
                       className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
@@ -994,7 +1034,7 @@ export function ChoreBoard({
 
                 {form.recurrenceType === "WEEKLY" ? (
                   <div className="mt-3">
-                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">Day(s)</p>
+                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">{t("daysLabel")}</p>
                     <div className="flex flex-wrap gap-2">
                       {WEEKDAY_OPTIONS.map((day) => {
                         const selected = form.weeklyDays.includes(day.value);
@@ -1010,7 +1050,7 @@ export function ChoreBoard({
                             onClick={() => toggleWeeklyDay(day.value)}
                             type="button"
                           >
-                            {day.short}
+                            {weekdayLabels[day.key].short}
                           </button>
                         );
                       })}
@@ -1029,7 +1069,7 @@ export function ChoreBoard({
                 >
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-starts-at">
-                      Starts
+                      {t("startsLabel")}
                     </label>
                     <input
                       className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
@@ -1043,7 +1083,7 @@ export function ChoreBoard({
 
                           setWeeklyDateAdjustmentMessage(
                             startsAt !== event.target.value
-                              ? `Moved to ${formatDateInputForMessage(startsAt)} to match your selected day(s).`
+                              ? t("weeklyDateAdjusted", { date: formatDateInputForMessage(startsAt, locale) })
                               : null,
                           );
 
@@ -1066,7 +1106,7 @@ export function ChoreBoard({
                     <>
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-interval-value">
-                        Every
+                        {t("everyLabel")}
                       </label>
                       <input
                         className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274]"
@@ -1082,7 +1122,7 @@ export function ChoreBoard({
 
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-interval-unit">
-                        Unit
+                        {t("unitLabel")}
                       </label>
                       <select
                         className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274]"
@@ -1095,9 +1135,9 @@ export function ChoreBoard({
                         }
                         value={form.intervalUnit}
                       >
-                        <option value="DAYS">Days</option>
-                        <option value="WEEKS">Weeks</option>
-                        <option value="MONTHS">Months</option>
+                        <option value="DAYS">{t("unitDays")}</option>
+                        <option value="WEEKS">{t("unitWeeks")}</option>
+                        <option value="MONTHS">{t("unitMonths")}</option>
                       </select>
                     </div>
                     </>
@@ -1106,12 +1146,12 @@ export function ChoreBoard({
               </section>
 
               <section className="border-t border-[#dce7dd] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">Preview</h3>
+                <h3 className="text-sm font-semibold text-[#202321]">{t("previewHeading")}</h3>
                 <div className="mt-3 rounded-md bg-[#f3f8f2] px-4 py-3 text-sm text-[#314236]">
                   <p className="font-medium text-[#2f4e35]">
-                    {previewAssignmentText} · {previewSchedule(form)}
+                    {previewAssignmentText} · {previewSchedule(form, locale, t, weekdayLabels)}
                   </p>
-                  <p className="mt-1 leading-6">Starts {formatPreviewDate(previewDueDate(form))}</p>
+                  <p className="mt-1 leading-6">{t("previewStarts", { date: formatPreviewDate(previewDueDate(form), locale, t) })}</p>
                 </div>
               </section>
             </div>
@@ -1123,14 +1163,14 @@ export function ChoreBoard({
                 onClick={closeCreateDialog}
                 type="button"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 className="h-10 rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
                 disabled={submitDisabled}
                 type="submit"
               >
-                {editingId ? "Save changes" : "Create chore"}
+                {editingId ? t("saveChanges") : t("createChore")}
               </button>
             </div>
           </form>
@@ -1140,14 +1180,14 @@ export function ChoreBoard({
       <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8]">
         {orderedChores.length === 0 ? (
           <p className="p-5 text-sm text-[#686e6a]">
-            No chores yet. Add your first repeating task to start the home board rhythm.
+            {t("emptyState")}
           </p>
         ) : (
           <div className="divide-y divide-[#eee9df]">
             {[
-              { key: "overdue" as const, label: "Overdue", chores: groupedChores.overdue },
-              { key: "today" as const, label: "Today", chores: groupedChores.today },
-              { key: "upcoming" as const, label: "Upcoming", chores: groupedChores.upcoming },
+              { key: "overdue" as const, label: t("sectionOverdue"), chores: groupedChores.overdue },
+              { key: "today" as const, label: t("sectionToday"), chores: groupedChores.today },
+              { key: "upcoming" as const, label: t("sectionUpcoming"), chores: groupedChores.upcoming },
             ].map((section) => {
               const isTodayEmpty = section.key === "today" && section.chores.length === 0;
 
@@ -1170,19 +1210,24 @@ export function ChoreBoard({
                     {section.label}
                   </h2>
                   {isTodayEmpty ? (
-                    <p className="text-sm font-medium text-[#5f4e1d]">Nothing due today · You&apos;re all caught up</p>
+                    <p className="text-sm font-medium text-[#5f4e1d]">{t("nothingDueToday")}</p>
                   ) : (
                     <ul className="grid gap-2">
                       {section.chores.map((chore) => {
                         const member = chore.assignedHouseholdMemberId
                           ? membersById.get(chore.assignedHouseholdMemberId)
                           : null;
-                        const memberName = member ? displayNameForMember(member) : (chore.assignedHouseholdMemberName ?? "Unassigned");
-                        const dueTone = dueDateTone(chore.nextDueAt);
-                        const assignmentLabel = compactAssignmentLabel(chore, membersById);
+                        const memberName = member
+                          ? displayNameForMember(member, memberFallback)
+                          : (chore.assignedHouseholdMemberName ?? t("unassigned"));
+                        const dueTone = dueDateTone(chore.nextDueAt, t);
+                        const assignmentLabel = compactAssignmentLabel(chore, membersById, memberFallback, t);
                         const isCompletingChore = completingChoreIds.includes(chore.id);
                         const showAssignmentText = chore.assignmentType === "UNASSIGNED";
-                        const avatarLabel = assignmentLabel.replace("Next: ", "");
+                        const avatarLabel =
+                          chore.assignmentType === "ROTATING" && chore.assignedHouseholdMemberName
+                            ? chore.assignedHouseholdMemberName
+                            : assignmentLabel;
 
                         return (
                           <li
@@ -1229,7 +1274,7 @@ export function ChoreBoard({
                               </div>
 
                               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#6d746f]">
-                                <span>{formatCompactIntervalLabel(chore)}</span>
+                                <span>{formatCompactIntervalLabel(chore, t, weekdayLabels)}</span>
                                 {chore.categoryName ? <span className="text-[#b3b7b2]">•</span> : null}
                                 {chore.categoryName ? (
                                   <span
@@ -1245,14 +1290,14 @@ export function ChoreBoard({
                             <div className="flex items-center gap-2 self-start">
                               {confirmDeleteId === chore.id ? (
                                 <div className="flex items-center gap-1">
-                                  <span className="text-xs text-[#5d635f]">Delete?</span>
+                                  <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                                   <button
                                     className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                                     disabled={isDeleting}
                                     onClick={() => removeChore(chore.id)}
                                     type="button"
                                   >
-                                    Yes
+                                    {t("confirmDelete")}
                                   </button>
                                   <button
                                     className="h-7 rounded bg-[#ebe8de] px-1.5 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
@@ -1260,13 +1305,13 @@ export function ChoreBoard({
                                     onClick={() => setConfirmDeleteId(null)}
                                     type="button"
                                   >
-                                    No
+                                    {t("cancelDelete")}
                                   </button>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1">
                                   <button
-                                    aria-label={`Edit ${chore.name}`}
+                                    aria-label={t("editChoreAria", { name: chore.name })}
                                     className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] focus:bg-[#e8efe9] focus:text-[#526c56] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
                                     disabled={boardBusy}
                                     onClick={() => openEditDialog(chore)}
@@ -1275,7 +1320,7 @@ export function ChoreBoard({
                                     <Pencil aria-hidden className="h-3.5 w-3.5" />
                                   </button>
                                   <button
-                                    aria-label={`Delete ${chore.name}`}
+                                    aria-label={t("deleteChoreAria", { name: chore.name })}
                                     className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] focus:bg-[#f3e4e2] focus:text-[#b94e3f] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
                                     disabled={isCompleting || isDeleting}
                                     onClick={() => setConfirmDeleteId(chore.id)}
@@ -1299,7 +1344,7 @@ export function ChoreBoard({
                                   aria-hidden
                                   className={`h-3.5 w-3.5 transition-transform duration-300 ${isCompletingChore ? "scale-110" : ""}`}
                                 />
-                                Done
+                                {t("done")}
                               </button>
                             </div>
                           </li>
