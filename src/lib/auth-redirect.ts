@@ -1,8 +1,4 @@
-const LOCALE_PREFIX_RE = /^\/[a-z]{2}(\/|$)/;
-
-function stripLocalePrefix(value: string): string {
-  return LOCALE_PREFIX_RE.test(value) ? value.replace(/^\/[a-z]{2}/, "") || "/" : value;
-}
+import { stripLocalePrefix } from "@/i18n/routing";
 
 function isSafeRelativePath(value: string | null | undefined): value is string {
   return Boolean(value && value.startsWith("/") && !value.startsWith("//"));

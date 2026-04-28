@@ -116,8 +116,15 @@ function formatShortMonthDay(year: number, month: number, day: number, locale: s
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function formatExpenseDate(date: string): string {
-  return date.slice(0, 10);
+function formatExpenseDate(date: string, locale: string): string {
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return date;
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function todayISO(): string {
@@ -1945,7 +1952,7 @@ export function ExpensesBoard({
                   {displayedExpenses.map((expense) => (
                     <tr key={expense.id} className="transition-colors hover:bg-[#f7f5f0]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {formatExpenseDate(expense.date)}
+                        {formatExpenseDate(expense.date, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{expense.name}</span>
@@ -2084,7 +2091,7 @@ export function ExpensesBoard({
                   {showCarryoverRow ? (
                     <tr className="bg-[#fbfaf6]">
                       <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
-                        {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`)}
+                        {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`, locale)}
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-[#171a18]">{t("startingBalance")}</span>

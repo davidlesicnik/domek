@@ -13,12 +13,13 @@ import {
 } from "lucide-react";
 
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { stripLocalePrefix } from "@/i18n/routing";
 import { AccountDropdown } from "@/components/layout/account-dropdown";
 
 const appPrefetchRefreshMs = 4 * 60 * 1000;
 
 function isActiveNavigationItem(href: string, pathname: string) {
-  const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(\/|$)/, "/").replace(/\/+/g, "/");
+  const pathWithoutLocale = stripLocalePrefix(pathname);
   return href === "/app" ? pathWithoutLocale === "/app" : pathWithoutLocale === href;
 }
 

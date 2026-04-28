@@ -8,6 +8,8 @@ import { routing } from "@/i18n/routing";
 
 const localeNames: Record<string, string> = {
   en: "EN",
+  "en-US": "US",
+  "en-GB": "UK",
   sl: "SL",
 };
 

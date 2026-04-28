@@ -26,8 +26,15 @@ function formatSignedAmount(amount: number, locale: string) {
   })}`;
 }
 
-function formatExpenseDate(date: string) {
-  return date.slice(0, 10);
+function formatExpenseDate(date: string, locale: string) {
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return date;
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function countAgendaItems(data: DashboardData) {
@@ -204,7 +211,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                         ) : null}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#717874]">
-                        <span>{formatExpenseDate(expense.date)}</span>
+                        <span>{formatExpenseDate(expense.date, locale)}</span>
                         {expense.householdMemberName ? (
                           <>
                             <span aria-hidden>·</span>

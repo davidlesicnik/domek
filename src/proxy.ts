@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { billingStatusHasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
-import { routing } from "@/i18n/routing";
+import { localePrefixPattern, routing, stripLocalePrefix } from "@/i18n/routing";
 import { upsertSupabaseUser } from "@/lib/users";
 
 type CookieUpdate = Readonly<{
@@ -180,12 +180,6 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-const localePattern = new RegExp(`^/(${routing.locales.join("|")})(\/|$)`);
-
-function stripLocale(pathname: string): string {
-  return pathname.replace(localePattern, "/").replace(/\/+/g, "/");
-}
-
 function prefixLocale(path: string, locale: string): string {
   if (!path.startsWith("/") || path.startsWith(`/${locale}/`) || path === `/${locale}`) {
     return path;
@@ -205,10 +199,10 @@ export async function proxy(request: NextRequest) {
     return authProxy(request);
   }
 
-  const pathnameWithoutLocale = stripLocale(pathname);
+  const pathnameWithoutLocale = stripLocalePrefix(pathname);
 
   // Detect the current locale from the URL (for redirect prefixing)
-  const localeMatch = pathname.match(localePattern);
+  const localeMatch = pathname.match(localePrefixPattern);
   const currentLocale = localeMatch ? localeMatch[1] : routing.defaultLocale;
 
   // Run auth/billing checks against the locale-stripped path
@@ -219,7 +213,7 @@ export async function proxy(request: NextRequest) {
     const location = proxyResponse.headers.get("location");
     if (location) {
       const locationUrl = new URL(location, request.url);
-      const localeStrippedPath = stripLocale(locationUrl.pathname);
+      const localeStrippedPath = stripLocalePrefix(locationUrl.pathname);
       const prefixedPath = prefixLocale(localeStrippedPath, currentLocale);
       locationUrl.pathname = prefixedPath;
 

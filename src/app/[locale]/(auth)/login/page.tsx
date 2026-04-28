@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { redirect } from "@/i18n/server";
+import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
 
@@ -20,7 +21,7 @@ function safeNextPath(value: string | null): string {
   }
 
   // Block both bare and locale-prefixed login/callback paths
-  const stripped = value.replace(/^\/(en|sl)/, "");
+  const stripped = stripLocalePrefix(value);
   if (stripped.startsWith("/login") || stripped.startsWith("/auth/callback")) {
     return "/app";
   }
