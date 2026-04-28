@@ -180,6 +180,17 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+function redirectLegacyEnglishLocale(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  if (pathname !== "/en" && !pathname.startsWith("/en/")) return null;
+
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = pathname === "/en" ? "/en-US" : pathname.replace(/^\/en(?=\/)/, "/en-US");
+  redirectUrl.search = search;
+
+  return NextResponse.redirect(redirectUrl);
+}
+
 function prefixLocale(path: string, locale: string): string {
   if (!path.startsWith("/") || path.startsWith(`/${locale}/`) || path === `/${locale}`) {
     return path;
@@ -189,6 +200,9 @@ function prefixLocale(path: string, locale: string): string {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const legacyEnglishRedirect = redirectLegacyEnglishLocale(request);
+  if (legacyEnglishRedirect) return legacyEnglishRedirect;
 
   // Skip intl for API routes, auth route handlers, and Next.js internals
   if (
