@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { ChoreBoard } from "@/components/chores/chore-board";
 import { getCurrentChoreScope, listChoreCategories, listChoreMembers, listChores } from "@/lib/chores";
 
-export const metadata: Metadata = {
-  title: "Chores | Domek",
-  description: "Track recurring household chores in one shared timeline.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("choresPage");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 type ChoresPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
