@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 type PaddleEnvironment = "live" | "sandbox";
@@ -59,6 +60,8 @@ export function PaddleCheckoutLauncher({
   priceId,
   successUrl,
 }: PaddleCheckoutLauncherProps) {
+  const locale = useLocale();
+  const t = useTranslations("onboarding");
   const [isReady, setIsReady] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const environment = useMemo(() => paddleEnvironment(clientToken), [clientToken]);
@@ -76,7 +79,7 @@ export function PaddleCheckoutLauncher({
       const paddleWindow = window as PaddleCheckoutWindow;
 
       if (!paddleWindow.Paddle) {
-        finishWithError("Paddle loaded, but the checkout library did not initialize.");
+        finishWithError(t("paymentCheckoutErrorNotInitialized"));
         return;
       }
 
@@ -90,7 +93,7 @@ export function PaddleCheckoutLauncher({
             checkout: {
               settings: {
                 displayMode: "overlay",
-                locale: "en",
+                locale,
                 theme: "light",
                 variant: "one-page",
               },
@@ -107,7 +110,7 @@ export function PaddleCheckoutLauncher({
         }
       } catch (error) {
         console.error("[PaddleCheckoutLauncher] initialize failed", error);
-        finishWithError("Paddle loaded, but checkout setup failed. Check the browser console.");
+        finishWithError(t("paymentCheckoutErrorSetup"));
       }
     }
 
@@ -122,7 +125,7 @@ export function PaddleCheckoutLauncher({
         existingScript.addEventListener("load", initializePaddle, { once: true });
         existingScript.addEventListener(
           "error",
-          () => finishWithError("Paddle checkout could not load. Refresh and try again."),
+          () => finishWithError(t("paymentCheckoutErrorLoad")),
           { once: true },
         );
       }
@@ -143,7 +146,7 @@ export function PaddleCheckoutLauncher({
     script.addEventListener("load", initializePaddle, { once: true });
     script.addEventListener(
       "error",
-      () => finishWithError("Paddle checkout could not load. Refresh and try again."),
+      () => finishWithError(t("paymentCheckoutErrorLoad")),
       { once: true },
     );
     document.body.appendChild(script);
@@ -151,13 +154,13 @@ export function PaddleCheckoutLauncher({
     return () => {
       cancelled = true;
     };
-  }, [clientToken, environment]);
+  }, [clientToken, environment, locale, t]);
 
   function launchCheckout() {
     const paddleWindow = window as PaddleCheckoutWindow;
 
     if (!paddleWindow.Paddle) {
-      setCheckoutError("Checkout is still loading. Try again in a moment.");
+      setCheckoutError(t("paymentCheckoutErrorStillLoading"));
       return;
     }
 
@@ -172,7 +175,7 @@ export function PaddleCheckoutLauncher({
         items: [{ priceId, quantity: 1 }],
         settings: {
           displayMode: "overlay",
-          locale: "en",
+          locale,
           successUrl,
           theme: "light",
           variant: "one-page",
@@ -180,7 +183,7 @@ export function PaddleCheckoutLauncher({
       });
     } catch (error) {
       console.error("[PaddleCheckoutLauncher] checkout open failed", error);
-      setCheckoutError("Paddle checkout could not open. Check the browser console.");
+      setCheckoutError(t("paymentCheckoutErrorOpen"));
     }
   }
 
@@ -192,7 +195,7 @@ export function PaddleCheckoutLauncher({
         onClick={launchCheckout}
         type="button"
       >
-        {isReady ? "Start 30-day trial with Paddle" : "Loading checkout..."}
+        {isReady ? t("paymentCheckoutReady") : t("paymentCheckoutLoading")}
       </button>
       {checkoutError ? (
         <p className="text-sm font-medium text-[#a6543c]">{checkoutError}</p>

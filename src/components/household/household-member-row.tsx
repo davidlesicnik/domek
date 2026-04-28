@@ -2,9 +2,10 @@
 
 import type { HouseholdRole } from "@prisma/client";
 import { Mail, Pencil, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
+import { useRouter } from "@/i18n/navigation";
 import { MemberColorPicker } from "@/components/household/member-color-picker";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import type {
@@ -26,6 +27,7 @@ type HouseholdMemberRowProps = Readonly<{
   };
   currentMemberId: string;
   isOwner: boolean;
+  label: string;
   linkAccountAction: (
     prevState: HouseholdActionState,
     formData: FormData,
@@ -38,16 +40,17 @@ type HouseholdMemberRowProps = Readonly<{
 const AVATAR_ONBOARDING_KEY = "domek.household.avatar-picker-seen";
 
 function RolePill({ role }: { role: HouseholdRole }) {
+  const t = useTranslations("householdPage");
   if (role === "OWNER") {
     return (
       <span className="inline-flex items-center rounded border border-[#d9d6ce] bg-[#f2efe8] px-2 py-0.5 text-xs font-semibold text-[#5d625e]">
-        Owner
+        {t("roleOwner")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold bg-[#d9ede0] text-[#2e6641]">
-      Member
+      {t("roleMember")}
     </span>
   );
 }
@@ -56,11 +59,13 @@ export function HouseholdMemberRow({
   member,
   currentMemberId,
   isOwner,
+  label,
   linkAccountAction,
   removeMemberAction,
   transferOwnershipAction,
   updateMemberAction,
 }: HouseholdMemberRowProps) {
+  const t = useTranslations("householdPage");
   const [selectedColor, setSelectedColor] = useState(getMemberColor(member.color).key);
   const [selectedEmoji, setSelectedEmoji] = useState(member.emoji);
   const [draftName, setDraftName] = useState(member.name);
@@ -118,7 +123,7 @@ export function HouseholdMemberRow({
             color={selectedColor}
             email={member.accountEmail}
             emoji={selectedEmoji}
-            fallbackLabel="Unknown"
+            fallbackLabel={t("unknownMember")}
             name={member.name}
           />
         </span>
@@ -140,7 +145,7 @@ export function HouseholdMemberRow({
                   onClick={saveName}
                   type="button"
                 >
-                  Save
+                  {t("save")}
                 </button>
                 <button
                   className="h-9 rounded-md px-2 text-xs font-semibold text-[#7c847f] transition hover:text-[#202321]"
@@ -151,7 +156,7 @@ export function HouseholdMemberRow({
                   }}
                   type="button"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
               </div>
             ) : (
@@ -161,7 +166,7 @@ export function HouseholdMemberRow({
                 </p>
                 {canEdit ? (
                   <button
-                    aria-label={`Edit ${memberLabel}`}
+                    aria-label={t("editMemberAria", { name: memberLabel })}
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[#7a817c] transition hover:bg-[#f4f1ea] hover:text-[#202321]"
                     onClick={() => {
                       setDraftName(member.name);
@@ -181,7 +186,7 @@ export function HouseholdMemberRow({
               ) : null}
               {!member.accountId ? (
                 <span className="inline-flex items-center rounded border border-[#e5e0d6] bg-[#f7f4ed] px-2 py-0.5 text-[11px] font-medium text-[#7b807b]">
-                  No account
+                  {t("noAccount")}
                 </span>
               ) : null}
             </div>
@@ -198,12 +203,13 @@ export function HouseholdMemberRow({
                       className="h-8 rounded-md border border-[#e2e7df] bg-transparent px-3 text-xs font-semibold text-[#59615c] transition hover:border-[#cfd9cf] hover:bg-[#f4f8f3] hover:text-[#202321]"
                       type="submit"
                     >
-                      Make owner
+                      {t("makeOwner")}
                     </button>
                   </form>
                 ) : (
                   <LinkAccountDialog
                     linkAccountAction={linkAccountAction}
+                    label={label}
                     memberId={member.id}
                     memberLabel={memberLabel}
                   />
@@ -214,7 +220,7 @@ export function HouseholdMemberRow({
                     className="h-8 rounded-md border border-[#efd0c8] px-3 text-xs font-semibold text-[#b46a58] transition hover:border-[#e4b7ad] hover:bg-[#fff8f6] hover:text-[#9d4f3f]"
                     type="submit"
                   >
-                    Remove
+                    {t("remove")}
                   </button>
                 </form>
               </>
@@ -233,13 +239,16 @@ type LinkAccountDialogProps = Readonly<{
     prevState: HouseholdActionState,
     formData: FormData,
   ) => Promise<HouseholdActionState>;
+  label: string;
 }>;
 
 function LinkAccountDialog({
+  label,
   memberId,
   memberLabel,
   linkAccountAction,
 }: LinkAccountDialogProps) {
+  const t = useTranslations("householdPage");
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -273,7 +282,7 @@ function LinkAccountDialog({
         onClick={() => setIsOpen(true)}
         type="button"
       >
-        Link account
+        {t("linkAccount")}
       </button>
       {isOpen ? (
         <>
@@ -291,17 +300,17 @@ function LinkAccountDialog({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
-                    Household
+                    {label}
                   </p>
                   <h3 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
-                    Invite {memberLabel} to create an account
+                    {t("linkAccountTitle", { name: memberLabel })}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#686e6a]">
-                    Send {memberLabel} a link to create an account for this profile.
+                    {t("linkAccountDescription", { name: memberLabel })}
                   </p>
                 </div>
                 <button
-                  aria-label={`Close link account dialog for ${memberLabel}`}
+                  aria-label={t("closeLinkAccountAria", { name: memberLabel })}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#ddd7cc] text-[#5d635f] transition hover:bg-[#f6f2ea]"
                   onClick={closeDialog}
                   type="button"
@@ -317,7 +326,7 @@ function LinkAccountDialog({
                     className="text-sm font-semibold text-[#3c413e]"
                     htmlFor={`link-account-email-${memberId}`}
                   >
-                    Email
+                    {t("emailLabel")}
                   </label>
                   <div className="flex items-center gap-2 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3">
                     <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
@@ -334,10 +343,10 @@ function LinkAccountDialog({
                   </div>
                 </div>
                 <p className="text-xs leading-5 text-[#7a817c]">
-                  Once they accept, their account will be linked to this existing profile.
+                  {t("linkAccountHelp")}
                 </p>
                 <p className="text-xs leading-5 text-[#7a817c]">
-                  This won&apos;t create a duplicate member.
+                  {t("linkAccountNoDuplicate")}
                 </p>
                 {state.error ? <p className="text-sm font-medium text-[#a6543c]">{state.error}</p> : null}
                 <div className="flex justify-end">
@@ -346,7 +355,7 @@ function LinkAccountDialog({
                     disabled={isPending}
                     type="submit"
                   >
-                    Send invite
+                    {t("sendInvite")}
                   </button>
                 </div>
               </form>
