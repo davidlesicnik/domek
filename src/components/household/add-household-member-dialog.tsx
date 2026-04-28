@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Mail, UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { useRouter } from "@/i18n/navigation";
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -61,11 +61,28 @@ export function AddHouseholdMemberDialog({
     error: null,
     success: false,
   });
-  const [currentTime] = useState(() => Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [invitePending, startInviteTransition] = useTransition();
   const [memberPending, startMemberTransition] = useTransition();
   const [, startRevokeTransition] = useTransition();
   const memberInitial = previewInitial(memberName);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const intervalId = globalThis.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60 * 1000);
+
+    return () => {
+      globalThis.clearInterval(intervalId);
+    };
+  }, [isOpen]);
+
+  function openDialog() {
+    setCurrentTime(Date.now());
+    setIsOpen(true);
+  }
 
   function formatExpiry(date: Date): string {
     const diff = date.getTime() - currentTime;
@@ -127,7 +144,7 @@ export function AddHouseholdMemberDialog({
 
   return (
     <>
-      <button className={buttonClassName} onClick={() => setIsOpen(true)} type="button">
+      <button className={buttonClassName} onClick={openDialog} type="button">
         <UserPlus aria-hidden className="h-3.5 w-3.5" />
         <span>{buttonLabel}</span>
       </button>
