@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
 const TRUST_KEYS = ["trustTrial", "trustNoCard", "trustCancel", "trustPrivate"] as const;
 
 const HERO_PREVIEW_STATS = [
-  { labelKey: "heroPreviewOpenChores", tone: "bg-[#a8beb0]", value: "3" },
-  { labelKey: "heroPreviewListItems", tone: "bg-[#dccd79]", value: "12" },
-  { labelKey: "heroPreviewSharedCosts", tone: "bg-[#ddaea9]", value: "4" },
-  { labelKey: "heroPreviewUpcomingDates", tone: "bg-[#a99f7f]", value: "6" },
+  ["heroPreviewOpenChores", "3", "bg-[#a8beb0]"],
+  ["heroPreviewListItems", "12", "bg-[#dccd79]"],
+  ["heroPreviewSharedCosts", "4", "bg-[#ddaea9]"],
+  ["heroPreviewUpcomingDates", "6", "bg-[#a99f7f]"],
 ] as const;
 
 const HERO_PREVIEW_TAB_KEYS = [
@@ -33,86 +33,20 @@ const PROBLEM_KEYS = [
 ] as const;
 
 const LANDING_FEATURE_CONFIGS = [
-  {
-    accent: "sage",
-    id: "calendar",
-    marker: "CAL",
-    primaryMetricKey: "screenCalendarPrimary",
-    screenSummaryKey: "screenCalendarSummary",
-    screenTitleKey: "screenCalendarTitle",
-    secondaryMetricKey: "screenCalendarSecondary",
-    summaryKey: "featureCalendarSummary",
-    tertiaryMetricKey: "screenCalendarTertiary",
-    titleKey: "featureCalendarTitle",
-  },
-  {
-    accent: "rose",
-    id: "todos",
-    marker: "DO",
-    primaryMetricKey: "screenTodosPrimary",
-    screenSummaryKey: "screenTodosSummary",
-    screenTitleKey: "screenTodosTitle",
-    secondaryMetricKey: "screenTodosSecondary",
-    summaryKey: "featureTodosSummary",
-    tertiaryMetricKey: "screenTodosTertiary",
-    titleKey: "featureTodosTitle",
-  },
-  {
-    accent: "sun",
-    id: "shopping",
-    marker: "SHOP",
-    primaryMetricKey: "screenShoppingPrimary",
-    screenSummaryKey: "screenShoppingSummary",
-    screenTitleKey: "screenShoppingTitle",
-    secondaryMetricKey: "screenShoppingSecondary",
-    summaryKey: "featureShoppingSummary",
-    tertiaryMetricKey: "screenShoppingTertiary",
-    titleKey: "featureShoppingTitle",
-  },
-  {
-    accent: "sun",
-    id: "notes",
-    marker: "NOTE",
-    primaryMetricKey: "screenNotesPrimary",
-    screenSummaryKey: "screenNotesSummary",
-    screenTitleKey: "screenNotesTitle",
-    secondaryMetricKey: "screenNotesSecondary",
-    summaryKey: "featureNotesSummary",
-    tertiaryMetricKey: "screenNotesTertiary",
-    titleKey: "featureNotesTitle",
-  },
-  {
-    accent: "rose",
-    id: "expenses",
-    marker: "EUR",
-    primaryMetricKey: "screenExpensesPrimary",
-    screenSummaryKey: "screenExpensesSummary",
-    screenTitleKey: "screenExpensesTitle",
-    secondaryMetricKey: "screenExpensesSecondary",
-    summaryKey: "featureExpensesSummary",
-    tertiaryMetricKey: "screenExpensesTertiary",
-    titleKey: "featureExpensesTitle",
-  },
-  {
-    accent: "moss",
-    id: "chores",
-    marker: "JOB",
-    primaryMetricKey: "screenChoresPrimary",
-    screenSummaryKey: "screenChoresSummary",
-    screenTitleKey: "screenChoresTitle",
-    secondaryMetricKey: "screenChoresSecondary",
-    summaryKey: "featureChoresSummary",
-    tertiaryMetricKey: "screenChoresTertiary",
-    titleKey: "featureChoresTitle",
-  },
+  ["sage", "calendar", "CAL", "screenCalendarPrimary", "screenCalendarSecondary", "screenCalendarTertiary", "screenCalendarTitle", "screenCalendarSummary", "featureCalendarTitle", "featureCalendarSummary"],
+  ["rose", "todos", "DO", "screenTodosPrimary", "screenTodosSecondary", "screenTodosTertiary", "screenTodosTitle", "screenTodosSummary", "featureTodosTitle", "featureTodosSummary"],
+  ["sun", "shopping", "SHOP", "screenShoppingPrimary", "screenShoppingSecondary", "screenShoppingTertiary", "screenShoppingTitle", "screenShoppingSummary", "featureShoppingTitle", "featureShoppingSummary"],
+  ["sun", "notes", "NOTE", "screenNotesPrimary", "screenNotesSecondary", "screenNotesTertiary", "screenNotesTitle", "screenNotesSummary", "featureNotesTitle", "featureNotesSummary"],
+  ["rose", "expenses", "EUR", "screenExpensesPrimary", "screenExpensesSecondary", "screenExpensesTertiary", "screenExpensesTitle", "screenExpensesSummary", "featureExpensesTitle", "featureExpensesSummary"],
+  ["moss", "chores", "JOB", "screenChoresPrimary", "screenChoresSecondary", "screenChoresTertiary", "screenChoresTitle", "screenChoresSummary", "featureChoresTitle", "featureChoresSummary"],
 ] as const;
 
 const FAQ_KEY_PAIRS = [
-  { answerKey: "faqTrialAnswer", questionKey: "faqTrialQuestion" },
-  { answerKey: "faqMembersAnswer", questionKey: "faqMembersQuestion" },
-  { answerKey: "faqPrivacyAnswer", questionKey: "faqPrivacyQuestion" },
-  { answerKey: "faqUseAnswer", questionKey: "faqUseQuestion" },
-  { answerKey: "faqCancelAnswer", questionKey: "faqCancelQuestion" },
+  ["faqTrialQuestion", "faqTrialAnswer"],
+  ["faqMembersQuestion", "faqMembersAnswer"],
+  ["faqPrivacyQuestion", "faqPrivacyAnswer"],
+  ["faqUseQuestion", "faqUseAnswer"],
+  ["faqCancelQuestion", "faqCancelAnswer"],
 ] as const;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -220,7 +154,7 @@ function LandingHero({ hasSession }: { hasSession: boolean }) {
 
 function HeroProductPreview() {
   const t = useTranslations("landing");
-  const stats = HERO_PREVIEW_STATS.map((stat) => ({ ...stat, label: t(stat.labelKey) }));
+  const stats = HERO_PREVIEW_STATS.map(([labelKey, value, tone]) => ({ label: t(labelKey), tone, value }));
   const tabs = HERO_PREVIEW_TAB_KEYS.map((key) => t(key));
 
   return (
@@ -332,18 +266,31 @@ function LandingProblem() {
 
 function LandingFeatures() {
   const t = useTranslations("landing");
-  const features: LandingFeaturePreview[] = LANDING_FEATURE_CONFIGS.map((feature) => ({
-    accent: feature.accent,
-    id: feature.id,
-    marker: feature.marker,
-    primaryMetric: t(feature.primaryMetricKey),
-    screenSummary: t(feature.screenSummaryKey),
-    screenTitle: t(feature.screenTitleKey),
-    secondaryMetric: t(feature.secondaryMetricKey),
-    summary: t(feature.summaryKey),
-    tertiaryMetric: t(feature.tertiaryMetricKey),
-    title: t(feature.titleKey),
-  }));
+  const features: LandingFeaturePreview[] = LANDING_FEATURE_CONFIGS.map(
+    ([
+      accent,
+      id,
+      marker,
+      primaryMetricKey,
+      secondaryMetricKey,
+      tertiaryMetricKey,
+      screenTitleKey,
+      screenSummaryKey,
+      titleKey,
+      summaryKey,
+    ]) => ({
+      accent,
+      id,
+      marker,
+      primaryMetric: t(primaryMetricKey),
+      screenSummary: t(screenSummaryKey),
+      screenTitle: t(screenTitleKey),
+      secondaryMetric: t(secondaryMetricKey),
+      summary: t(summaryKey),
+      tertiaryMetric: t(tertiaryMetricKey),
+      title: t(titleKey),
+    }),
+  );
 
   return (
     <section className="mt-10 sm:mt-12">
@@ -363,9 +310,9 @@ function LandingFeatures() {
 
 function LandingFaq() {
   const t = useTranslations("landing");
-  const faqs = FAQ_KEY_PAIRS.map((faq) => ({
-    answer: t(faq.answerKey),
-    question: t(faq.questionKey),
+  const faqs = FAQ_KEY_PAIRS.map(([questionKey, answerKey]) => ({
+    answer: t(answerKey),
+    question: t(questionKey),
   }));
 
   return (
