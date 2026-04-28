@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,51 +17,52 @@ type RightPaneState =
   | { mode: "edit"; noteId: string };
 
 type SaveStatus = "idle" | "saving" | "saved";
+type NotesTranslator = ReturnType<typeof useTranslations>;
 
-function notePreview(body: string): string {
+function notePreview(body: string, t: NotesTranslator): string {
   const firstLine = body
     .split(/\r?\n/)
     .map((line) => line.trim())
     .find((line) => line.length > 0);
 
   if (!firstLine) {
-    return "Nothing written yet.";
+    return t("emptyPreview");
   }
 
   return firstLine.length > 72 ? `${firstLine.slice(0, 69)}...` : firstLine;
 }
 
-function formatLastEditedLabel(updatedAt: string | null): string {
+function formatLastEditedLabel(updatedAt: string | null, nowMs: number | null, t: NotesTranslator): string {
   if (!updatedAt) {
-    return "Start writing to save this note.";
+    return t("startWritingToSave");
   }
 
   const updatedAtDate = new Date(updatedAt);
 
-  if (Number.isNaN(updatedAtDate.getTime())) {
-    return "Changes are saved automatically.";
+  if (Number.isNaN(updatedAtDate.getTime()) || nowMs === null) {
+    return t("autosaveHint");
   }
 
-  const diffMs = Date.now() - updatedAtDate.getTime();
+  const diffMs = nowMs - updatedAtDate.getTime();
 
   if (diffMs < 45_000) {
-    return "Last edited just now";
+    return t("lastEditedJustNow");
   }
 
   const diffMinutes = Math.round(diffMs / 60_000);
 
   if (diffMinutes < 60) {
-    return `Last edited ${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+    return t("lastEditedMinutes", { count: diffMinutes });
   }
 
   const diffHours = Math.round(diffMinutes / 60);
 
   if (diffHours < 24) {
-    return `Last edited ${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+    return t("lastEditedHours", { count: diffHours });
   }
 
   const diffDays = Math.round(diffHours / 24);
-  return `Last edited ${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+  return t("lastEditedDays", { count: diffDays });
 }
 
 function ChevronLeftIcon(props: SVGProps<SVGSVGElement>) {
@@ -117,6 +119,7 @@ function PlusIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export function NotesBoard({ initialNotes }: NotesBoardProps) {
+  const t = useTranslations("notesPage");
   const [notes, setNotes] = useState<NoteView[]>(initialNotes);
   const [pane, setPane] = useState<RightPaneState>(
     initialNotes[0] ? { mode: "edit", noteId: initialNotes[0].id } : { mode: "idle" },
@@ -126,6 +129,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
+  const [nowMs, setNowMs] = useState<number | null>(null);
 
   const isSavingRef = useRef(false);
 
@@ -185,6 +189,12 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
     return () => clearTimeout(timer);
   }, [editTitle, editBody, pane.mode]);
+
+  useEffect(() => {
+    setNowMs(Date.now());
+    const timer = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Switches the editor to a note without flushing — used internally and in rollback paths.
   function switchToNote(note: NoteView) {
@@ -255,14 +265,14 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   const activeNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
   const saveMessage =
     saveStatus === "saving"
-      ? "Saving changes..."
+      ? t("savingChanges")
       : pane.mode === "new" && !editTitle.trim()
-        ? "Start writing to save this note."
-        : formatLastEditedLabel(activeNote?.updatedAt ?? null);
+        ? t("startWritingToSave")
+        : formatLastEditedLabel(activeNote?.updatedAt ?? null, nowMs, t);
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
-      <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">Notes</h1>
+      <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">{t("title")}</h1>
       <div className="grid items-start gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
         {/* Left pane: note list */}
         <aside
@@ -283,20 +293,20 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                 >
                   <PlusIcon className="h-3.5 w-3.5" />
                 </span>
-                <span>New note</span>
+                <span>{t("newNote")}</span>
               </button>
             </li>
             {notes.length === 0 && pane.mode !== "new" && (
-              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">No notes yet.</li>
+              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">{t("emptyList")}</li>
             )}
             {pane.mode === "new" && (
               <li className="flex items-center border-b border-[#e0dcd4] border-l-4 border-l-[#6e9274] bg-[#f6faf6]">
                 <span className="min-w-0 flex-1 px-3 py-3 text-left">
                   <span className="block truncate text-sm font-semibold text-[#426148]">
-                    {editTitle.trim() || <span className="italic text-[#9ab5a0]">New note</span>}
+                    {editTitle.trim() || <span className="italic text-[#9ab5a0]">{t("newNote")}</span>}
                   </span>
                   <span className="mt-1 block truncate text-xs text-[#64806a]">
-                    {notePreview(editBody)}
+                    {notePreview(editBody, t)}
                   </span>
                 </span>
               </li>
@@ -328,30 +338,30 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                         isSelected ? "text-[#64806a]" : "text-[#8b857d]"
                       }`}
                     >
-                      {notePreview(note.body)}
+                      {notePreview(note.body, t)}
                     </span>
                   </button>
                   {confirmDeleteId === note.id ? (
                     <div className="mr-2 flex shrink-0 items-center gap-1">
-                      <span className="text-xs text-[#5d635f]">Delete?</span>
+                      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                       <button
                         className="min-h-7 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
                         onClick={() => handleDelete(note.id)}
                         type="button"
                       >
-                        Yes
+                        {t("confirmDelete")}
                       </button>
                       <button
                         className="min-h-7 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
                         onClick={() => setConfirmDeleteId(null)}
                         type="button"
                       >
-                        No
+                        {t("cancelDelete")}
                       </button>
                     </div>
                   ) : (
                     <button
-                      aria-label={`Delete ${note.title}`}
+                      aria-label={t("deleteNoteAria", { title: note.title })}
                       className="mr-2 shrink-0 rounded p-2 text-[#b0aca5] opacity-0 transition hover:bg-[#f7ecea] hover:text-[#a6543c] group-hover:opacity-100"
                       onClick={() => setConfirmDeleteId(note.id)}
                       type="button"
@@ -373,9 +383,9 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
         >
           {pane.mode === "idle" ? (
             <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
-              <p className="font-serif text-lg text-[#5d635f]">Nothing selected.</p>
+              <p className="font-serif text-lg text-[#5d635f]">{t("nothingSelected")}</p>
               <p className="mt-1 text-sm text-[#9a9e9b]">
-                Pick a note from the list or add a new one.
+                {t("nothingSelectedHint")}
               </p>
             </div>
           ) : (
@@ -383,7 +393,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
               <div className="border-b border-[#e6dfd3] bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,250,241,0.58))] px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
                 <div className="flex items-start gap-3">
                   <button
-                    aria-label="Back to notes"
+                    aria-label={t("backToNotes")}
                     className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white/90 text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
                     onClick={() => setIsMobileDetailOpen(false)}
                     type="button"
@@ -395,7 +405,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                       autoFocus={pane.mode === "new"}
                       className="min-w-0 w-full bg-transparent font-serif text-[1.4rem] font-semibold text-[#171a18] placeholder:font-serif placeholder:text-[#c0bbb4] focus:outline-none"
                       onChange={(e) => setEditTitle(e.target.value)}
-                      placeholder="Untitled note"
+                      placeholder={t("untitledPlaceholder")}
                       type="text"
                       value={editTitle}
                     />
@@ -409,7 +419,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
               <textarea
                 className="flex-1 resize-none bg-transparent px-4 pt-6 pb-5 text-[15px] leading-[1.95] text-[#2d3230] placeholder:text-[#c0bbb4] focus:outline-none sm:px-6 sm:pt-7 sm:pb-6"
                 onChange={(e) => setEditBody(e.target.value)}
-                placeholder="Write down a plan, reminder, or little household thought..."
+                placeholder={t("bodyPlaceholder")}
                 value={editBody}
               />
             </div>
@@ -419,7 +429,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
       {!isMobileDetailOpen && (
         <button
-          aria-label="Add note"
+          aria-label={t("addNoteAria")}
           className="fixed bottom-[calc(5.5rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[#7aab86] bg-[#dff0e3] text-3xl font-bold leading-none text-[#3a6645] shadow-[0_14px_34px_rgba(31,35,30,0.22)] transition hover:bg-[#cce8d2] sm:hidden"
           onClick={openNewNote}
           type="button"
