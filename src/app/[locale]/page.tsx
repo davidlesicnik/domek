@@ -9,6 +9,112 @@ import { getCurrentAppSession } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
+const TRUST_KEYS = ["trustTrial", "trustNoCard", "trustCancel", "trustPrivate"] as const;
+
+const HERO_PREVIEW_STATS = [
+  { labelKey: "heroPreviewOpenChores", tone: "bg-[#a8beb0]", value: "3" },
+  { labelKey: "heroPreviewListItems", tone: "bg-[#dccd79]", value: "12" },
+  { labelKey: "heroPreviewSharedCosts", tone: "bg-[#ddaea9]", value: "4" },
+  { labelKey: "heroPreviewUpcomingDates", tone: "bg-[#a99f7f]", value: "6" },
+] as const;
+
+const HERO_PREVIEW_TAB_KEYS = [
+  "heroPreviewBoardTab",
+  "heroPreviewCalendar",
+  "heroPreviewListsTab",
+  "heroPreviewMoneyTab",
+] as const;
+
+const PROBLEM_KEYS = [
+  "problemStickyNotes",
+  "problemShoppingApps",
+  "problemChoreTurns",
+  "problemForgottenBills",
+] as const;
+
+const LANDING_FEATURE_CONFIGS = [
+  {
+    accent: "sage",
+    id: "calendar",
+    marker: "CAL",
+    primaryMetricKey: "screenCalendarPrimary",
+    screenSummaryKey: "screenCalendarSummary",
+    screenTitleKey: "screenCalendarTitle",
+    secondaryMetricKey: "screenCalendarSecondary",
+    summaryKey: "featureCalendarSummary",
+    tertiaryMetricKey: "screenCalendarTertiary",
+    titleKey: "featureCalendarTitle",
+  },
+  {
+    accent: "rose",
+    id: "todos",
+    marker: "DO",
+    primaryMetricKey: "screenTodosPrimary",
+    screenSummaryKey: "screenTodosSummary",
+    screenTitleKey: "screenTodosTitle",
+    secondaryMetricKey: "screenTodosSecondary",
+    summaryKey: "featureTodosSummary",
+    tertiaryMetricKey: "screenTodosTertiary",
+    titleKey: "featureTodosTitle",
+  },
+  {
+    accent: "sun",
+    id: "shopping",
+    marker: "SHOP",
+    primaryMetricKey: "screenShoppingPrimary",
+    screenSummaryKey: "screenShoppingSummary",
+    screenTitleKey: "screenShoppingTitle",
+    secondaryMetricKey: "screenShoppingSecondary",
+    summaryKey: "featureShoppingSummary",
+    tertiaryMetricKey: "screenShoppingTertiary",
+    titleKey: "featureShoppingTitle",
+  },
+  {
+    accent: "sun",
+    id: "notes",
+    marker: "NOTE",
+    primaryMetricKey: "screenNotesPrimary",
+    screenSummaryKey: "screenNotesSummary",
+    screenTitleKey: "screenNotesTitle",
+    secondaryMetricKey: "screenNotesSecondary",
+    summaryKey: "featureNotesSummary",
+    tertiaryMetricKey: "screenNotesTertiary",
+    titleKey: "featureNotesTitle",
+  },
+  {
+    accent: "rose",
+    id: "expenses",
+    marker: "EUR",
+    primaryMetricKey: "screenExpensesPrimary",
+    screenSummaryKey: "screenExpensesSummary",
+    screenTitleKey: "screenExpensesTitle",
+    secondaryMetricKey: "screenExpensesSecondary",
+    summaryKey: "featureExpensesSummary",
+    tertiaryMetricKey: "screenExpensesTertiary",
+    titleKey: "featureExpensesTitle",
+  },
+  {
+    accent: "moss",
+    id: "chores",
+    marker: "JOB",
+    primaryMetricKey: "screenChoresPrimary",
+    screenSummaryKey: "screenChoresSummary",
+    screenTitleKey: "screenChoresTitle",
+    secondaryMetricKey: "screenChoresSecondary",
+    summaryKey: "featureChoresSummary",
+    tertiaryMetricKey: "screenChoresTertiary",
+    titleKey: "featureChoresTitle",
+  },
+] as const;
+
+const FAQ_KEY_PAIRS = [
+  { answerKey: "faqTrialAnswer", questionKey: "faqTrialQuestion" },
+  { answerKey: "faqMembersAnswer", questionKey: "faqMembersQuestion" },
+  { answerKey: "faqPrivacyAnswer", questionKey: "faqPrivacyQuestion" },
+  { answerKey: "faqUseAnswer", questionKey: "faqUseQuestion" },
+  { answerKey: "faqCancelAnswer", questionKey: "faqCancelQuestion" },
+] as const;
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "common" });
@@ -70,7 +176,7 @@ function LandingHeaderButtons({ hasSession }: { hasSession: boolean }) {
 function LandingHero({ hasSession }: { hasSession: boolean }) {
   const t = useTranslations("landing");
   const tc = useTranslations("common");
-  const trustItems = [t("trustTrial"), t("trustNoCard"), t("trustCancel"), t("trustPrivate")];
+  const trustItems = TRUST_KEYS.map((key) => t(key));
 
   return (
     <section className="-mx-4 grid w-auto gap-8 rounded-none bg-[#fffdf8] px-[18px] pb-12 pt-8 shadow-none sm:mx-auto sm:w-full sm:rounded-md sm:px-8 sm:pb-8 sm:pt-10 sm:shadow-[0_8px_40px_rgba(31,35,30,0.06)] lg:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)] lg:items-center">
@@ -114,18 +220,8 @@ function LandingHero({ hasSession }: { hasSession: boolean }) {
 
 function HeroProductPreview() {
   const t = useTranslations("landing");
-  const stats = [
-    { label: t("heroPreviewOpenChores"), value: "3", tone: "bg-[#a8beb0]" },
-    { label: t("heroPreviewListItems"), value: "12", tone: "bg-[#dccd79]" },
-    { label: t("heroPreviewSharedCosts"), value: "4", tone: "bg-[#ddaea9]" },
-    { label: t("heroPreviewUpcomingDates"), value: "6", tone: "bg-[#a99f7f]" },
-  ];
-  const tabs = [
-    t("heroPreviewBoardTab"),
-    t("heroPreviewCalendar"),
-    t("heroPreviewListsTab"),
-    t("heroPreviewMoneyTab"),
-  ];
+  const stats = HERO_PREVIEW_STATS.map((stat) => ({ ...stat, label: t(stat.labelKey) }));
+  const tabs = HERO_PREVIEW_TAB_KEYS.map((key) => t(key));
 
   return (
     <div className="max-w-full overflow-hidden rounded-md border border-[#ded8ce] bg-[#fffdf9] shadow-[0_16px_34px_rgba(31,35,30,0.08)] sm:shadow-[0_20px_44px_rgba(31,35,30,0.10)]">
@@ -205,12 +301,7 @@ function HeroProductPreview() {
 
 function LandingProblem() {
   const t = useTranslations("landing");
-  const problems = [
-    t("problemStickyNotes"),
-    t("problemShoppingApps"),
-    t("problemChoreTurns"),
-    t("problemForgottenBills"),
-  ];
+  const problems = PROBLEM_KEYS.map((key) => t(key));
 
   return (
     <section className="mx-auto mt-8 grid max-w-[1040px] gap-6 py-6 sm:mt-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
@@ -241,81 +332,18 @@ function LandingProblem() {
 
 function LandingFeatures() {
   const t = useTranslations("landing");
-
-  const features: LandingFeaturePreview[] = [
-    {
-      accent: "sage" as const,
-      id: "calendar",
-      marker: "CAL",
-      primaryMetric: t("screenCalendarPrimary"),
-      screenSummary: t("screenCalendarSummary"),
-      screenTitle: t("screenCalendarTitle"),
-      secondaryMetric: t("screenCalendarSecondary"),
-      tertiaryMetric: t("screenCalendarTertiary"),
-      title: t("featureCalendarTitle"),
-      summary: t("featureCalendarSummary"),
-    },
-    {
-      accent: "rose" as const,
-      id: "todos",
-      marker: "DO",
-      primaryMetric: t("screenTodosPrimary"),
-      screenSummary: t("screenTodosSummary"),
-      screenTitle: t("screenTodosTitle"),
-      secondaryMetric: t("screenTodosSecondary"),
-      tertiaryMetric: t("screenTodosTertiary"),
-      title: t("featureTodosTitle"),
-      summary: t("featureTodosSummary"),
-    },
-    {
-      accent: "sun" as const,
-      id: "shopping",
-      marker: "SHOP",
-      primaryMetric: t("screenShoppingPrimary"),
-      screenSummary: t("screenShoppingSummary"),
-      screenTitle: t("screenShoppingTitle"),
-      secondaryMetric: t("screenShoppingSecondary"),
-      tertiaryMetric: t("screenShoppingTertiary"),
-      title: t("featureShoppingTitle"),
-      summary: t("featureShoppingSummary"),
-    },
-    {
-      accent: "sun" as const,
-      id: "notes",
-      marker: "NOTE",
-      primaryMetric: t("screenNotesPrimary"),
-      screenSummary: t("screenNotesSummary"),
-      screenTitle: t("screenNotesTitle"),
-      secondaryMetric: t("screenNotesSecondary"),
-      tertiaryMetric: t("screenNotesTertiary"),
-      title: t("featureNotesTitle"),
-      summary: t("featureNotesSummary"),
-    },
-    {
-      accent: "rose" as const,
-      id: "expenses",
-      marker: "EUR",
-      primaryMetric: t("screenExpensesPrimary"),
-      screenSummary: t("screenExpensesSummary"),
-      screenTitle: t("screenExpensesTitle"),
-      secondaryMetric: t("screenExpensesSecondary"),
-      tertiaryMetric: t("screenExpensesTertiary"),
-      title: t("featureExpensesTitle"),
-      summary: t("featureExpensesSummary"),
-    },
-    {
-      accent: "moss" as const,
-      id: "chores",
-      marker: "JOB",
-      primaryMetric: t("screenChoresPrimary"),
-      screenSummary: t("screenChoresSummary"),
-      screenTitle: t("screenChoresTitle"),
-      secondaryMetric: t("screenChoresSecondary"),
-      tertiaryMetric: t("screenChoresTertiary"),
-      title: t("featureChoresTitle"),
-      summary: t("featureChoresSummary"),
-    },
-  ];
+  const features: LandingFeaturePreview[] = LANDING_FEATURE_CONFIGS.map((feature) => ({
+    accent: feature.accent,
+    id: feature.id,
+    marker: feature.marker,
+    primaryMetric: t(feature.primaryMetricKey),
+    screenSummary: t(feature.screenSummaryKey),
+    screenTitle: t(feature.screenTitleKey),
+    secondaryMetric: t(feature.secondaryMetricKey),
+    summary: t(feature.summaryKey),
+    tertiaryMetric: t(feature.tertiaryMetricKey),
+    title: t(feature.titleKey),
+  }));
 
   return (
     <section className="mt-10 sm:mt-12">
@@ -335,28 +363,10 @@ function LandingFeatures() {
 
 function LandingFaq() {
   const t = useTranslations("landing");
-  const faqs = [
-    {
-      answer: t("faqTrialAnswer"),
-      question: t("faqTrialQuestion"),
-    },
-    {
-      answer: t("faqMembersAnswer"),
-      question: t("faqMembersQuestion"),
-    },
-    {
-      answer: t("faqPrivacyAnswer"),
-      question: t("faqPrivacyQuestion"),
-    },
-    {
-      answer: t("faqUseAnswer"),
-      question: t("faqUseQuestion"),
-    },
-    {
-      answer: t("faqCancelAnswer"),
-      question: t("faqCancelQuestion"),
-    },
-  ];
+  const faqs = FAQ_KEY_PAIRS.map((faq) => ({
+    answer: t(faq.answerKey),
+    question: t(faq.questionKey),
+  }));
 
   return (
     <section className="mx-auto mt-10 max-w-[940px] sm:mt-14">
