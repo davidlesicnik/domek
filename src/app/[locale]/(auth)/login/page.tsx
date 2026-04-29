@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
+import { getLocale } from "next-intl/server";
 
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { SignInOptions } from "@/components/auth/sign-in-options";
 import { redirect } from "@/i18n/server";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
@@ -35,6 +36,7 @@ function safeNextPath(value: string | null): string {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = (await searchParams) ?? {};
+  const locale = await getLocale();
   const nextPath = safeNextPath(stringParam(params.next));
   const session = await getCurrentAppSession();
 
@@ -46,13 +48,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   const hasAuthError = stringParam(params.error) === "auth";
+  const hasMagicLinkSent = stringParam(params.email) === "sent";
 
   return (
     <main className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] px-4 py-8 text-[#202321] sm:px-6">
       <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[980px] items-center">
         <section className="grid w-full gap-8 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
           <LoginLeft />
-          <LoginRight hasAuthError={hasAuthError} nextPath={nextPath} />
+          <LoginRight
+            hasAuthError={hasAuthError}
+            hasMagicLinkSent={hasMagicLinkSent}
+            locale={locale}
+            nextPath={nextPath}
+          />
         </section>
       </div>
     </main>
@@ -78,7 +86,17 @@ function LoginLeft() {
   );
 }
 
-function LoginRight({ hasAuthError, nextPath }: { hasAuthError: boolean; nextPath: string }) {
+function LoginRight({
+  hasAuthError,
+  hasMagicLinkSent,
+  locale,
+  nextPath,
+}: {
+  hasAuthError: boolean;
+  hasMagicLinkSent: boolean;
+  locale: string;
+  nextPath: string;
+}) {
   const t = useTranslations("login");
   return (
     <div className="self-center">
@@ -93,8 +111,13 @@ function LoginRight({ hasAuthError, nextPath }: { hasAuthError: boolean; nextPat
           {t("authError")}
         </p>
       ) : null}
+      {hasMagicLinkSent ? (
+        <p className="mt-4 rounded-md border border-[#b8d1b7] bg-[#f3faf1] px-3 py-2 text-sm font-medium text-[#3d6f4a]">
+          {t("magicLinkSent")}
+        </p>
+      ) : null}
       <div className="mt-5">
-        <OAuthButtons nextPath={nextPath} />
+        <SignInOptions locale={locale} nextPath={nextPath} />
       </div>
     </div>
   );

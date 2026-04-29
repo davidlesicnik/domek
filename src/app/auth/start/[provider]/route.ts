@@ -6,7 +6,7 @@ import { resolveAuthOrigin } from "@/lib/origin";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 const nextCookieName = "domek_next";
-const allowedProviders = new Set<Provider>(["google", "github"]);
+const allowedProviders = new Set<Provider>(["google"]);
 
 export async function GET(
   request: NextRequest,

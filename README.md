@@ -11,7 +11,7 @@ Domek is a container-first household planner for shared household coordination.
 - **Shopping lists** — shared shopping lists with item check-off
 - **Notes** — shared freeform notes
 - **Expenses** — basic expense tracker with categories
-- **Authentication** — Supabase OAuth (Google and GitHub)
+- **Authentication** — Supabase Auth with Google and email magic links
 - **Email invites** — invite links sent via Resend
 
 ## Stack
@@ -36,7 +36,14 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-Configure a Supabase project and enable the Google and GitHub providers before using sign-in. Add the local callback URL (`http://localhost:3000/auth/callback`) and deployed callback URL to the Supabase redirect allow list.
+Configure a Supabase project and enable the Google provider plus email auth before using sign-in. Add the local callback URL (`http://localhost:3000/auth/callback`) and deployed callback URL to the Supabase redirect allow list.
+
+If you want auth emails to match Domek's invite emails, configure Resend as Supabase's custom SMTP provider and paste the branded templates from:
+
+- `docs/supabase-confirm-signup-template.html`
+- `docs/supabase-magic-link-template.html`
+
+Setup notes live in `docs/supabase-auth-email-setup.md`.
 
 For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. The Docker web service uses `CONTAINER_DATABASE_URL` so it can reach the same database through the Compose-internal `postgres` hostname.
 

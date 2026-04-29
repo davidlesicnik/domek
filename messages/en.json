@@ -217,8 +217,15 @@
     "title": "Sign in",
     "tagline": "Domek (doh-mek) - a little home for the things you share.",
     "description": "A shared place for your calendar, chores, and expenses.",
-    "subtitle": "Use an account you already have.",
-    "authError": "Sign-in did not finish. Try again."
+    "subtitle": "Use a magic link or an account you already have.",
+    "authError": "Sign-in did not finish. Try again.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@example.com",
+    "emailHelp": "We’ll email you a secure sign-in link for this home board.",
+    "sendMagicLink": "Send magic link",
+    "magicLinkSent": "Check your inbox for a sign-in link.",
+    "orContinueWithGoogle": "Or continue with Google",
+    "continueWithGoogle": "Continue with Google"
   },
   "pricing": {
     "metaTitle": "Pricing – Domek",

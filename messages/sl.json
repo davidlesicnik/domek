@@ -217,8 +217,15 @@
     "title": "Prijavite se",
     "tagline": "Domek (doh-mek) – majhen dom za stvari, ki jih delite z drugimi.",
     "description": "Skupni prostor za vaš koledar, hišna opravila in stroške.",
-    "subtitle": "Uporabite račun, ki ga že imate.",
-    "authError": "Prijava ni bila dokončana. Poskusite znova."
+    "subtitle": "Uporabite prijavno povezavo ali račun, ki ga že imate.",
+    "authError": "Prijava ni bila dokončana. Poskusite znova.",
+    "emailLabel": "E-poštni naslov",
+    "emailPlaceholder": "ime@primer.si",
+    "emailHelp": "Po e-pošti vam pošljemo varno prijavno povezavo za to domačo tablo.",
+    "sendMagicLink": "Pošlji prijavno povezavo",
+    "magicLinkSent": "Preverite svoj e-poštni nabiralnik za prijavno povezavo.",
+    "orContinueWithGoogle": "Ali nadaljujte z Googlom",
+    "continueWithGoogle": "Nadaljujte z Googlom"
   },
   "pricing": {
     "metaTitle": "Cenik – Domek",
