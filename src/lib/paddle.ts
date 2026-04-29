@@ -1,6 +1,8 @@
 import { BillingSubscriptionStatus } from "@prisma/client";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+export const PADDLE_WEBHOOK_SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000;
+
 export type PaddleSubscriptionEvent = Readonly<{
   occurred_at: string;
   event_id: string;
@@ -64,6 +66,10 @@ export function verifyPaddleWebhookSignature(
   body: string,
   headerValue: string | null,
   endpointSecretKey: string,
+  options: {
+    nowMs?: number;
+    toleranceMs?: number;
+  } = {},
 ): boolean {
   if (!headerValue) {
     return false;
@@ -72,6 +78,19 @@ export function verifyPaddleWebhookSignature(
   const parsed = parseSignatureHeader(headerValue);
 
   if (!parsed) {
+    return false;
+  }
+
+  const timestampMs = Number(parsed.timestamp) * 1000;
+
+  if (!Number.isFinite(timestampMs)) {
+    return false;
+  }
+
+  const toleranceMs = options.toleranceMs ?? PADDLE_WEBHOOK_SIGNATURE_TOLERANCE_MS;
+  const nowMs = options.nowMs ?? Date.now();
+
+  if (Math.abs(nowMs - timestampMs) > toleranceMs) {
     return false;
   }
 

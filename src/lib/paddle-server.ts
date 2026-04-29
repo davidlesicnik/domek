@@ -9,6 +9,8 @@ export class PaddleSubscriptionCancelError extends Error {
   }
 }
 
+const PADDLE_API_TIMEOUT_MS = 10_000;
+
 export function getPaddleApiBaseUrl(clientToken: string): string {
   return getPaddleEnvironment(clientToken) === "sandbox"
     ? "https://sandbox-api.paddle.com"
@@ -64,17 +66,37 @@ async function sendCancelSubscriptionRequest(
   { apiKey, clientToken, subscriptionId }: CancelSubscriptionParams,
   effectiveFrom: "immediately" | "next_billing_period",
 ): Promise<PaddleCancelSubscriptionPayload> {
-  const response = await fetch(
-    `${getPaddleApiBaseUrl(clientToken)}/subscriptions/${subscriptionId}/cancel`,
-    {
-      body: JSON.stringify({ effective_from: effectiveFrom }),
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), PADDLE_API_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${getPaddleApiBaseUrl(clientToken)}/subscriptions/${subscriptionId}/cancel`,
+      {
+        body: JSON.stringify({ effective_from: effectiveFrom }),
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        signal: abortController.signal,
       },
-      method: "POST",
-    },
-  );
+    );
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new PaddleSubscriptionCancelError(
+        "Paddle did not respond in time. Please try the subscription action again.",
+      );
+    }
+
+    throw new PaddleSubscriptionCancelError(
+      "Paddle could not be reached. Please try the subscription action again.",
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const payload = (await response.json().catch(() => null)) as PaddleCancelSubscriptionPayload;
 

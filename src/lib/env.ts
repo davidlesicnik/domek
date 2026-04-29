@@ -33,6 +33,16 @@ function readOptionalEnv(name: string): string | undefined {
   return value ? value : undefined;
 }
 
+function readBooleanEnv(name: string): boolean {
+  const value = readOptionalEnv(name);
+
+  if (!value) {
+    return false;
+  }
+
+  return /^(1|true|yes|on)$/i.test(value);
+}
+
 function getSupabaseEnv() {
   const supabaseUrl =
     readEnv("SUPABASE_URL") ?? readEnv("NEXT_PUBLIC_SUPABASE_URL");
@@ -74,6 +84,35 @@ const paddleServerSchema = z.object({
   apiKey: z.string().regex(/^pdl_/, "PADDLE_API_KEY must start with pdl_."),
   clientToken: z.string().regex(/^(test|live)_/, "PADDLE_CLIENT_TOKEN must start with test_ or live_."),
 });
+
+const developmentAccessBypassSchema = z
+  .object({
+    accessCode: z.string().min(1).optional(),
+    enabled: z.boolean(),
+    nodeEnv: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.enabled && value.nodeEnv === "production") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Development access bypass cannot be enabled in production.",
+        path: ["enabled"],
+      });
+    }
+
+    if (value.enabled && !value.accessCode) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "DEVELOPMENT_ACCESS_CODE is required when ENABLE_DEVELOPMENT_ACCESS_BYPASS is enabled.",
+        path: ["accessCode"],
+      });
+    }
+  });
+
+export type DevelopmentAccessBypassConfig = Readonly<{
+  accessCode: string | null;
+  enabled: boolean;
+}>;
 
 export function getEmailConfig() {
   return emailSchema.parse({
@@ -144,6 +183,19 @@ export function getOptionalPaddleServerConfig() {
   });
 }
 
+export function getDevelopmentAccessBypassConfig(): DevelopmentAccessBypassConfig {
+  const parsed = developmentAccessBypassSchema.parse({
+    accessCode: readOptionalEnv("DEVELOPMENT_ACCESS_CODE"),
+    enabled: readBooleanEnv("ENABLE_DEVELOPMENT_ACCESS_BYPASS"),
+    nodeEnv: readEnv("NODE_ENV"),
+  });
+
+  return {
+    accessCode: parsed.enabled ? parsed.accessCode ?? null : null,
+    enabled: parsed.enabled,
+  };
+}
+
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
@@ -154,5 +206,6 @@ export function assertRuntimeEnv() {
     email: getOptionalEmailConfig(),
     paddle: getOptionalPaddleRuntimeConfig(),
     paddleServer: getOptionalPaddleServerConfig(),
+    developmentAccessBypass: getDevelopmentAccessBypassConfig(),
   };
 }

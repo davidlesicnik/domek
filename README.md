@@ -63,9 +63,13 @@ SUPABASE_ANON_KEY=""
 NEXT_PUBLIC_GA_MEASUREMENT_ID=""
 RESEND_API_KEY=""
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
+ENABLE_DEVELOPMENT_ACCESS_BYPASS="false"
+DEVELOPMENT_ACCESS_CODE=""
 ```
 
 `APP_URL` is optional locally (defaults to `http://localhost:3000`) but required in production so invite links resolve to the correct origin.
+
+`ENABLE_DEVELOPMENT_ACCESS_BYPASS` and `DEVELOPMENT_ACCESS_CODE` are local-development-only escape hatches for onboarding. The bypass is disabled by default and the app rejects it when `NODE_ENV=production`.
 
 `NEXT_PUBLIC_GA_MEASUREMENT_ID` is optional. When set, Domek loads Google Analytics in the browser for aggregate page views and product events. Do not send household names, member details, invite tokens, note text, list item text, expense amounts, or other user-entered household content to analytics.
 
@@ -73,6 +77,7 @@ Validate deployment configuration with:
 
 ```bash
 npm run env:check
+npm run check:security-hardening
 ```
 
 Do not commit `.env` files or paste server secrets into public tools, tickets, or chat logs. `SUPABASE_ANON_KEY` / Supabase publishable keys are designed to be browser-visible, but `RESEND_API_KEY`, Supabase service-role keys, and database passwords are server secrets. Rotate any server secret that has been exposed.
@@ -184,7 +189,7 @@ Domek now uses a Paddle-first onboarding flow.
 5. Domek stores the subscription status in `BillingSubscription`.
 6. Once the status is `TRIALING` or `ACTIVE`, the user can continue to `/onboarding/household` and create the household.
 
-Household creation is now blocked until billing access exists, unless the user has development access.
+Household creation is blocked until billing access exists, unless the user has already been granted development access.
 
 **Billing-backed access states:**
 
@@ -209,6 +214,17 @@ Keep all four in the same Paddle environment:
 - live for production
 
 Do not mix a sandbox client token with a live price, webhook secret, or API key.
+
+### Development Access Bypass
+
+The payment-page access-code bypass is no longer hardcoded in the app.
+
+- It is disabled by default.
+- It only works when `ENABLE_DEVELOPMENT_ACCESS_BYPASS=true`.
+- It requires `DEVELOPMENT_ACCESS_CODE` to be set.
+- It is rejected when `NODE_ENV=production`.
+
+This keeps local onboarding unblocked when you need it, without leaving a production-capable bypass in source code.
 
 ### How To Get The Paddle Variables
 

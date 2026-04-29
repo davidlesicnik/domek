@@ -62,13 +62,14 @@ function TrialEndedView() {
                 </Link>
                 .
               </p>
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a
-                className="mt-1 text-center text-xs text-[#9ea49f] hover:underline"
-                href="/api/auth/signout"
-              >
-                {t("logOut")}
-              </a>
+              <form action="/api/auth/signout" className="mt-1" method="post">
+                <button
+                  className="w-full text-center text-xs text-[#9ea49f] hover:underline"
+                  type="submit"
+                >
+                  {t("logOut")}
+                </button>
+              </form>
             </div>
           </div>
         </section>
