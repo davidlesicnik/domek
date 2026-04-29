@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ComponentProps, FormEvent, ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
@@ -116,6 +116,13 @@ const categoryStyles: Record<
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
+
+const plannerInputClassName =
+  "h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm";
+const plannerPrimaryButtonClassName =
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+const plannerSecondaryButtonClassName =
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
 
 function parseDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
@@ -381,6 +388,112 @@ function CalendarMemberPill({
       {memberLabel(member, t)}
       <span aria-hidden>x</span>
     </button>
+  );
+}
+
+function PlannerField({ children, label }: Readonly<{ children: ReactNode; label: ReactNode }>) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+function PlannerInput(props: Readonly<ComponentProps<"input">>) {
+  return <input {...props} className={plannerInputClassName} />;
+}
+
+function PlannerEditorHeader({
+  closeLabel,
+  description,
+  disabled,
+  eyebrow,
+  onClose,
+  title,
+  titleId,
+}: Readonly<{
+  closeLabel: string;
+  description?: string | null;
+  disabled: boolean;
+  eyebrow: string;
+  onClose: () => void;
+  title: string;
+  titleId?: string;
+}>) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+          {eyebrow}
+        </p>
+        <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]" id={titleId}>
+          {title}
+        </h3>
+        {description ? <p className="mt-1 text-xs text-[#6c726e]">{description}</p> : null}
+      </div>
+      <button
+        aria-label={closeLabel}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
+        disabled={disabled}
+        onClick={onClose}
+        type="button"
+      >
+        <span aria-hidden>&times;</span>
+      </button>
+    </div>
+  );
+}
+
+function PlannerFormActions({
+  disabled,
+  error,
+  onCancel,
+  primaryLabel,
+  secondaryLabel,
+}: Readonly<{
+  disabled: boolean;
+  error: string | null;
+  onCancel: () => void;
+  primaryLabel: string;
+  secondaryLabel: string;
+}>) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      {error ? <p className="w-full text-sm font-semibold text-[#a6543c]">{error}</p> : null}
+      <button className={plannerPrimaryButtonClassName} disabled={disabled} type="submit">
+        {primaryLabel}
+      </button>
+      <button
+        className={plannerSecondaryButtonClassName}
+        disabled={disabled}
+        onClick={onCancel}
+        type="button"
+      >
+        {secondaryLabel}
+      </button>
+    </div>
+  );
+}
+
+function PlannerDialog({
+  children,
+  labelledBy,
+}: Readonly<{
+  children: ReactNode;
+  labelledBy: string;
+}>) {
+  return (
+    <div
+      aria-labelledby={labelledBy}
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+      role="dialog"
+    >
+      <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -1080,50 +1193,33 @@ export function DashboardPlanner({
 
     return (
       <form className="grid gap-4" onSubmit={saveEvent}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              {t("calendarLabel")}
-            </p>
-            <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]">
-              {isEditing ? t("editEvent") : t("addEvent")}
-            </h3>
-          </div>
-          <button
-            aria-label={t("closeEventEditor")}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-            disabled={isSaving}
-            onClick={closeComposer}
-            type="button"
-          >
-            <span aria-hidden>&times;</span>
-          </button>
-        </div>
+        <PlannerEditorHeader
+          closeLabel={t("closeEventEditor")}
+          disabled={isSaving}
+          eyebrow={t("calendarLabel")}
+          onClose={closeComposer}
+          title={isEditing ? t("editEvent") : t("addEvent")}
+        />
 
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("dateLabel")}
-          <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
+        <PlannerField label={t("dateLabel")}>
+          <PlannerInput
             onChange={(changeEvent) => setComposerDateKey(changeEvent.target.value)}
             required
             type="date"
             value={composerDateKey}
           />
-        </label>
+        </PlannerField>
 
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("nameLabel")}
-          <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
+        <PlannerField label={t("nameLabel")}>
+          <PlannerInput
             onChange={(changeEvent) => setEventName(changeEvent.target.value)}
             required
             type="text"
             value={eventName}
           />
-        </label>
+        </PlannerField>
 
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("categoryLabel")}
+        <PlannerField label={t("categoryLabel")}>
           <PlannerSelect
             id="dashboard-event-category"
             onChange={(nextValue) => setEventCategory(nextValue as CalendarCategory)}
@@ -1131,7 +1227,7 @@ export function DashboardPlanner({
             placeholder={t("categoryLabel")}
             value={eventCategory}
           />
-        </label>
+        </PlannerField>
 
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
@@ -1144,16 +1240,14 @@ export function DashboardPlanner({
             {t("allDay")}
           </label>
           {!isAllDay ? (
-            <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-              {t("timeLabel")}
-              <input
-                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
+            <PlannerField label={t("timeLabel")}>
+              <PlannerInput
                 onChange={(changeEvent) => setEventTime(changeEvent.target.value)}
                 required
                 type="time"
                 value={eventTime}
               />
-            </label>
+            </PlannerField>
           ) : null}
         </div>
 
@@ -1201,24 +1295,13 @@ export function DashboardPlanner({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {formError ? <p className="w-full text-sm font-semibold text-[#a6543c]">{formError}</p> : null}
-          <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-            disabled={isSaving}
-            type="submit"
-          >
-            {isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
-          </button>
-          <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-            disabled={isSaving}
-            onClick={closeComposer}
-            type="button"
-          >
-            {t("cancel")}
-          </button>
-        </div>
+        <PlannerFormActions
+          disabled={isSaving}
+          error={formError}
+          onCancel={closeComposer}
+          primaryLabel={isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
+          secondaryLabel={t("cancel")}
+        />
       </form>
     );
   }
@@ -1645,19 +1728,12 @@ export function DashboardPlanner({
       </div>
 
       {isComposerOpen ? (
-        <div
-          aria-labelledby="dashboard-calendar-event-dialog-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
-          <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
-            <div className="sr-only" id="dashboard-calendar-event-dialog-title">
-              {editingEventId ? t("editEvent") : t("addEvent")}
-            </div>
-            {renderEventForm()}
+        <PlannerDialog labelledBy="dashboard-calendar-event-dialog-title">
+          <div className="sr-only" id="dashboard-calendar-event-dialog-title">
+            {editingEventId ? t("editEvent") : t("addEvent")}
           </div>
-        </div>
+          {renderEventForm()}
+        </PlannerDialog>
       ) : null}
 
       {showCreateMenu ? (
@@ -1732,13 +1808,7 @@ export function DashboardPlanner({
       ) : null}
 
       {editingTodo ? (
-        <div
-          aria-labelledby="dashboard-todo-editor-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
-          <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+        <PlannerDialog labelledBy="dashboard-todo-editor-title">
             <form className="grid gap-4" onSubmit={saveTodoEdit}>
               {(() => {
                 const todoMemberOptions: SelectOption[] = [
@@ -1751,89 +1821,56 @@ export function DashboardPlanner({
 
                 return (
                   <>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                    {t("todoLabel")}
-                  </p>
-                  <h3
-                    className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]"
-                    id="dashboard-todo-editor-title"
-                  >
-                    {t("editTask")}
-                  </h3>
-                  <p className="mt-1 text-xs text-[#6c726e]">{editingTodo.listName}</p>
-                </div>
-                <button
-                  aria-label={t("closeTaskEditor")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                  disabled={isSavingTodo}
-                  onClick={closeTodoEditor}
-                  type="button"
-                >
-                  <span aria-hidden>&times;</span>
-                </button>
-              </div>
+                    <PlannerEditorHeader
+                      closeLabel={t("closeTaskEditor")}
+                      description={editingTodo.listName}
+                      disabled={isSavingTodo}
+                      eyebrow={t("todoLabel")}
+                      onClose={closeTodoEditor}
+                      title={t("editTask")}
+                      titleId="dashboard-todo-editor-title"
+                    />
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("nameLabel")}
-                <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
-                  onChange={(event) => setTodoText(event.target.value)}
-                  required
-                  type="text"
-                  value={todoText}
-                />
-              </label>
+                    <PlannerField label={t("nameLabel")}>
+                      <PlannerInput
+                        onChange={(event) => setTodoText(event.target.value)}
+                        required
+                        type="text"
+                        value={todoText}
+                      />
+                    </PlannerField>
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("dueDateLabel")}
-                <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
-                  onChange={(event) => setTodoDueDate(event.target.value)}
-                  required
-                  type="date"
-                  value={todoDueDate}
-                />
-              </label>
+                    <PlannerField label={t("dueDateLabel")}>
+                      <PlannerInput
+                        onChange={(event) => setTodoDueDate(event.target.value)}
+                        required
+                        type="date"
+                        value={todoDueDate}
+                      />
+                    </PlannerField>
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("assignedToLabel")}
-                <PlannerSelect
-                  id="dashboard-todo-member"
-                  onChange={(nextValue) => setTodoMemberId(nextValue || null)}
-                  options={todoMemberOptions}
-                  placeholder={t("unassigned")}
-                  value={todoMemberId ?? ""}
-                />
-              </label>
+                    <PlannerField label={t("assignedToLabel")}>
+                      <PlannerSelect
+                        id="dashboard-todo-member"
+                        onChange={(nextValue) => setTodoMemberId(nextValue || null)}
+                        options={todoMemberOptions}
+                        placeholder={t("unassigned")}
+                        value={todoMemberId ?? ""}
+                      />
+                    </PlannerField>
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                {todoFormError ? (
-                  <p className="w-full text-sm font-semibold text-[#a6543c]">{todoFormError}</p>
-                ) : null}
-                <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-                  disabled={isSavingTodo}
-                  type="submit"
-                >
-                  {isSavingTodo ? t("saving") : t("saveChanges")}
-                </button>
-                <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-                  disabled={isSavingTodo}
-                  onClick={closeTodoEditor}
-                  type="button"
-                >
-                  {t("cancel")}
-                </button>
-              </div>
+                    <PlannerFormActions
+                      disabled={isSavingTodo}
+                      error={todoFormError}
+                      onCancel={closeTodoEditor}
+                      primaryLabel={isSavingTodo ? t("saving") : t("saveChanges")}
+                      secondaryLabel={t("cancel")}
+                    />
                   </>
                 );
               })()}
             </form>
-          </div>
-        </div>
+        </PlannerDialog>
       ) : null}
     </section>
   );

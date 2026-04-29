@@ -98,6 +98,72 @@ function ChevronLeftIcon(props: IconProps) {
   );
 }
 
+function TrashIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4h6v2" />
+    </svg>
+  );
+}
+
+function DeleteConfirmActions({
+  onCancel,
+  onConfirm,
+  t,
+}: Readonly<{
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: ReturnType<typeof useTranslations>;
+}>) {
+  return (
+    <div className="flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none">
+      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+      <button
+        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+        onClick={onConfirm}
+        type="button"
+      >
+        {t("confirmYes")}
+      </button>
+      <button
+        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+        onClick={onCancel}
+        type="button"
+      >
+        {t("confirmNo")}
+      </button>
+    </div>
+  );
+}
+
+function DeleteIconButton({
+  ariaLabel,
+  className,
+  onClick,
+}: Readonly<{
+  ariaLabel: string;
+  className: string;
+  onClick: () => void;
+}>) {
+  return (
+    <button aria-label={ariaLabel} className={className} onClick={onClick} type="button">
+      <TrashIcon height="14" width="14" />
+    </button>
+  );
+}
+
 export function ListBoard<TItem extends ListItemView, TCreateItemInput extends object = { text: string }>({
   title,
   listsPath,
@@ -426,32 +492,19 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                     )}
                   </button>
                   {confirmDeleteListId === list.id ? (
-                    <div className="mr-2 flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 py-2 sm:max-w-none">
-                      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                      <button
-                        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                        onClick={() => handleDeleteList(list.id)}
-                        type="button"
-                      >
-                        {t("confirmYes")}
-                      </button>
-                      <button
-                        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                        onClick={() => setConfirmDeleteListId(null)}
-                        type="button"
-                      >
-                        {t("confirmNo")}
-                      </button>
+                    <div className="mr-2 py-2">
+                      <DeleteConfirmActions
+                        onCancel={() => setConfirmDeleteListId(null)}
+                        onConfirm={() => handleDeleteList(list.id)}
+                        t={t}
+                      />
                     </div>
                   ) : (
-                    <button
-                      aria-label={t("deleteListAriaLabel", { name: list.name })}
+                    <DeleteIconButton
+                      ariaLabel={t("deleteListAriaLabel", { name: list.name })}
                       className="mr-2 mt-1.5 shrink-0 self-start rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0 sm:self-center"
                       onClick={() => setConfirmDeleteListId(list.id)}
-                      type="button"
-                    >
-                      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                    </button>
+                    />
                   )}
                 </li>
               );
@@ -531,32 +584,17 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       {renderItemMeta ? renderItemMeta(item) : null}
                     </span>
                     {confirmDeleteItemId === item.id ? (
-                      <div className="flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none">
-                        <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                        <button
-                          className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                          onClick={() => handleDeleteItem(selectedList.id, item.id)}
-                          type="button"
-                        >
-                          {t("confirmYes")}
-                        </button>
-                        <button
-                          className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                          onClick={() => setConfirmDeleteItemId(null)}
-                          type="button"
-                        >
-                          {t("confirmNo")}
-                        </button>
-                      </div>
+                      <DeleteConfirmActions
+                        onCancel={() => setConfirmDeleteItemId(null)}
+                        onConfirm={() => handleDeleteItem(selectedList.id, item.id)}
+                        t={t}
+                      />
                     ) : (
-                      <button
-                        aria-label={t("deleteItemAriaLabel")}
+                      <DeleteIconButton
+                        ariaLabel={t("deleteItemAriaLabel")}
                         className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
                         onClick={() => setConfirmDeleteItemId(item.id)}
-                        type="button"
-                      >
-                        <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                      </button>
+                      />
                     )}
                   </li>
                 ))}
@@ -589,32 +627,17 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       {renderItemMeta ? renderItemMeta(item) : null}
                     </span>
                     {confirmDeleteItemId === item.id ? (
-                          <div className="flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none">
-                            <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                            <button
-                              className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                              onClick={() => handleDeleteItem(selectedList.id, item.id)}
-                              type="button"
-                            >
-                              {t("confirmYes")}
-                            </button>
-                            <button
-                              className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                              onClick={() => setConfirmDeleteItemId(null)}
-                              type="button"
-                            >
-                              {t("confirmNo")}
-                            </button>
-                          </div>
+                          <DeleteConfirmActions
+                            onCancel={() => setConfirmDeleteItemId(null)}
+                            onConfirm={() => handleDeleteItem(selectedList.id, item.id)}
+                            t={t}
+                          />
                         ) : (
-                          <button
-                            aria-label={t("deleteItemAriaLabel")}
+                          <DeleteIconButton
+                            ariaLabel={t("deleteItemAriaLabel")}
                             className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
                             onClick={() => setConfirmDeleteItemId(item.id)}
-                            type="button"
-                          >
-                            <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                          </button>
+                          />
                         )}
                       </li>
                     ))}
