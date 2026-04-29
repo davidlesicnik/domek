@@ -17,7 +17,7 @@
               <p style="margin:0 0 28px;font-size:14px;line-height:1.6;color:#4d5451;">
                 Use this secure link to sign in to Domek and pick up where you left off.
               </p>
-              <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">
+              <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=magiclink" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">
                 Sign in to Domek
               </a>
               <p style="margin:28px 0 0;font-size:12px;line-height:1.6;color:#9a9e9b;">

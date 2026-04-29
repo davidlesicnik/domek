@@ -29,7 +29,12 @@ Open `Authentication -> Email -> Templates` in Supabase and update these templat
   Subject: `Sign in to Domek`
   HTML: paste `docs/supabase-magic-link-template.html`
 
-The templates use `{{ .ConfirmationURL }}`, which Supabase documents for auth email links.
+The templates intentionally use `{{ .RedirectTo }}` plus `{{ .TokenHash }}` so Supabase lands on Domek's server callback with readable query params instead of fragment-only session data.
+
+Current link patterns:
+
+- Confirm signup: `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email`
+- Magic Link: `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=magiclink`
 
 Reference:
 
