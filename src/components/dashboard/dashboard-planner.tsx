@@ -408,6 +408,34 @@ function PlannerInput(props: Readonly<ComponentProps<"input">>) {
   return <input {...props} className={plannerInputClassName} />;
 }
 
+function PlannerInputField({
+  inputProps,
+  label,
+}: Readonly<{
+  inputProps: ComponentProps<"input">;
+  label: ReactNode;
+}>) {
+  return (
+    <PlannerField label={label}>
+      <PlannerInput {...inputProps} />
+    </PlannerField>
+  );
+}
+
+function PlannerSelectField({
+  label,
+  selectProps,
+}: Readonly<{
+  label: ReactNode;
+  selectProps: ComponentProps<typeof PlannerSelect>;
+}>) {
+  return (
+    <PlannerField label={label}>
+      <PlannerSelect {...selectProps} />
+    </PlannerField>
+  );
+}
+
 function PlannerEditorHeader({
   closeLabel,
   description,
@@ -1260,33 +1288,36 @@ export function DashboardPlanner({
           title={isEditing ? t("editEvent") : t("addEvent")}
         />
 
-        <PlannerField label={t("dateLabel")}>
-          <PlannerInput
-            onChange={(changeEvent) => setComposerDateKey(changeEvent.target.value)}
-            required
-            type="date"
-            value={composerDateKey}
-          />
-        </PlannerField>
+        <PlannerInputField
+          inputProps={{
+            onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
+            required: true,
+            type: "date",
+            value: composerDateKey,
+          }}
+          label={t("dateLabel")}
+        />
 
-        <PlannerField label={t("nameLabel")}>
-          <PlannerInput
-            onChange={(changeEvent) => setEventName(changeEvent.target.value)}
-            required
-            type="text"
-            value={eventName}
-          />
-        </PlannerField>
+        <PlannerInputField
+          inputProps={{
+            onChange: (changeEvent) => setEventName(changeEvent.target.value),
+            required: true,
+            type: "text",
+            value: eventName,
+          }}
+          label={t("nameLabel")}
+        />
 
-        <PlannerField label={t("categoryLabel")}>
-          <PlannerSelect
-            id="dashboard-event-category"
-            onChange={(nextValue) => setEventCategory(nextValue as CalendarCategory)}
-            options={eventCategoryOptions}
-            placeholder={t("categoryLabel")}
-            value={eventCategory}
-          />
-        </PlannerField>
+        <PlannerSelectField
+          label={t("categoryLabel")}
+          selectProps={{
+            id: "dashboard-event-category",
+            onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
+            options: eventCategoryOptions,
+            placeholder: t("categoryLabel"),
+            value: eventCategory,
+          }}
+        />
 
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
@@ -1299,14 +1330,15 @@ export function DashboardPlanner({
             {t("allDay")}
           </label>
           {!isAllDay ? (
-            <PlannerField label={t("timeLabel")}>
-              <PlannerInput
-                onChange={(changeEvent) => setEventTime(changeEvent.target.value)}
-                required
-                type="time"
-                value={eventTime}
-              />
-            </PlannerField>
+            <PlannerInputField
+              inputProps={{
+                onChange: (changeEvent) => setEventTime(changeEvent.target.value),
+                required: true,
+                type: "time",
+                value: eventTime,
+              }}
+              label={t("timeLabel")}
+            />
           ) : null}
         </div>
 
@@ -1830,67 +1862,62 @@ export function DashboardPlanner({
 
       {editingTodo ? (
         <PlannerDialog labelledBy="dashboard-todo-editor-title">
-            <form className="grid gap-4" onSubmit={saveTodoEdit}>
-              {(() => {
-                const todoMemberOptions: SelectOption[] = [
+          <form className="grid gap-4" onSubmit={saveTodoEdit}>
+            <PlannerEditorHeader
+              closeLabel={t("closeTaskEditor")}
+              description={editingTodo.listName}
+              disabled={isSavingTodo}
+              eyebrow={t("todoLabel")}
+              onClose={closeTodoEditor}
+              title={t("editTask")}
+              titleId="dashboard-todo-editor-title"
+            />
+
+            <PlannerInputField
+              inputProps={{
+                onChange: (event) => setTodoText(event.target.value),
+                required: true,
+                type: "text",
+                value: todoText,
+              }}
+              label={t("nameLabel")}
+            />
+
+            <PlannerInputField
+              inputProps={{
+                onChange: (event) => setTodoDueDate(event.target.value),
+                required: true,
+                type: "date",
+                value: todoDueDate,
+              }}
+              label={t("dueDateLabel")}
+            />
+
+            <PlannerSelectField
+              label={t("assignedToLabel")}
+              selectProps={{
+                id: "dashboard-todo-member",
+                onChange: (nextValue) => setTodoMemberId(nextValue || null),
+                options: [
                   { label: t("unassigned"), value: "" },
                   ...calendarMembers.map((member) => ({
                     label: memberLabel(member, t),
                     value: member.id,
                   })),
-                ];
+                ],
+                placeholder: t("unassigned"),
+                value: todoMemberId ?? "",
+              }}
+            />
 
-                return (
-                  <>
-                    <PlannerEditorHeader
-                      closeLabel={t("closeTaskEditor")}
-                      description={editingTodo.listName}
-                      disabled={isSavingTodo}
-                      eyebrow={t("todoLabel")}
-                      onClose={closeTodoEditor}
-                      title={t("editTask")}
-                      titleId="dashboard-todo-editor-title"
-                    />
-
-                    <PlannerField label={t("nameLabel")}>
-                      <PlannerInput
-                        onChange={(event) => setTodoText(event.target.value)}
-                        required
-                        type="text"
-                        value={todoText}
-                      />
-                    </PlannerField>
-
-                    <PlannerField label={t("dueDateLabel")}>
-                      <PlannerInput
-                        onChange={(event) => setTodoDueDate(event.target.value)}
-                        required
-                        type="date"
-                        value={todoDueDate}
-                      />
-                    </PlannerField>
-
-                    <PlannerField label={t("assignedToLabel")}>
-                      <PlannerSelect
-                        id="dashboard-todo-member"
-                        onChange={(nextValue) => setTodoMemberId(nextValue || null)}
-                        options={todoMemberOptions}
-                        placeholder={t("unassigned")}
-                        value={todoMemberId ?? ""}
-                      />
-                    </PlannerField>
-
-                    <PlannerFormActions
-                      disabled={isSavingTodo}
-                      error={todoFormError}
-                      onCancel={closeTodoEditor}
-                      primaryLabel={isSavingTodo ? t("saving") : t("saveChanges")}
-                      secondaryLabel={t("cancel")}
-                    />
-                  </>
-                );
-              })()}
-            </form>
+            <PlannerFormActions
+              disabled={isSavingTodo}
+              error={todoFormError}
+              onCancel={closeTodoEditor}
+              primaryLabel={isSavingTodo ? t("saving") : t("saveChanges")}
+              secondaryLabel={t("cancel")}
+            />
+          </form>
         </PlannerDialog>
       ) : null}
     </section>
