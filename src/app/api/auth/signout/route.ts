@@ -5,13 +5,18 @@ import { validatePublicRouteRequest } from "@/lib/public-request-guard";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
-  const requestGuard = validatePublicRouteRequest(request, "signout");
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const requestGuard = validatePublicRouteRequest(request, "signout", {
+    identifiers: user ? [user.id] : [],
+  });
 
   if (!requestGuard.ok) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
 
   const publicOrigin = resolveAuthOrigin(request);

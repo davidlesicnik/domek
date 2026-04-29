@@ -46,8 +46,8 @@ function withEnv<T>(
   }
 }
 
-function buildRequest(origin: string) {
-  return new Request("https://app.example.com/auth/email", {
+function buildRequest(origin: string, url = "https://app.example.com/auth/email") {
+  return new Request(url, {
     method: "POST",
     headers: {
       origin,
@@ -131,6 +131,35 @@ function run() {
           identifiers: ["home@example.com"],
         }),
         { ok: false, reason: "rate_limited" },
+      );
+
+      resetRateLimitStore();
+
+      const signoutRequest = buildRequest(
+        "https://app.example.com",
+        "https://app.example.com/api/auth/signout",
+      );
+
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        assert.deepEqual(
+          validatePublicRouteRequest(signoutRequest, "signout", {
+            identifiers: ["user-a"],
+          }),
+          { ok: true },
+        );
+      }
+
+      assert.deepEqual(
+        validatePublicRouteRequest(signoutRequest, "signout", {
+          identifiers: ["user-a"],
+        }),
+        { ok: false, reason: "rate_limited" },
+      );
+      assert.deepEqual(
+        validatePublicRouteRequest(signoutRequest, "signout", {
+          identifiers: ["user-b"],
+        }),
+        { ok: true },
       );
     },
   );
