@@ -219,6 +219,7 @@
     "description": "Skupni prostor za vaš koledar, hišna opravila in stroške.",
     "subtitle": "Uporabite prijavno povezavo ali račun, ki ga že imate.",
     "authError": "Prijava ni bila dokončana. Poskusite znova.",
+    "cooldown": "Pred novo prijavno povezavo počakajte {seconds} sekund.",
     "emailLabel": "E-poštni naslov",
     "emailPlaceholder": "ime@primer.si",
     "emailHelp": "Po e-pošti vam pošljemo varno prijavno povezavo za to domačo tablo.",
@@ -271,7 +272,15 @@
     "formMessage": "Sporočilo",
     "formSend": "Pošlji sporočilo",
     "formSending": "Pošiljam",
-    "formSuccess": "Sporočilo je poslano. Odgovorili bomo po e-pošti."
+    "formSuccess": "Sporočilo je poslano. Odgovorili bomo po e-pošti.",
+    "formValidationError": "Preverite označena polja.",
+    "formGenericError": "Sporočila trenutno nismo mogli poslati. Poskusite znova malo pozneje.",
+    "formCooldown": "Pred novim sporočilom počakajte {seconds} sekund.",
+    "formEmailInvalid": "Vnesite veljaven e-poštni naslov.",
+    "formEmailTooLong": "E-poštni naslov je lahko dolg največ 320 znakov.",
+    "formMessageTooShort": "Sporočilo mora vsebovati vsaj 10 znakov.",
+    "formMessageTooLong": "Sporočilo je lahko dolgo največ 4000 znakov.",
+    "formNameTooLong": "Ime je lahko dolgo največ 120 znakov."
   },
   "invite": {
     "metaTitle": "Povabilo | Domek",

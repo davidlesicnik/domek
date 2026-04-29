@@ -1,9 +1,15 @@
 "use client";
 
 import { Mail } from "lucide-react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { useSubmitCooldown } from "@/components/forms/use-submit-cooldown";
 import { trackAnalyticsEvent } from "@/lib/analytics";
+import {
+  PUBLIC_FORM_HONEYPOT_FIELD,
+  PUBLIC_MUTATION_COOLDOWN_MS,
+} from "@/lib/public-form";
 
 type SignInOptionsProps = Readonly<{
   locale: string;
@@ -40,6 +46,11 @@ function GoogleIcon() {
 
 export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
   const t = useTranslations("login");
+  const cooldown = useSubmitCooldown(
+    "domek:login-email-submit",
+    PUBLIC_MUTATION_COOLDOWN_MS["email-auth"],
+  );
+  const [clientError, setClientError] = useState<string | null>(null);
 
   return (
     <div className="grid gap-4">
@@ -47,10 +58,32 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
         action="/auth/email"
         className="grid gap-2.5 rounded-md border border-[#ddd7cc] bg-[#fbfaf6] p-4"
         method="post"
-        onSubmit={() => trackAnalyticsEvent("login_started", { provider: "email" })}
+        onSubmit={(event) => {
+          if (cooldown.isCoolingDown) {
+            event.preventDefault();
+            setClientError(
+              t("cooldown", {
+                seconds: cooldown.remainingSeconds,
+              }),
+            );
+            return;
+          }
+
+          setClientError(null);
+          cooldown.startCooldown();
+          trackAnalyticsEvent("login_started", { provider: "email" });
+        }}
       >
         <input name="locale" type="hidden" value={locale} />
         <input name="next" type="hidden" value={nextPath} />
+        <input
+          aria-hidden="true"
+          autoComplete="off"
+          className="hidden"
+          name={PUBLIC_FORM_HONEYPOT_FIELD}
+          tabIndex={-1}
+          type="text"
+        />
         <label className="text-sm font-semibold text-[#3c413e]" htmlFor="login-email">
           {t("emailLabel")}
         </label>
@@ -68,8 +101,11 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
           />
         </div>
         <p className="text-xs leading-5 text-[#7a817c]">{t("emailHelp")}</p>
+        {clientError ? (
+          <p className="text-sm font-medium text-[#a6543c]">{clientError}</p>
+        ) : null}
         <button
-          className="inline-flex h-11 items-center justify-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3a3d39]"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3a3d39] disabled:cursor-not-allowed disabled:opacity-60"
           type="submit"
         >
           {t("sendMagicLink")}

@@ -50,10 +50,11 @@ export function parseAllowedDevHosts(rawValue: string | undefined): ReadonlySet<
   return parsed.length > 0 ? new Set(parsed) : new Set(defaultDevHosts);
 }
 
-export function resolveAuthOriginFromRequest(
-  requestUrl: URL,
+function resolveValidatedAuthOrigin(
   headers: Pick<Headers, "get">,
   runtime: AuthOriginRuntime,
+  fallbackProtocol: string,
+  fallbackHost: string | null,
 ): string {
   if (runtime.appUrl) {
     return new URL(runtime.appUrl).origin;
@@ -64,10 +65,9 @@ export function resolveAuthOriginFromRequest(
   }
 
   const proto = normalizeHostValue(
-    parseForwardedValue(headers.get("x-forwarded-proto")) ??
-      requestUrl.protocol.replace(":", ""),
+    parseForwardedValue(headers.get("x-forwarded-proto")) ?? fallbackProtocol,
   );
-  const host = parseForwardedValue(headers.get("x-forwarded-host")) ?? requestUrl.host;
+  const host = parseForwardedValue(headers.get("x-forwarded-host")) ?? fallbackHost;
 
   if (!host) {
     throw new Error("Unable to determine auth origin because request host is missing.");
@@ -79,6 +79,31 @@ export function resolveAuthOriginFromRequest(
 
   validateLocalHost(host, runtime.allowedDevHosts);
   return `${proto}://${host}`;
+}
+
+export function resolveAuthOriginFromHeaders(
+  headers: Pick<Headers, "get">,
+  runtime: AuthOriginRuntime,
+): string {
+  return resolveValidatedAuthOrigin(
+    headers,
+    runtime,
+    normalizeHostValue(parseForwardedValue(headers.get("x-forwarded-proto")) ?? "http"),
+    headers.get("host"),
+  );
+}
+
+export function resolveAuthOriginFromRequest(
+  requestUrl: URL,
+  headers: Pick<Headers, "get">,
+  runtime: AuthOriginRuntime,
+): string {
+  return resolveValidatedAuthOrigin(
+    headers,
+    runtime,
+    requestUrl.protocol.replace(":", ""),
+    requestUrl.host,
+  );
 }
 
 export function resolveAuthOrigin(request: NextRequest): string {

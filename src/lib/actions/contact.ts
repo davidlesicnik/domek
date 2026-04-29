@@ -1,16 +1,13 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { sendContactMessageEmail } from "@/lib/email";
 import { getOptionalEmailConfig } from "@/lib/env";
-
-const contactSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address.").max(320),
-  message: z.string().trim().min(10, "Message must be at least 10 characters.").max(4000),
-  name: z.string().trim().max(120).optional(),
-});
+import { PUBLIC_MUTATION_COOLDOWN_MS } from "@/lib/public-form";
+import { validatePublicServerActionRequest } from "@/lib/public-request-guard";
 
 export type ContactActionState = {
   error: string | null;
@@ -22,6 +19,20 @@ export async function sendContactMessageAction(
   _prevState: ContactActionState,
   formData: FormData,
 ): Promise<ContactActionState> {
+  const t = await getTranslations("contact");
+  const contactSchema = z.object({
+    email: z
+      .string()
+      .trim()
+      .email(t("formEmailInvalid"))
+      .max(320, t("formEmailTooLong")),
+    message: z
+      .string()
+      .trim()
+      .min(10, t("formMessageTooShort"))
+      .max(4000, t("formMessageTooLong")),
+    name: z.string().trim().max(120, t("formNameTooLong")).optional(),
+  });
   const parsed = contactSchema.safeParse({
     email: formData.get("email"),
     message: formData.get("message"),
@@ -32,12 +43,28 @@ export async function sendContactMessageAction(
     const fieldErrors = z.flattenError(parsed.error).fieldErrors;
 
     return {
-      error: "Check the highlighted fields.",
+      error: t("formValidationError"),
       fieldErrors: {
         email: fieldErrors.email?.[0],
         message: fieldErrors.message?.[0],
         name: fieldErrors.name?.[0],
       },
+      success: false,
+    };
+  }
+
+  const requestGuard = await validatePublicServerActionRequest(formData, "contact", [
+    parsed.data.email,
+  ]);
+
+  if (!requestGuard.ok) {
+    return {
+      error:
+        requestGuard.reason === "rate_limited"
+          ? t("formCooldown", {
+              seconds: Math.ceil(PUBLIC_MUTATION_COOLDOWN_MS.contact / 1000),
+            })
+          : t("formGenericError"),
       success: false,
     };
   }
@@ -54,7 +81,7 @@ export async function sendContactMessageAction(
     });
 
     return {
-      error: "We couldn't send your message right now. Please try again later.",
+      error: t("formGenericError"),
       success: false,
     };
   }
@@ -71,7 +98,7 @@ export async function sendContactMessageAction(
     });
 
     return {
-      error: "We couldn't send your message right now. Please try again later.",
+      error: t("formGenericError"),
       success: false,
     };
   }

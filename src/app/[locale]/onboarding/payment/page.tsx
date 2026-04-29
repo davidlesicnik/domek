@@ -4,11 +4,13 @@ import { PaddleCheckoutLauncher } from "@/components/billing/paddle-checkout-lau
 import { billingStatusHasAccess, getUserBillingSubscription } from "@/lib/billing";
 import { requireAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { getAppRuntimeConfig, getPaddleRuntimeConfig } from "@/lib/env";
+import {
+  getAppRuntimeConfig,
+  getDevelopmentAccessBypassConfig,
+  getPaddleRuntimeConfig,
+} from "@/lib/env";
 import { redirect } from "@/i18n/server";
 import { Link } from "@/i18n/navigation";
-
-const developmentCode = "domekappdevelopment";
 
 type PaymentOnboardingPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,10 +25,15 @@ async function unlockDevelopmentAccessAction(formData: FormData) {
   "use server";
 
   const session = await requireAppSession();
+  const developmentAccessBypass = getDevelopmentAccessBypassConfig();
   const rawCode = formData.get("accessCode");
   const accessCode = typeof rawCode === "string" ? rawCode.trim() : "";
 
-  if (accessCode !== developmentCode) {
+  if (
+    !developmentAccessBypass.enabled ||
+    !developmentAccessBypass.accessCode ||
+    accessCode !== developmentAccessBypass.accessCode
+  ) {
     return await redirect("/onboarding/payment?error=code");
   }
 
@@ -70,6 +77,7 @@ export default async function PaymentOnboardingPage({
 
   const { appUrl } = getAppRuntimeConfig();
   const { clientToken, priceId } = getPaddleRuntimeConfig();
+  const developmentAccessBypass = getDevelopmentAccessBypassConfig();
   const origin = appUrl ?? "http://localhost:3000";
   const successUrl = `${origin}/onboarding/payment/success`;
   const params = (await searchParams) ?? {};
@@ -82,6 +90,7 @@ export default async function PaymentOnboardingPage({
       customerEmail={session.user.email}
       priceId={priceId}
       successUrl={successUrl}
+      showDevelopmentAccessBypass={developmentAccessBypass.enabled}
       hasCodeError={hasCodeError}
     />
   );
@@ -93,6 +102,7 @@ function PaymentOnboardingView({
   customerEmail,
   priceId,
   successUrl,
+  showDevelopmentAccessBypass,
   hasCodeError,
 }: {
   appUserId: string;
@@ -100,6 +110,7 @@ function PaymentOnboardingView({
   customerEmail: string | null;
   priceId: string;
   successUrl: string;
+  showDevelopmentAccessBypass: boolean;
   hasCodeError: boolean;
 }) {
   const t = useTranslations("onboarding");
@@ -153,33 +164,35 @@ function PaymentOnboardingView({
                 {t("paymentPaddleNote")}
               </p>
 
-              <div className="border-t border-[#ebe6dd] pt-4">
-                <p className="text-xs font-semibold uppercase tracking-normal text-[#8b918c]">
-                  {t("paymentAccessOption")}
-                </p>
-                <form action={unlockDevelopmentAccessAction} className="mt-3 grid gap-3">
-                  <label className="grid gap-2 text-sm font-semibold text-[#3c413e]">
-                    {t("paymentAccessCodeLabel")}
-                    <input
-                      autoComplete="off"
-                      className="h-12 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-base font-medium text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
-                      name="accessCode"
-                      placeholder={t("paymentAccessCodePlaceholder")}
-                    />
-                  </label>
-                  {hasCodeError ? (
-                    <p className="text-sm font-medium text-[#a6543c]">
-                      {t("paymentAccessCodeError")}
-                    </p>
-                  ) : null}
-                  <button
-                    className="h-11 rounded-md border border-[#d9d6ce] bg-[#fffdf8] px-5 text-sm font-semibold text-[#3c413e] transition hover:border-[#bfc9bd] hover:bg-[#f8f6f1]"
-                    type="submit"
-                  >
-                    {t("paymentContinueWithCode")}
-                  </button>
-                </form>
-              </div>
+              {showDevelopmentAccessBypass ? (
+                <div className="border-t border-[#ebe6dd] pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-normal text-[#8b918c]">
+                    {t("paymentAccessOption")}
+                  </p>
+                  <form action={unlockDevelopmentAccessAction} className="mt-3 grid gap-3">
+                    <label className="grid gap-2 text-sm font-semibold text-[#3c413e]">
+                      {t("paymentAccessCodeLabel")}
+                      <input
+                        autoComplete="off"
+                        className="h-12 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-base font-medium text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
+                        name="accessCode"
+                        placeholder={t("paymentAccessCodePlaceholder")}
+                      />
+                    </label>
+                    {hasCodeError ? (
+                      <p className="text-sm font-medium text-[#a6543c]">
+                        {t("paymentAccessCodeError")}
+                      </p>
+                    ) : null}
+                    <button
+                      className="h-11 rounded-md border border-[#d9d6ce] bg-[#fffdf8] px-5 text-sm font-semibold text-[#3c413e] transition hover:border-[#bfc9bd] hover:bg-[#f8f6f1]"
+                      type="submit"
+                    >
+                      {t("paymentContinueWithCode")}
+                    </button>
+                  </form>
+                </div>
+              ) : null}
 
               <Link
                 className="text-center text-xs text-[#9ea49f] underline-offset-2 transition hover:text-[#686e6a] hover:underline"

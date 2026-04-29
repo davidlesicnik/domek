@@ -219,6 +219,7 @@
     "description": "A shared place for your calendar, chores, and expenses.",
     "subtitle": "Use a magic link or an account you already have.",
     "authError": "Sign-in did not finish. Try again.",
+    "cooldown": "Please wait {seconds} seconds before requesting another sign-in link.",
     "emailLabel": "Email address",
     "emailPlaceholder": "name@example.com",
     "emailHelp": "We’ll email you a secure sign-in link for this home board.",
@@ -271,7 +272,15 @@
     "formMessage": "Message",
     "formSend": "Send message",
     "formSending": "Sending",
-    "formSuccess": "Message sent. We will reply by email."
+    "formSuccess": "Message sent. We will reply by email.",
+    "formValidationError": "Check the highlighted fields.",
+    "formGenericError": "We couldn't send your message right now. Please try again later.",
+    "formCooldown": "Please wait {seconds} seconds before sending another message.",
+    "formEmailInvalid": "Enter a valid email address.",
+    "formEmailTooLong": "Email addresses must be 320 characters or fewer.",
+    "formMessageTooShort": "Message must be at least 10 characters.",
+    "formMessageTooLong": "Message must be 4000 characters or fewer.",
+    "formNameTooLong": "Name must be 120 characters or fewer."
   },
   "invite": {
     "metaTitle": "Invite | Domek",

@@ -75,13 +75,14 @@ export function AccountDropdown({
             >
               {t("accountSettings")}
             </Link>
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-            <a
-              className="mt-2 flex h-9 items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
-              href="/api/auth/signout"
-            >
-              {t("signOut")}
-            </a>
+            <form action="/api/auth/signout" className="mt-2" method="post">
+              <button
+                className="flex h-9 w-full items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
+                type="submit"
+              >
+                {t("signOut")}
+              </button>
+            </form>
           </div>
         </>
       ) : null}

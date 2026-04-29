@@ -4,6 +4,7 @@ import { z } from "zod";
 import { routing } from "@/i18n/routing";
 import { sanitizeAuthStartNextPath } from "@/lib/auth-redirect";
 import { resolveAuthOrigin } from "@/lib/origin";
+import { validatePublicRouteRequest } from "@/lib/public-request-guard";
 import { createSupabaseServerClient } from "@/lib/supabase";
 
 const nextCookieName = "domek_next";
@@ -43,6 +44,38 @@ export async function POST(request: NextRequest) {
   }
 
   const nextPath = sanitizeAuthStartNextPath(parsed.data.next);
+  const requestGuard = validatePublicRouteRequest(request, "email-auth", {
+    formData,
+    identifiers: [parsed.data.email],
+  });
+  const isSecure = new URL(publicOrigin).protocol === "https:";
+
+  if (!requestGuard.ok) {
+    const response = NextResponse.redirect(
+      new URL(
+        buildLoginUrl(
+          parsed.data.locale,
+          nextPath,
+          requestGuard.reason === "rate_limited" ? "sent" : "auth",
+        ),
+        publicOrigin,
+      ),
+      { status: 303 },
+    );
+
+    if (requestGuard.reason === "rate_limited") {
+      response.cookies.set(nextCookieName, nextPath, {
+        httpOnly: true,
+        maxAge: 600,
+        path: "/",
+        sameSite: "lax",
+        secure: isSecure,
+      });
+    }
+
+    return response;
+  }
+
   const redirectTo = new URL("/auth/callback", publicOrigin).toString();
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
@@ -52,7 +85,6 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  const isSecure = new URL(publicOrigin).protocol === "https:";
   const response = NextResponse.redirect(
     new URL(
       buildLoginUrl(parsed.data.locale, nextPath, error ? "auth" : "sent"),

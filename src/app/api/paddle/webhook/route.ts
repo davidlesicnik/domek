@@ -160,7 +160,7 @@ export async function POST(request: Request) {
 
   if (
     currentRecord?.lastEventOccurredAt &&
-    currentRecord.lastEventOccurredAt.getTime() > occurredAt.getTime()
+    currentRecord.lastEventOccurredAt.getTime() >= occurredAt.getTime()
   ) {
     return NextResponse.json({ ok: true, ignored: true, stale: true });
   }
