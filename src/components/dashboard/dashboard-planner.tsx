@@ -484,6 +484,32 @@ function PlannerFieldList({ fields }: Readonly<{ fields: PlannerFieldDefinition[
   );
 }
 
+function plannerInputFieldDefinition(
+  key: string,
+  label: ReactNode,
+  inputProps: ComponentProps<"input">,
+): PlannerFieldDefinition {
+  return {
+    inputProps,
+    key,
+    kind: "input",
+    label,
+  };
+}
+
+function plannerSelectFieldDefinition(
+  key: string,
+  label: ReactNode,
+  selectProps: ComponentProps<typeof PlannerSelect>,
+): PlannerFieldDefinition {
+  return {
+    key,
+    kind: "select",
+    label,
+    selectProps,
+  };
+}
+
 function PlannerEditorHeader({
   closeLabel,
   description,
@@ -1325,40 +1351,25 @@ export function DashboardPlanner({
       value: member.id,
     }));
     const eventFields: PlannerFieldDefinition[] = [
-      {
-        inputProps: {
+      plannerInputFieldDefinition("date", t("dateLabel"), {
           onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
           required: true,
           type: "date",
           value: composerDateKey,
-        },
-        key: "date",
-        kind: "input",
-        label: t("dateLabel"),
-      },
-      {
-        inputProps: {
+        }),
+      plannerInputFieldDefinition("name", t("nameLabel"), {
           onChange: (changeEvent) => setEventName(changeEvent.target.value),
           required: true,
           type: "text",
           value: eventName,
-        },
-        key: "name",
-        kind: "input",
-        label: t("nameLabel"),
-      },
-      {
-        key: "category",
-        kind: "select",
-        label: t("categoryLabel"),
-        selectProps: {
+        }),
+      plannerSelectFieldDefinition("category", t("categoryLabel"), {
           id: "dashboard-event-category",
           onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
           options: eventCategoryOptions,
           placeholder: t("categoryLabel"),
           value: eventCategory,
-        },
-      },
+        }),
     ];
 
     return (
@@ -1386,17 +1397,12 @@ export function DashboardPlanner({
           {!isAllDay ? (
             <PlannerFieldList
               fields={[
-                {
-                  inputProps: {
+                plannerInputFieldDefinition("time", t("timeLabel"), {
                     onChange: (changeEvent) => setEventTime(changeEvent.target.value),
                     required: true,
                     type: "time",
                     value: eventTime,
-                  },
-                  key: "time",
-                  kind: "input",
-                  label: t("timeLabel"),
-                },
+                  }),
               ]}
             />
           ) : null}
@@ -1908,33 +1914,19 @@ export function DashboardPlanner({
         <PlannerDialog labelledBy="dashboard-todo-editor-title">
           {(() => {
             const todoFields: PlannerFieldDefinition[] = [
-              {
-                inputProps: {
+              plannerInputFieldDefinition("name", t("nameLabel"), {
                   onChange: (event) => setTodoText(event.target.value),
                   required: true,
                   type: "text",
                   value: todoText,
-                },
-                key: "name",
-                kind: "input",
-                label: t("nameLabel"),
-              },
-              {
-                inputProps: {
+                }),
+              plannerInputFieldDefinition("dueDate", t("dueDateLabel"), {
                   onChange: (event) => setTodoDueDate(event.target.value),
                   required: true,
                   type: "date",
                   value: todoDueDate,
-                },
-                key: "dueDate",
-                kind: "input",
-                label: t("dueDateLabel"),
-              },
-              {
-                key: "assigned",
-                kind: "select",
-                label: t("assignedToLabel"),
-                selectProps: {
+                }),
+              plannerSelectFieldDefinition("assigned", t("assignedToLabel"), {
                   id: "dashboard-todo-member",
                   onChange: (nextValue) => setTodoMemberId(nextValue || null),
                   options: [
@@ -1946,8 +1938,7 @@ export function DashboardPlanner({
                   ],
                   placeholder: t("unassigned"),
                   value: todoMemberId ?? "",
-                },
-              },
+                }),
             ];
 
             return (
