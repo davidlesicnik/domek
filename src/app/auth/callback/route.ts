@@ -14,18 +14,17 @@ export async function GET(request: NextRequest) {
   const publicOrigin = resolveAuthOrigin(request);
 
   const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const tokenType = requestUrl.searchParams.get("type");
   const next = sanitizeAuthCallbackNextPath(request.cookies.get(nextCookieName)?.value);
-
-  if (!code) {
-    const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
-    response.cookies.delete(nextCookieName);
-    return response;
-  }
-
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const authResult = code
+    ? await supabase.auth.exchangeCodeForSession(code)
+    : tokenHash && (tokenType === "email" || tokenType === "magiclink")
+      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: tokenType })
+      : { error: new Error("Missing auth callback parameters.") };
 
-  if (error) {
+  if (authResult.error) {
     const response = NextResponse.redirect(new URL("/login?error=auth", publicOrigin));
     response.cookies.delete(nextCookieName);
     return response;

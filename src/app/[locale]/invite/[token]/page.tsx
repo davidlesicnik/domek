@@ -3,12 +3,12 @@ import { Prisma } from "@prisma/client";
 import { getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
 
+import { SignInOptions } from "@/components/auth/sign-in-options";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { getCurrentAppSession } from "@/lib/authz";
 import { getInvitePreview, redeemInvite } from "@/lib/invites";
 import { hasHouseholdMembership } from "@/lib/users";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -50,7 +50,7 @@ async function acceptInviteAction(token: string) {
 }
 
 export default async function InvitePage({ params, searchParams }: InvitePageProps) {
-  const { token } = await params;
+  const { locale, token } = await params;
   const sp = (await searchParams) ?? {};
   const [session, preview] = await Promise.all([
     getCurrentAppSession(),
@@ -76,7 +76,12 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
 
   if (!session) {
     return (
-      <InviteSignInPage householdName={householdName} inviterName={inviterName} token={token} />
+      <InviteSignInPage
+        householdName={householdName}
+        inviterName={inviterName}
+        locale={locale}
+        token={token}
+      />
     );
   }
 
@@ -112,10 +117,12 @@ function PageShell({ children }: { children: React.ReactNode }) {
 function InviteSignInPage({
   householdName,
   inviterName,
+  locale,
   token,
 }: {
   householdName: string;
   inviterName: string;
+  locale: string;
   token: string;
 }) {
   const t = useTranslations("invite");
@@ -131,7 +138,7 @@ function InviteSignInPage({
         {t("signInDescription", { inviterName })}
       </p>
       <div className="mt-6">
-        <OAuthButtons nextPath={`/invite/${token}`} />
+        <SignInOptions locale={locale} nextPath={`/invite/${token}`} />
       </div>
     </PageShell>
   );

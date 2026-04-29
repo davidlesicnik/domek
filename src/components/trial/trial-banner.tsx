@@ -17,7 +17,7 @@ export function TrialBanner({ state, daysLeft, daysUsed, memberCount }: TrialBan
       <div className="border-b border-[#c5d9c6] bg-[#f0f6f1]">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4 py-2 sm:px-6">
           <p className="text-xs text-[#3c5e40]">
-            You&apos;ve been using Domek for {daysUsed} days — keep your household going for €15/year.
+            You&apos;ve been using Domek for {daysUsed} days — keep your household going for $20/year.
           </p>
           <Link
             className="ml-4 shrink-0 text-xs font-semibold text-[#526c56] hover:underline"
