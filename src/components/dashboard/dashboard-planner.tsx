@@ -360,6 +360,23 @@ function withoutScheduledItem(
   return nextItems;
 }
 
+function withoutCalendarEvent(
+  currentEvents: Record<string, CalendarEventView[]>,
+  eventId: string,
+) {
+  const nextEvents: Record<string, CalendarEventView[]> = {};
+
+  for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
+    const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== eventId);
+
+    if (filteredEvents.length > 0) {
+      nextEvents[dateKey] = filteredEvents;
+    }
+  }
+
+  return nextEvents;
+}
+
 function withCalendarCountDelta(
   currentCounts: Record<string, DashboardMonthCellCounts>,
   dateKey: string,
@@ -1114,15 +1131,7 @@ export function DashboardPlanner({
           .find((calendarEvent) => calendarEvent.id === editingEventId);
 
         setEventsByDate((currentEvents) => {
-          const nextEvents: Record<string, CalendarEventView[]> = {};
-
-          for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
-            const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== editingEventId);
-
-            if (filteredEvents.length > 0) {
-              nextEvents[dateKey] = filteredEvents;
-            }
-          }
+          const nextEvents = withoutCalendarEvent(currentEvents, editingEventId);
 
           nextEvents[updatedEvent.dateKey] = [
             ...(nextEvents[updatedEvent.dateKey] ?? []),
@@ -1181,19 +1190,7 @@ export function DashboardPlanner({
         .flat()
         .find((calendarEvent) => calendarEvent.id === id);
 
-      setEventsByDate((currentEvents) => {
-        const nextEvents: Record<string, CalendarEventView[]> = {};
-
-        for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
-          const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== id);
-
-          if (filteredEvents.length > 0) {
-            nextEvents[dateKey] = filteredEvents;
-          }
-        }
-
-        return nextEvents;
-      });
+      setEventsByDate((currentEvents) => withoutCalendarEvent(currentEvents, id));
 
       if (deletedEvent) {
         setCalendarCounts((currentCounts) => withCalendarCountDelta(currentCounts, deletedEvent.dateKey, -1));
