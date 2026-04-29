@@ -609,6 +609,52 @@ function PlannerItemBadge({
   );
 }
 
+function PlannerMemberAvatar({
+  member,
+  sizeClassName,
+}: Readonly<{
+  member: NonNullable<DashboardAgendaItem["member"]> | CalendarMemberOption;
+  sizeClassName: string;
+}>) {
+  const title = "name" in member ? member.name ?? member.email ?? undefined : undefined;
+
+  return (
+    <MemberAvatar
+      className={sizeClassName}
+      color={member.color}
+      email={member.email}
+      emoji={member.emoji}
+      name={member.name}
+      title={title}
+    />
+  );
+}
+
+function PlannerQuickActionLink({
+  description,
+  href,
+  label,
+  onClick,
+}: Readonly<{
+  description: string;
+  href: string;
+  label: string;
+  onClick: () => void;
+}>) {
+  return (
+    <Link
+      className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+      href={href}
+      onClick={onClick}
+    >
+      <span>
+        <span className="block text-sm font-semibold text-[#202321]">{label}</span>
+        <span className="mt-1 block text-xs text-[#6a716d]">{description}</span>
+      </span>
+    </Link>
+  );
+}
+
 function PlannerSelect({
   id,
   onChange,
@@ -751,14 +797,10 @@ function DashboardCalendarEventCard({
       {assignedMembers.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {assignedMembers.map((member) => (
-            <MemberAvatar
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold"
-              color={member.color}
-              email={member.email}
-              emoji={member.emoji}
+            <PlannerMemberAvatar
               key={member.id}
-              name={member.name}
-              title={memberLabel(member, t)}
+              member={member}
+              sizeClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold"
             />
           ))}
         </div>
@@ -965,6 +1007,22 @@ export function DashboardPlanner({
     });
   }
 
+  async function persistCalendarEvent(url: string, method: "PATCH" | "POST", input: CalendarEventInput) {
+    const response = await fetch(url, {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method,
+    });
+
+    if (!response.ok) {
+      setFormError(t("eventSaveError"));
+      return null;
+    }
+
+    const { event } = (await response.json()) as { event: CalendarEventView };
+    return event;
+  }
+
   async function saveEvent(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
 
@@ -993,19 +1051,15 @@ export function DashboardPlanner({
 
     try {
       if (editingEventId) {
-        const response = await fetch(`/api/calendar/events/${editingEventId}`, {
-          body: JSON.stringify(input),
-          headers: { "Content-Type": "application/json" },
-          method: "PATCH",
-        });
+        const updatedEvent = await persistCalendarEvent(
+          `/api/calendar/events/${editingEventId}`,
+          "PATCH",
+          input,
+        );
 
-        if (!response.ok) {
-          setFormError(t("eventSaveError"));
-
+        if (!updatedEvent) {
           return;
         }
-
-        const { event: updatedEvent } = (await response.json()) as { event: CalendarEventView };
         const previousEvent = Object.values(eventsByDate)
           .flat()
           .find((calendarEvent) => calendarEvent.id === editingEventId);
@@ -1039,21 +1093,11 @@ export function DashboardPlanner({
 
         selectDate(updatedEvent.dateKey);
       } else {
-        const response = await fetch("/api/calendar/events", {
-          body: JSON.stringify(input),
-          headers: {
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        });
+        const savedEvent = await persistCalendarEvent("/api/calendar/events", "POST", input);
 
-        if (!response.ok) {
-          setFormError(t("eventSaveError"));
-
+        if (!savedEvent) {
           return;
         }
-
-        const { event: savedEvent } = (await response.json()) as { event: CalendarEventView };
 
         setEventsByDate((currentEvents) => ({
           ...currentEvents,
@@ -1625,13 +1669,9 @@ export function DashboardPlanner({
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               {item.member ? (
-                                <MemberAvatar
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                  color={item.member.color}
-                                  email={item.member.email}
-                                  emoji={item.member.emoji}
-                                  name={item.member.name}
-                                  title={item.member.name ?? item.member.email ?? undefined}
+                                <PlannerMemberAvatar
+                                  member={item.member}
+                                  sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
                                 />
                               ) : null}
                               <ChevronRight aria-hidden className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]" />
@@ -1734,13 +1774,9 @@ export function DashboardPlanner({
                           <h3 className="mt-2 text-base font-semibold text-[#202321]">{item.title}</h3>
                           {item.member ? (
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                              <MemberAvatar
-                                className="flex h-7 w-7 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                color={item.member.color}
-                                email={item.member.email}
-                                emoji={item.member.emoji}
-                                name={item.member.name}
-                                title={item.member.name ?? item.member.email ?? undefined}
+                              <PlannerMemberAvatar
+                                member={item.member}
+                                sizeClassName="flex h-7 w-7 items-center justify-center rounded-md border text-[11px] font-semibold"
                               />
                             </div>
                           ) : null}
@@ -1834,27 +1870,19 @@ export function DashboardPlanner({
                 </span>
               </button>
 
-              <Link
-                className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+              <PlannerQuickActionLink
+                description={t("taskDescription")}
                 href="/app/todos?create=1"
+                label={t("taskLabel")}
                 onClick={() => setShowCreateMenu(false)}
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#202321]">{t("taskLabel")}</span>
-                  <span className="mt-1 block text-xs text-[#6a716d]">{t("taskDescription")}</span>
-                </span>
-              </Link>
+              />
 
-              <Link
-                className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+              <PlannerQuickActionLink
+                description={t("choreDescription")}
                 href="/app/chores?create=1"
+                label={t("choreLabel")}
                 onClick={() => setShowCreateMenu(false)}
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#202321]">{t("choreLabel")}</span>
-                  <span className="mt-1 block text-xs text-[#6a716d]">{t("choreDescription")}</span>
-                </span>
-              </Link>
+              />
             </div>
           </div>
         </PlannerDialog>
