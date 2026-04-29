@@ -177,6 +177,13 @@ function getMonthDays({ year, monthIndex }: MonthCursor) {
   return Array.from({ length: cellCount }, (_, index) => addDays(firstCell, index));
 }
 
+function createUtcFormatter(locale: string, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    timeZone: "UTC",
+  });
+}
+
 type DashboardTranslations = ReturnType<typeof useTranslations>;
 
 function agendaDateLabel(
@@ -334,6 +341,23 @@ function calendarEventAgendaItem(
 
 function plannerItemMeta(item: DashboardAgendaItem, t: DashboardTranslations) {
   return itemMeta(item, t);
+}
+
+function withoutScheduledItem(
+  currentItems: Record<string, DashboardAgendaItem[]>,
+  itemId: string,
+) {
+  const nextItems: Record<string, DashboardAgendaItem[]> = {};
+
+  for (const [dateKey, dayItems] of Object.entries(currentItems)) {
+    const filteredItems = dayItems.filter((candidate) => candidate.id !== itemId);
+
+    if (filteredItems.length > 0) {
+      nextItems[dateKey] = filteredItems;
+    }
+  }
+
+  return nextItems;
 }
 
 function withCalendarCountDelta(
@@ -822,48 +846,23 @@ export function DashboardPlanner({
   const router = useRouter();
   const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
   const monthFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        month: "long",
-        timeZone: "UTC",
-        year: "numeric",
-      }),
+    () => createUtcFormatter(locale, { month: "long", year: "numeric" }),
     [locale],
   );
   const fullDateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "long",
-        timeZone: "UTC",
-        year: "numeric",
-      }),
+    () => createUtcFormatter(locale, { day: "numeric", month: "long", year: "numeric" }),
     [locale],
   );
   const agendaDateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "short",
-        timeZone: "UTC",
-        weekday: "long",
-      }),
+    () => createUtcFormatter(locale, { day: "numeric", month: "short", weekday: "long" }),
     [locale],
   );
   const weekdayFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: "UTC",
-        weekday: "long",
-      }),
+    () => createUtcFormatter(locale, { weekday: "long" }),
     [locale],
   );
   const shortWeekdayFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: "UTC",
-        weekday: "short",
-      }),
+    () => createUtcFormatter(locale, { weekday: "short" }),
     [locale],
   );
   const [visibleMonth, setVisibleMonth] = useState<MonthCursor>({
@@ -1226,15 +1225,7 @@ export function DashboardPlanner({
       }
 
       setScheduledItemsByDate((currentItems) => {
-        const nextItems: Record<string, DashboardAgendaItem[]> = {};
-
-        for (const [dateKey, dayItems] of Object.entries(currentItems)) {
-          const filteredItems = dayItems.filter((item) => item.id !== editingTodo.id);
-
-          if (filteredItems.length > 0) {
-            nextItems[dateKey] = filteredItems;
-          }
-        }
+        const nextItems = withoutScheduledItem(currentItems, editingTodo.id);
 
         const member = todoMemberId
           ? calendarMembers.find((candidate) => candidate.id === todoMemberId) ?? null
@@ -1286,19 +1277,7 @@ export function DashboardPlanner({
         return;
       }
 
-      setScheduledItemsByDate((currentItems) => {
-        const nextItems: Record<string, DashboardAgendaItem[]> = {};
-
-        for (const [dateKey, dayItems] of Object.entries(currentItems)) {
-          const filteredItems = dayItems.filter((candidate) => candidate.id !== item.id);
-
-          if (filteredItems.length > 0) {
-            nextItems[dateKey] = filteredItems;
-          }
-        }
-
-        return nextItems;
-      });
+      setScheduledItemsByDate((currentItems) => withoutScheduledItem(currentItems, item.id));
 
       if (editingTodo?.id === item.id) {
         closeTodoEditor();
