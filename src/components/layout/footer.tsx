@@ -17,7 +17,7 @@ export async function Footer() {
   return (
     <footer className="border-t border-[#dfddd6] bg-[#fdfcf8] px-4 pt-6 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <p className="text-xs text-[#9ea49f]">{t("tagline")}</p>
           <LocaleSwitcher />
         </div>

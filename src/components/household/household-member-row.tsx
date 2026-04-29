@@ -129,10 +129,10 @@ export function HouseholdMemberRow({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {isEditingName ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   className="h-9 min-w-0 flex-1 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
                   maxLength={120}
@@ -161,7 +161,7 @@ export function HouseholdMemberRow({
               </div>
             ) : (
               <div className="flex min-w-0 items-center gap-2">
-                <p className="truncate text-[15px] font-semibold leading-5 text-[#171a18]">
+                <p className="break-words text-[15px] font-semibold leading-5 text-[#171a18]">
                   {memberLabel}
                 </p>
                 {canEdit ? (
@@ -182,7 +182,7 @@ export function HouseholdMemberRow({
             )}
             <div className="mt-1 flex flex-wrap items-center gap-2">
               {subtitle ? (
-                <p className="truncate text-xs font-normal leading-5 text-[#8a928c]">{subtitle}</p>
+                <p className="break-words text-xs font-normal leading-5 text-[#8a928c]">{subtitle}</p>
               ) : null}
               {!member.accountId ? (
                 <span className="inline-flex items-center rounded border border-[#e5e0d6] bg-[#f7f4ed] px-2 py-0.5 text-[11px] font-medium text-[#7b807b]">
@@ -192,7 +192,7 @@ export function HouseholdMemberRow({
             </div>
             {error ? <p className="mt-2 text-xs font-medium text-[#a6543c]">{error}</p> : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <RolePill role={member.role} />
             {isOwner && member.role === "MEMBER" ? (
               <>
@@ -332,7 +332,7 @@ function LinkAccountDialog({
                     <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
                     <input
                       autoComplete="email"
-                      className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#202321] outline-none"
+                      className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#202321] outline-none sm:text-sm"
                       id={`link-account-email-${memberId}`}
                       maxLength={320}
                       name="email"

@@ -32,6 +32,7 @@ export async function HouseholdModalServer({ userId }: { userId: string }) {
   return (
     <HouseholdHeaderControls
       createMemberAction={createPassiveHouseholdMemberAction}
+      householdName={membership.household.name}
       isOwner={isOwner}
       members={members.map((member) => ({
         accountEmail: member.account?.email ?? null,

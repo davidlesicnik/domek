@@ -61,6 +61,11 @@ export async function upsertSupabaseUser(user: SupabaseAuthUser) {
 export async function getFirstHouseholdMembership(userId: string) {
   return prisma.householdMember.findFirst({
     select: {
+      household: {
+        select: {
+          name: true,
+        },
+      },
       householdId: true,
       id: true,
       role: true,

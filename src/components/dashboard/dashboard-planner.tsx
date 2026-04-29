@@ -38,6 +38,12 @@ type TodoEditorState = Readonly<{
   text: string;
 }>;
 
+type SelectOption = Readonly<{
+  disabled?: boolean;
+  label: string;
+  value: string;
+}>;
+
 type MonthCursor = Readonly<{
   monthIndex: number;
   year: number;
@@ -378,6 +384,108 @@ function CalendarMemberPill({
   );
 }
 
+function PlannerSelect({
+  id,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: Readonly<{
+  id: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder: string;
+  value: string;
+}>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = options.find((option) => option.value === value);
+  const listboxId = `${id}-listbox`;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative w-full" ref={rootRef}>
+      <button
+        aria-controls={listboxId}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-[#d8d2c8] bg-white px-3 text-left text-base font-medium text-[#202321] outline-none transition hover:border-[#cdbfb0] focus:border-[#9bb6a4] sm:text-sm"
+        id={id}
+        onClick={() => setIsOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        role="combobox"
+        type="button"
+      >
+        <span className={selectedOption ? "truncate" : "truncate text-[#6d746f]"}>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <ChevronRight
+          aria-hidden
+          className={`h-4 w-4 shrink-0 text-[#6d746f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
+        />
+      </button>
+      {isOpen ? (
+        <div
+          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[80] max-h-60 overflow-y-auto rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+          id={listboxId}
+          role="listbox"
+        >
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={`flex w-full items-center rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
+                  option.disabled
+                    ? "cursor-not-allowed text-[#a1a7a3]"
+                    : isSelected
+                      ? "bg-[#eef6ef] text-[#2f4e35]"
+                      : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                }`}
+                disabled={option.disabled}
+                key={`${id}-${option.value}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DashboardCalendarEventCard({
   calendarEvent,
   isDeleting,
@@ -577,8 +685,6 @@ export function DashboardPlanner({
     .filter((member): member is CalendarMemberOption => Boolean(member));
   const selectedDateIsToday = selectedDateKey === todayKey;
   const effectiveSelectedAgendaDateKey = selectedDateIsToday ? todayKey : null;
-  const isCurrentMonthVisible =
-    visibleMonth.monthIndex === today.getUTCMonth() && visibleMonth.year === today.getUTCFullYear();
 
   useEffect(() => {
     if (!selectedDateIsToday || !effectiveSelectedAgendaDateKey) return;
@@ -962,6 +1068,15 @@ export function DashboardPlanner({
 
   function renderEventForm() {
     const isEditing = editingEventId !== null;
+    const eventCategoryOptions: SelectOption[] = calendarCategoryOptions.map((category) => ({
+      label: translateCalendarCategory(category, t),
+      value: category,
+    }));
+    const involvedMemberOptions: SelectOption[] = calendarMembers.map((member) => ({
+      disabled: selectedMemberIds.includes(member.id),
+      label: memberLabel(member, t),
+      value: member.id,
+    }));
 
     return (
       <form className="grid gap-4" onSubmit={saveEvent}>
@@ -988,7 +1103,7 @@ export function DashboardPlanner({
         <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           {t("dateLabel")}
           <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
             onChange={(changeEvent) => setComposerDateKey(changeEvent.target.value)}
             required
             type="date"
@@ -999,7 +1114,7 @@ export function DashboardPlanner({
         <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           {t("nameLabel")}
           <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
             onChange={(changeEvent) => setEventName(changeEvent.target.value)}
             required
             type="text"
@@ -1009,17 +1124,13 @@ export function DashboardPlanner({
 
         <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           {t("categoryLabel")}
-          <select
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            onChange={(changeEvent) => setEventCategory(changeEvent.target.value as CalendarCategory)}
+          <PlannerSelect
+            id="dashboard-event-category"
+            onChange={(nextValue) => setEventCategory(nextValue as CalendarCategory)}
+            options={eventCategoryOptions}
+            placeholder={t("categoryLabel")}
             value={eventCategory}
-          >
-            {calendarCategoryOptions.map((category) => (
-              <option key={category} value={category}>
-                {translateCalendarCategory(category, t)}
-              </option>
-            ))}
-          </select>
+          />
         </label>
 
         <div className="grid gap-3">
@@ -1036,7 +1147,7 @@ export function DashboardPlanner({
             <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
               {t("timeLabel")}
               <input
-                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
                 onChange={(changeEvent) => setEventTime(changeEvent.target.value)}
                 required
                 type="time"
@@ -1048,28 +1159,23 @@ export function DashboardPlanner({
 
         <div className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           {t("whoInvolved")}
-          <select
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            disabled={calendarMembers.length === 0}
-            onChange={(changeEvent) => {
-              const memberId = changeEvent.target.value;
-              if (!memberId) return;
+          <PlannerSelect
+            id="dashboard-event-members"
+            onChange={(memberId) => {
               setSelectedMemberIds((currentIds) =>
                 currentIds.includes(memberId) ? currentIds : [...currentIds, memberId],
               );
-              changeEvent.target.value = "";
             }}
+            options={
+              calendarMembers.length > 0
+                ? involvedMemberOptions
+                : [{ disabled: true, label: t("noHouseholdMembers"), value: "__none__" }]
+            }
+            placeholder={
+              calendarMembers.length > 0 ? t("addHouseholdMember") : t("noHouseholdMembers")
+            }
             value=""
-          >
-            <option value="">
-              {calendarMembers.length > 0 ? t("addHouseholdMember") : t("noHouseholdMembers")}
-            </option>
-            {calendarMembers.map((member) => (
-              <option disabled={selectedMemberIds.includes(member.id)} key={member.id} value={member.id}>
-                {memberLabel(member, t)}
-              </option>
-            ))}
-          </select>
+          />
 
           {selectedMembers.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -1121,36 +1227,37 @@ export function DashboardPlanner({
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="order-2 lg:order-1" id="home-calendar" ref={calendarSectionRef}>
         <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
-          <div className="flex flex-col gap-4 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <button
-                aria-label={t("previousMonth")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4]"
-                onClick={() => goToMonth(-1)}
-                type="button"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-              </button>
-              <button
-                aria-label={t("nextMonth")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4]"
-                onClick={() => goToMonth(1)}
-                type="button"
-              >
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-              <div className="min-w-0 pl-1">
-                <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
-                  {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
-                </p>
-                <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
+          <div className="flex flex-col gap-3 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    aria-label={t("previousMonth")}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    onClick={() => goToMonth(-1)}
+                    type="button"
+                  >
+                    <ChevronLeft aria-hidden className="h-4 w-4" />
+                  </button>
+                  <button
+                    aria-label={t("nextMonth")}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    onClick={() => goToMonth(1)}
+                    type="button"
+                  >
+                    <ChevronRight aria-hidden className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                    {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
+                  </p>
+                  <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {!isCurrentMonthVisible ? (
+              {!selectedDateIsToday ? (
                 <button
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5]"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:h-9 sm:w-auto sm:shrink-0"
                   onClick={goToToday}
                   type="button"
                 >
@@ -1163,7 +1270,7 @@ export function DashboardPlanner({
           <div className="grid grid-cols-7 border-b border-[#e6e0d7] bg-[#fbfaf6]">
             {Array.from({ length: 7 }, (_, index) => addDays(createDate(2024, 0, 1), index)).map((weekday) => (
               <div
-                className="px-1 py-3 text-center text-[11px] font-bold uppercase tracking-normal text-[#626a65] sm:px-2"
+                className="px-1 py-2.5 text-center text-[10px] font-bold uppercase tracking-normal text-[#626a65] sm:px-2 sm:py-3 sm:text-[11px]"
                 key={weekday.toISOString()}
               >
                 {shortWeekdayFormatter.format(weekday)}
@@ -1182,7 +1289,7 @@ export function DashboardPlanner({
               return (
                 <div
                   className={cx(
-                    "relative min-h-[80px] border-b border-r border-[#e7e1d9] p-2 sm:min-h-[100px] xl:min-h-[130px]",
+                    "relative min-h-[68px] border-b border-r border-[#e7e1d9] p-1.5 sm:min-h-[100px] sm:p-2 xl:min-h-[130px]",
                     index % 7 === 6 && "border-r-0",
                     index >= monthDays.length - 7 && "border-b-0",
                     isSelectedDate
@@ -1206,7 +1313,7 @@ export function DashboardPlanner({
                         aria-current={isToday ? "date" : undefined}
                         aria-pressed={isSelectedDate}
                         className={cx(
-                          "pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold",
+                          "pointer-events-auto inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold sm:h-7 sm:w-7 sm:text-sm",
                           isToday
                             ? "bg-[#202321] text-white"
                             : isCurrentMonth
@@ -1229,25 +1336,25 @@ export function DashboardPlanner({
 
                     {counts?.total ? (
                       <>
-                        <div className="mt-3 flex items-center gap-1.5">
+                        <div className="mt-2 flex items-center gap-1 sm:mt-3 sm:gap-1.5">
                           {counts.calendar > 0 ? (
                             <span
                               aria-label={t("calendarItemCount", { count: counts.calendar })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("calendar") }}
                             />
                           ) : null}
                           {counts.chore > 0 ? (
                             <span
                               aria-label={t("choreCount", { count: counts.chore })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("chore") }}
                             />
                           ) : null}
                           {counts.todo > 0 ? (
                             <span
                               aria-label={t("todoItemCount", { count: counts.todo })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("todo") }}
                             />
                           ) : null}
@@ -1633,6 +1740,17 @@ export function DashboardPlanner({
         >
           <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
             <form className="grid gap-4" onSubmit={saveTodoEdit}>
+              {(() => {
+                const todoMemberOptions: SelectOption[] = [
+                  { label: t("unassigned"), value: "" },
+                  ...calendarMembers.map((member) => ({
+                    label: memberLabel(member, t),
+                    value: member.id,
+                  })),
+                ];
+
+                return (
+                  <>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
@@ -1660,7 +1778,7 @@ export function DashboardPlanner({
               <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
                 {t("nameLabel")}
                 <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
                   onChange={(event) => setTodoText(event.target.value)}
                   required
                   type="text"
@@ -1671,7 +1789,7 @@ export function DashboardPlanner({
               <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
                 {t("dueDateLabel")}
                 <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
+                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm"
                   onChange={(event) => setTodoDueDate(event.target.value)}
                   required
                   type="date"
@@ -1681,18 +1799,13 @@ export function DashboardPlanner({
 
               <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
                 {t("assignedToLabel")}
-                <select
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-                  onChange={(event) => setTodoMemberId(event.target.value || null)}
+                <PlannerSelect
+                  id="dashboard-todo-member"
+                  onChange={(nextValue) => setTodoMemberId(nextValue || null)}
+                  options={todoMemberOptions}
+                  placeholder={t("unassigned")}
                   value={todoMemberId ?? ""}
-                >
-                  <option value="">{t("unassigned")}</option>
-                  {calendarMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {memberLabel(member, t)}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -1715,6 +1828,9 @@ export function DashboardPlanner({
                   {t("cancel")}
                 </button>
               </div>
+                  </>
+                );
+              })()}
             </form>
           </div>
         </div>

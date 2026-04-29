@@ -14,7 +14,7 @@ type AppShellFrameProps = Readonly<{
 export function AppShellFrame({ children, memberColor, memberEmoji, userName }: AppShellFrameProps) {
   return (
     <div
-      className="flex flex-col gap-8 sm:grid sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-start sm:gap-x-10 sm:gap-y-8 xl:grid-cols-[14rem_minmax(0,980px)_minmax(0,max(0px,min(14rem,calc(100%_-_14rem_-_980px_-_5rem))))]"
+      className="flex flex-col gap-5 sm:grid sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-start sm:gap-x-10 sm:gap-y-8 xl:grid-cols-[14rem_minmax(0,980px)_minmax(0,max(0px,min(14rem,calc(100%_-_14rem_-_980px_-_5rem))))]"
     >
       <AppNavigation
         memberColor={memberColor}

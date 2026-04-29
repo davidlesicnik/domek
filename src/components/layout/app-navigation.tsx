@@ -203,7 +203,7 @@ export function AppNavigation({
               pendingNavigation?.href === item.href &&
               pendingNavigation.fromPathname === pathname;
             const isVisuallyActive = isActive || isPending;
-            const className = `inline-flex h-12 items-center justify-center rounded-md border text-[#5d635f] transition ${
+            const className = `inline-flex h-11 min-w-0 items-center justify-center rounded-md border text-[#5d635f] transition ${
               isVisuallyActive
                 ? "border-[#c85b45] bg-[#f7ecea] text-[#a6543c]"
                 : "border-transparent hover:border-[#cbd9ce] hover:bg-[#f4f1ea] hover:text-[#202321]"

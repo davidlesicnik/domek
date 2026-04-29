@@ -246,7 +246,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         </h1>
       </div>
 
-      <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
+      <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-[#3c413e]">{t("signedInAs")}</h2>
         <p className="mt-2 text-sm font-semibold text-[#202321]">
           {session.user.name ?? session.user.email ?? t("unknownUser")}
@@ -257,11 +257,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       </section>
 
       {billingSubscription ? (
-        <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5">
+        <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-sm font-semibold text-[#3c413e]">{t("subscriptionTitle")}</h2>
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="inline-flex h-7 items-center rounded-full border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#526c56]">
                   {t(statusKeys[billingSubscription.status] as Parameters<typeof t>[0])}
                 </span>
@@ -293,7 +293,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             !billingSubscription.scheduledCancellationAt ? (
               <form action={cancelSubscriptionAction}>
                 <button
-                  className="inline-flex h-9 items-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df] sm:h-9 sm:w-auto"
                   type="submit"
                 >
                   {t("cancelAfterBilling")}
@@ -307,7 +307,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         </section>
       ) : null}
 
-      <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-5">
+      <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-[#a6543c]">{t("deleteTitle")}</h2>
         {isOwnerWithMembers ? (
           <>
@@ -315,7 +315,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               {t("ownerWithMembersNote")}
             </p>
             <Link
-              className="mt-3 inline-flex h-9 items-center rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8] sm:h-9 sm:w-auto"
               href="/app/household"
             >
               {t("goToHouseholdSettings")}
@@ -342,7 +342,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               </label>
               <div>
                 <button
-                  className="h-9 rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8]"
+                  className="h-11 w-full rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8] sm:h-9 sm:w-auto"
                   type="submit"
                 >
                   {t("deleteButton")}

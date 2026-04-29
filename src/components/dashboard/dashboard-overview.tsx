@@ -94,37 +94,37 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
 
   return (
     <div className="grid gap-8">
-      <section className="rounded-md border border-[#e9e4da] bg-[#fffdf9] p-6 shadow-[0_20px_45px_rgba(31,35,30,0.07)] sm:p-8">
+      <section className="rounded-md border border-[#e9e4da] bg-[#fffdf9] p-5 shadow-[0_20px_45px_rgba(31,35,30,0.07)] sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="font-serif text-4xl font-semibold tracking-normal text-[#171a18] sm:text-5xl">
+            <h1 className="font-serif text-[1.95rem] font-semibold leading-[1.04] tracking-normal text-[#171a18] sm:text-5xl sm:leading-[1.02]">
               {summaryState.title}
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-[#686e6a]">{summaryState.summary}</p>
-            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[#5f6662] sm:gap-x-4">
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="font-serif text-2xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+            <p className="mt-3 max-w-xl text-base leading-7 text-[#686e6a]">{summaryState.summary}</p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-[#5f6662] sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
                   {actionSummary.todosThisWeek}
                 </span>
-                <span className="text-sm font-medium sm:text-[15px]">
+                <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("tasksDue", { count: actionSummary.todosThisWeek })}
                 </span>
               </span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-[#c9ceca]" />
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="font-serif text-2xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[#c9ceca] sm:block" />
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
                   {actionSummary.calendarThisWeek}
                 </span>
-                <span className="text-sm font-medium sm:text-[15px]">
+                <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("events", { count: actionSummary.calendarThisWeek })}
                 </span>
               </span>
-              <span aria-hidden className="h-1 w-1 rounded-full bg-[#c9ceca]" />
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="font-serif text-2xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[#c9ceca] sm:block" />
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
                   {actionSummary.overdueChores}
                 </span>
-                <span className="text-sm font-medium sm:text-[15px]">
+                <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("overdueChores", { count: actionSummary.overdueChores })}
                 </span>
               </span>
@@ -144,7 +144,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
 
       {hasExpenseActivity ? (
         <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
                 {t("moneyThisMonth")}
@@ -157,7 +157,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
               </p>
             </div>
             <Link
-              className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea] sm:h-9 sm:w-auto sm:shrink-0"
               href="/app/expenses"
             >
               {t("openExpenses")}
@@ -189,7 +189,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
             <div className="mt-5 overflow-hidden rounded-md border border-[#e3ded6] bg-[#fbfaf6]">
               <div className="grid divide-y divide-[#e3ded6]">
                 {expenseSnapshot.entries.map((expense) => (
-                  <div className="flex items-center justify-between gap-4 px-4 py-3" key={expense.id}>
+                  <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" key={expense.id}>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold text-[#202321]">{expense.name}</p>
@@ -230,7 +230,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                       </div>
                     </div>
                     <p
-                      className={`shrink-0 text-sm font-semibold tabular-nums ${
+                      className={`text-sm font-semibold tabular-nums sm:shrink-0 sm:text-right ${
                         expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
                       }`}
                     >
@@ -258,7 +258,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
               </p>
             </div>
             <Link
-              className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea] sm:h-9 sm:w-auto sm:shrink-0"
               href="/app/expenses"
             >
               {t("addExpense")}
