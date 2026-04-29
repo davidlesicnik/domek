@@ -273,7 +273,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
   return (
     <div className="mx-auto w-full max-w-[1120px]">
       <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">{t("title")}</h1>
-      <div className="grid items-start gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-5">
         {/* Left pane: note list */}
         <aside
           className={`flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
@@ -324,13 +324,13 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                   key={note.id}
                 >
                   <button
-                    className={`min-w-0 flex-1 px-3 py-3 text-left ${
-                      isSelected ? "text-[#426148]" : "text-[#4d5451]"
-                    }`}
+                      className={`min-w-0 flex-1 px-3 py-3 text-left ${
+                        isSelected ? "text-[#426148]" : "text-[#4d5451]"
+                      }`}
                     onClick={() => openNote(note)}
                     type="button"
                   >
-                    <span className={`block truncate text-sm ${isSelected ? "font-semibold" : "font-medium"}`}>
+                    <span className={`block break-words text-sm ${isSelected ? "font-semibold" : "font-medium"}`}>
                       {note.title}
                     </span>
                     <span
@@ -342,7 +342,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                     </span>
                   </button>
                   {confirmDeleteId === note.id ? (
-                    <div className="mr-2 flex shrink-0 items-center gap-1">
+                    <div className="mr-2 flex max-w-[9rem] shrink-0 flex-wrap items-center gap-1 sm:max-w-none">
                       <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                       <button
                         className="min-h-7 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
@@ -362,7 +362,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                   ) : (
                     <button
                       aria-label={t("deleteNoteAria", { title: note.title })}
-                      className="mr-2 shrink-0 rounded p-2 text-[#b0aca5] opacity-0 transition hover:bg-[#f7ecea] hover:text-[#a6543c] group-hover:opacity-100"
+                      className="mr-2 shrink-0 rounded p-2 text-[#b0aca5] opacity-100 transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:opacity-0 sm:group-hover:opacity-100"
                       onClick={() => setConfirmDeleteId(note.id)}
                       type="button"
                     >
@@ -394,7 +394,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                 <div className="flex items-start gap-3">
                   <button
                     aria-label={t("backToNotes")}
-                    className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white/90 text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                    className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white/90 text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
                     onClick={() => setIsMobileDetailOpen(false)}
                     type="button"
                   >
@@ -430,7 +430,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
       {!isMobileDetailOpen && (
         <button
           aria-label={t("addNoteAria")}
-          className="fixed bottom-[calc(5.5rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[#7aab86] bg-[#dff0e3] text-3xl font-bold leading-none text-[#3a6645] shadow-[0_14px_34px_rgba(31,35,30,0.22)] transition hover:bg-[#cce8d2] sm:hidden"
+          className="fixed bottom-[calc(5.75rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[#7aab86] bg-[#dff0e3] text-3xl font-bold leading-none text-[#3a6645] shadow-[0_14px_34px_rgba(31,35,30,0.22)] transition hover:bg-[#cce8d2] sm:hidden"
           onClick={openNewNote}
           type="button"
         >

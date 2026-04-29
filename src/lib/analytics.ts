@@ -9,9 +9,20 @@ export type AnalyticsEventName =
 
 export type AnalyticsEventParams = Record<string, boolean | number | string | null | undefined>;
 export type CookieConsentValue = "accepted" | "rejected";
+type AnalyticsConsentState = "granted" | "denied";
 
 type GtagCommand =
   | ["config", string, AnalyticsEventParams?]
+  | [
+      "consent",
+      "default" | "update",
+      {
+        ad_personalization: "denied";
+        ad_storage: "denied";
+        ad_user_data: "denied";
+        analytics_storage: AnalyticsConsentState;
+      },
+    ]
   | ["event", AnalyticsEventName | "page_view", AnalyticsEventParams?]
   | ["js", Date];
 
@@ -21,6 +32,7 @@ const cookieConsentMaxAgeSeconds = 60 * 60 * 24 * 180;
 
 declare global {
   interface Window {
+    __domekAnalyticsBootstrapped?: boolean;
     dataLayer?: GtagCommand[];
     gtag?: (...args: GtagCommand) => void;
   }
@@ -30,13 +42,47 @@ export function hasCookieConsent() {
   return readCookieConsent() === "accepted";
 }
 
-export function disableAnalytics() {
+export function ensureAnalyticsBootstrap() {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.gtag = undefined;
-  window.dataLayer = [];
+  if (window.__domekAnalyticsBootstrapped) {
+    return;
+  }
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag =
+    window.gtag ||
+    ((...args: GtagCommand) => {
+      window.dataLayer?.push(args);
+    });
+  window.gtag("js", new Date());
+  window.gtag("consent", "default", {
+    analytics_storage: "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  window.__domekAnalyticsBootstrapped = true;
+}
+
+export function updateAnalyticsConsent(isAccepted: boolean) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  ensureAnalyticsBootstrap();
+  window.gtag?.("consent", "update", {
+    analytics_storage: isAccepted ? "granted" : "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+}
+
+export function disableAnalytics() {
+  updateAnalyticsConsent(false);
 }
 
 export function readCookieConsent(): CookieConsentValue | null {
@@ -69,11 +115,12 @@ export function trackAnalyticsEvent(
   eventName: AnalyticsEventName,
   eventParams: AnalyticsEventParams = {},
 ) {
-  if (
-    typeof window === "undefined" ||
-    !hasCookieConsent() ||
-    typeof window.gtag !== "function"
-  ) {
+  if (typeof window === "undefined" || !hasCookieConsent()) {
+    return;
+  }
+
+  ensureAnalyticsBootstrap();
+  if (typeof window.gtag !== "function") {
     return;
   }
 

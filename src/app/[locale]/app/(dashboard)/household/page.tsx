@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { redirect } from "@/i18n/server";
@@ -22,6 +23,34 @@ export async function generateMetadata(): Promise<Metadata> {
 function stringParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+async function renameHouseholdAction(formData: FormData) {
+  "use server";
+
+  const session = await requireHouseholdMemberSession();
+  const membership = await getFirstHouseholdMembership(session.user.id);
+
+  if (!membership || membership.role !== "OWNER") {
+    return await redirect("/app/household?error=forbidden");
+  }
+
+  const name = formData.get("name");
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+
+  if (!trimmedName || trimmedName.length > 120) {
+    return await redirect("/app/household?error=household-name");
+  }
+
+  await prisma.household.update({
+    where: { id: membership.householdId },
+    data: { name: trimmedName },
+  });
+
+  revalidatePath("/app", "layout");
+  revalidatePath("/app/household");
+
+  return await redirect("/app/household?success=renamed");
 }
 
 async function removeMemberAction(formData: FormData) {
@@ -226,6 +255,8 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
         ? t("successOwner")
         : successParam === "color"
           ? t("successColor")
+          : successParam === "renamed"
+            ? t("successHouseholdRenamed")
           : null;
   const errorMessage =
     errorParam === "forbidden"
@@ -234,6 +265,8 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
         ? t("errorConfirm")
         : errorParam === "color"
           ? t("errorColor")
+          : errorParam === "household-name"
+            ? t("errorHouseholdName")
           : errorParam === "assigned-chores"
             ? t("errorAssignedChores")
             : null;
@@ -255,6 +288,7 @@ export default async function HouseholdPage({ searchParams }: HouseholdPageProps
       currentMemberId={membership.id}
       isOwner={membership.role === "OWNER"}
       createMemberAction={createPassiveHouseholdMemberAction}
+      renameHouseholdAction={renameHouseholdAction}
       linkAccountAction={sendHouseholdMemberInviteAction}
       sendInviteAction={sendHouseholdMemberInviteAction}
       revokeInviteAction={revokeHouseholdMemberInviteAction}

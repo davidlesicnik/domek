@@ -98,6 +98,130 @@ function ChevronLeftIcon(props: IconProps) {
   );
 }
 
+function TrashIcon(props: IconProps) {
+  return (
+    <svg
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4h6v2" />
+    </svg>
+  );
+}
+
+function DeleteConfirmActions({
+  onCancel,
+  onConfirm,
+  t,
+}: Readonly<{
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: ReturnType<typeof useTranslations>;
+}>) {
+  return (
+    <div className="flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none">
+      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+      <button
+        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+        onClick={onConfirm}
+        type="button"
+      >
+        {t("confirmYes")}
+      </button>
+      <button
+        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+        onClick={onCancel}
+        type="button"
+      >
+        {t("confirmNo")}
+      </button>
+    </div>
+  );
+}
+
+function DeleteIconButton({
+  ariaLabel,
+  className,
+  onClick,
+}: Readonly<{
+  ariaLabel: string;
+  className: string;
+  onClick: () => void;
+}>) {
+  return (
+    <button aria-label={ariaLabel} className={className} onClick={onClick} type="button">
+      <TrashIcon height="14" width="14" />
+    </button>
+  );
+}
+
+function ListItemRow<TItem extends ListItemView>({
+  confirmDeleteItemId,
+  item,
+  listId,
+  onCancelDelete,
+  onConfirmDelete,
+  onRequestDelete,
+  onToggle,
+  renderItemMeta,
+  rowClassName,
+  t,
+}: Readonly<{
+  confirmDeleteItemId: string | null;
+  item: TItem;
+  listId: string;
+  onCancelDelete: () => void;
+  onConfirmDelete: (listId: string, itemId: string) => void;
+  onRequestDelete: (itemId: string) => void;
+  onToggle: (listId: string, itemId: string, currentDone: boolean) => void;
+  renderItemMeta?: (item: TItem) => ReactNode;
+  rowClassName: string;
+  t: ReturnType<typeof useTranslations>;
+}>) {
+  return (
+    <li className={rowClassName} key={item.id}>
+      <input
+        checked={item.done}
+        className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
+        onChange={() => onToggle(listId, item.id, item.done)}
+        type="checkbox"
+      />
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block break-words text-sm leading-snug text-[#2d3230] ${
+            item.done ? "line-through" : ""
+          }`}
+        >
+          {item.text}
+        </span>
+        {renderItemMeta ? renderItemMeta(item) : null}
+      </span>
+      {confirmDeleteItemId === item.id ? (
+        <DeleteConfirmActions
+          onCancel={onCancelDelete}
+          onConfirm={() => onConfirmDelete(listId, item.id)}
+          t={t}
+        />
+      ) : (
+        <DeleteIconButton
+          ariaLabel={t("deleteItemAriaLabel")}
+          className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
+          onClick={() => onRequestDelete(item.id)}
+        />
+      )}
+    </li>
+  );
+}
+
 export function ListBoard<TItem extends ListItemView, TCreateItemInput extends object = { text: string }>({
   title,
   listsPath,
@@ -352,7 +476,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
   return (
     <div className="mx-auto w-full max-w-[1120px]">
       <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">{title}</h1>
-      <div className="grid items-start gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)] xl:gap-5">
         {/* Left pane: list of lists */}
         <aside
           className={`flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
@@ -384,15 +508,15 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                   key={list.id}
                 >
                   <button
-                    className={`flex min-w-0 flex-1 items-center gap-2 px-3 py-3 text-left text-sm ${
+                    className={`flex min-w-0 flex-1 items-start gap-2 px-3 py-3 text-left text-sm sm:items-center ${
                       isSelected ? "font-medium text-[#426148]" : "text-[#4d5451]"
                     }`}
                     onClick={() => openList(list.id)}
                     type="button"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate">{list.name}</span>
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="min-w-0 flex-1 break-words">{list.name}</span>
                         {totalCount > 0 ? (
                           <span
                             className={`shrink-0 text-[10px] font-semibold ${
@@ -405,10 +529,10 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       </span>
                     </span>
                     {totalCount > 0 && (
-                      <span className="shrink-0">
+                      <span className="shrink-0 self-center">
                         <span
                           aria-hidden
-                          className={`block h-1.5 w-14 overflow-hidden rounded-full ${
+                          className={`block h-1.5 w-10 overflow-hidden rounded-full sm:w-14 ${
                             isSelected ? "bg-[#c7d9ca]" : "bg-[#ddd6ca]"
                           }`}
                         >
@@ -426,32 +550,19 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                     )}
                   </button>
                   {confirmDeleteListId === list.id ? (
-                    <div className="mr-2 flex shrink-0 flex-wrap items-center justify-end gap-1 py-2">
-                      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                      <button
-                        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                        onClick={() => handleDeleteList(list.id)}
-                        type="button"
-                      >
-                        {t("confirmYes")}
-                      </button>
-                      <button
-                        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                        onClick={() => setConfirmDeleteListId(null)}
-                        type="button"
-                      >
-                        {t("confirmNo")}
-                      </button>
+                    <div className="mr-2 py-2">
+                      <DeleteConfirmActions
+                        onCancel={() => setConfirmDeleteListId(null)}
+                        onConfirm={() => handleDeleteList(list.id)}
+                        t={t}
+                      />
                     </div>
                   ) : (
-                    <button
-                      aria-label={t("deleteListAriaLabel", { name: list.name })}
-                      className="mr-2 mt-1.5 shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0"
+                    <DeleteIconButton
+                      ariaLabel={t("deleteListAriaLabel", { name: list.name })}
+                      className="mr-2 mt-1.5 shrink-0 self-start rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0 sm:self-center"
                       onClick={() => setConfirmDeleteListId(list.id)}
-                      type="button"
-                    >
-                      <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                    </button>
+                    />
                   )}
                 </li>
               );
@@ -464,7 +575,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
             onSubmit={handleCreateList}
           >
             <input
-              className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9"
+              className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-base text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9 sm:text-sm"
               disabled={isSavingList}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder={t("newListPlaceholder")}
@@ -472,7 +583,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               value={newListName}
             />
             <button
-              className="h-10 shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
+              className="h-10 w-full shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9 sm:w-auto"
               disabled={isSavingList || !newListName.trim()}
               type="submit"
             >
@@ -492,7 +603,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               <div className="flex items-center gap-3 border-b border-[#e0dcd4] px-4 py-3 sm:px-5">
                 <button
                   aria-label={t("backToLists")}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
                   onClick={() => setIsMobileListOpen(false)}
                   type="button"
                 >
@@ -510,55 +621,23 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                   </li>
                 )}
                 {activeItems.map((item) => (
-                  <li
-                    className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
+                  <ListItemRow
+                    confirmDeleteItemId={confirmDeleteItemId}
+                    item={item}
+                    key={item.id}
+                    listId={selectedList.id}
+                    onCancelDelete={() => setConfirmDeleteItemId(null)}
+                    onConfirmDelete={handleDeleteItem}
+                    onRequestDelete={setConfirmDeleteItemId}
+                    onToggle={handleToggleItem}
+                    renderItemMeta={renderItemMeta}
+                    rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
                       enteringItemIds.includes(item.id)
                         ? "animate-[list-item-enter_520ms_cubic-bezier(0.16,1,0.3,1)] bg-[#f7fbf3]"
                         : ""
                     }`}
-                    key={item.id}
-                  >
-                    <input
-                      checked={item.done}
-                      className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
-                      onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
-                      type="checkbox"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block break-words text-sm leading-snug text-[#2d3230]">
-                        {item.text}
-                      </span>
-                      {renderItemMeta ? renderItemMeta(item) : null}
-                    </span>
-                    {confirmDeleteItemId === item.id ? (
-                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                        <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                        <button
-                          className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                          onClick={() => handleDeleteItem(selectedList.id, item.id)}
-                          type="button"
-                        >
-                          {t("confirmYes")}
-                        </button>
-                        <button
-                          className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                          onClick={() => setConfirmDeleteItemId(null)}
-                          type="button"
-                        >
-                          {t("confirmNo")}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        aria-label={t("deleteItemAriaLabel")}
-                        className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
-                        onClick={() => setConfirmDeleteItemId(item.id)}
-                        type="button"
-                      >
-                        <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                      </button>
-                    )}
-                  </li>
+                    t={t}
+                  />
                 ))}
                 {completedItems.length > 0 ? (
                   <>
@@ -568,55 +647,23 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       </span>
                     </li>
                     {completedItems.map((item, index) => (
-                      <li
-                        className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
+                      <ListItemRow
+                        confirmDeleteItemId={confirmDeleteItemId}
+                        item={item}
+                        key={item.id}
+                        listId={selectedList.id}
+                        onCancelDelete={() => setConfirmDeleteItemId(null)}
+                        onConfirmDelete={handleDeleteItem}
+                        onRequestDelete={setConfirmDeleteItemId}
+                        onToggle={handleToggleItem}
+                        renderItemMeta={renderItemMeta}
+                        rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
                           recentlyCompletedItemIds.includes(item.id)
                             ? "animate-[list-item-complete_420ms_cubic-bezier(0.22,1,0.36,1)]"
                             : ""
                         } ${index === completedItems.length - 1 ? "last:border-b-0" : ""}`}
-                        key={item.id}
-                      >
-                        <input
-                          checked={item.done}
-                          className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
-                          onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
-                          type="checkbox"
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block break-words text-sm leading-snug text-[#2d3230] line-through">
-                            {item.text}
-                          </span>
-                          {renderItemMeta ? renderItemMeta(item) : null}
-                        </span>
-                        {confirmDeleteItemId === item.id ? (
-                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                            <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
-                            <button
-                              className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
-                              onClick={() => handleDeleteItem(selectedList.id, item.id)}
-                              type="button"
-                            >
-                              {t("confirmYes")}
-                            </button>
-                            <button
-                              className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
-                              onClick={() => setConfirmDeleteItemId(null)}
-                              type="button"
-                            >
-                              {t("confirmNo")}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            aria-label={t("deleteItemAriaLabel")}
-                            className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
-                            onClick={() => setConfirmDeleteItemId(item.id)}
-                            type="button"
-                          >
-                            <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                          </button>
-                        )}
-                      </li>
+                        t={t}
+                      />
                     ))}
                   </>
                 ) : null}
@@ -645,7 +692,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                 <div className="flex min-w-0 items-center rounded-md border border-[#d8d2c8] bg-white focus-within:border-[#9bb6a4]">
                   <input
                     ref={newItemInputRef}
-                    className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-[#171a18] placeholder:text-[#b0aca5] focus:outline-none sm:h-9"
+                    className="h-10 min-w-0 flex-1 bg-transparent px-3 text-base text-[#171a18] placeholder:text-[#b0aca5] focus:outline-none sm:h-9 sm:text-sm"
                     disabled={isSavingItem}
                     onChange={(e) => setNewItemText(e.target.value)}
                     placeholder={t("addItemPlaceholder")}
@@ -662,7 +709,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                 ) : (
                   <div className="flex justify-end">
                     <button
-                      className="h-10 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9"
+                      className="h-10 w-full rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9 sm:w-auto"
                       disabled={isSavingItem || !newItemText.trim()}
                       type="submit"
                     >

@@ -2,12 +2,14 @@
 
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   cookieConsentChangedEvent,
   disableAnalytics,
+  ensureAnalyticsBootstrap,
   hasCookieConsent as hasStoredCookieConsent,
+  updateAnalyticsConsent,
 } from "@/lib/analytics";
 
 type GoogleAnalyticsProps = Readonly<{
@@ -52,7 +54,8 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const searchParams = useSearchParams();
   const searchParamSnapshot = searchParams.toString();
   const [isCookieConsentAccepted, setIsCookieConsentAccepted] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const hasConfiguredRef = useRef(false);
+  const lastTrackedPathRef = useRef<string | null>(null);
   const pagePath = useMemo(() => {
     const stableSearchParams = new URLSearchParams(searchParamSnapshot);
 
@@ -60,30 +63,47 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   }, [pathname, searchParamSnapshot]);
 
   useEffect(() => {
+    if (!measurementId) {
+      return;
+    }
+
+    ensureAnalyticsBootstrap();
+
     function syncConsent() {
       const isAccepted = hasStoredCookieConsent();
       setIsCookieConsentAccepted(isAccepted);
 
       if (!isAccepted) {
-        setIsInitialized(false);
+        hasConfiguredRef.current = false;
+        lastTrackedPathRef.current = null;
         disableAnalytics();
+        return;
       }
+
+      updateAnalyticsConsent(true);
     }
 
     syncConsent();
     window.addEventListener(cookieConsentChangedEvent, syncConsent);
 
     return () => window.removeEventListener(cookieConsentChangedEvent, syncConsent);
-  }, []);
+  }, [measurementId]);
 
   useEffect(() => {
     if (
       !measurementId ||
       !isCookieConsentAccepted ||
-      !isInitialized ||
-      !hasStoredCookieConsent() ||
       typeof window.gtag !== "function"
     ) {
+      return;
+    }
+
+    if (!hasConfiguredRef.current) {
+      window.gtag("config", measurementId, { send_page_view: false });
+      hasConfiguredRef.current = true;
+    }
+
+    if (lastTrackedPathRef.current === pagePath) {
       return;
     }
 
@@ -91,7 +111,8 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       page_path: pagePath,
       page_title: document.title,
     });
-  }, [isCookieConsentAccepted, isInitialized, measurementId, pagePath]);
+    lastTrackedPathRef.current = pagePath;
+  }, [isCookieConsentAccepted, measurementId, pagePath]);
 
   if (!measurementId || !isCookieConsentAccepted) {
     return null;
@@ -101,14 +122,8 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
     <Script
       src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
       strategy="afterInteractive"
-      onLoad={() => {
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = (...args) => {
-          window.dataLayer?.push(args);
-        };
-        window.gtag("js", new Date());
-        window.gtag("config", measurementId, { send_page_view: false });
-        setIsInitialized(true);
+      onReady={() => {
+        ensureAnalyticsBootstrap();
       }}
     />
   );
