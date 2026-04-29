@@ -53,6 +53,16 @@ function paddleEnvironment(clientToken: string): PaddleEnvironment {
   return clientToken.startsWith("test_") ? "sandbox" : "live";
 }
 
+function paddleCheckoutLocale(locale: string): string | undefined {
+  switch (locale) {
+    case "en-US":
+    case "en-GB":
+      return "en";
+    default:
+      return undefined;
+  }
+}
+
 export function PaddleCheckoutLauncher({
   appUserId,
   clientToken,
@@ -65,6 +75,7 @@ export function PaddleCheckoutLauncher({
   const [isReady, setIsReady] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const environment = useMemo(() => paddleEnvironment(clientToken), [clientToken]);
+  const checkoutLocale = useMemo(() => paddleCheckoutLocale(locale), [locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +104,7 @@ export function PaddleCheckoutLauncher({
             checkout: {
               settings: {
                 displayMode: "overlay",
-                locale,
+                locale: checkoutLocale,
                 theme: "light",
                 variant: "one-page",
               },
@@ -154,7 +165,7 @@ export function PaddleCheckoutLauncher({
     return () => {
       cancelled = true;
     };
-  }, [clientToken, environment, locale, t]);
+  }, [checkoutLocale, clientToken, environment, t]);
 
   function launchCheckout() {
     const paddleWindow = window as PaddleCheckoutWindow;
@@ -175,7 +186,7 @@ export function PaddleCheckoutLauncher({
         items: [{ priceId, quantity: 1 }],
         settings: {
           displayMode: "overlay",
-          locale,
+          locale: checkoutLocale,
           successUrl,
           theme: "light",
           variant: "one-page",
