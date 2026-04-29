@@ -32,15 +32,6 @@ const PROBLEM_KEYS = [
   "problemForgottenBills",
 ] as const;
 
-const LANDING_FEATURE_CONFIGS = [
-  ["sage", "calendar", "CAL", "screenCalendarPrimary", "screenCalendarSecondary", "screenCalendarTertiary", "screenCalendarTitle", "screenCalendarSummary", "featureCalendarTitle", "featureCalendarSummary"],
-  ["rose", "todos", "DO", "screenTodosPrimary", "screenTodosSecondary", "screenTodosTertiary", "screenTodosTitle", "screenTodosSummary", "featureTodosTitle", "featureTodosSummary"],
-  ["sun", "shopping", "SHOP", "screenShoppingPrimary", "screenShoppingSecondary", "screenShoppingTertiary", "screenShoppingTitle", "screenShoppingSummary", "featureShoppingTitle", "featureShoppingSummary"],
-  ["sun", "notes", "NOTE", "screenNotesPrimary", "screenNotesSecondary", "screenNotesTertiary", "screenNotesTitle", "screenNotesSummary", "featureNotesTitle", "featureNotesSummary"],
-  ["rose", "expenses", "EUR", "screenExpensesPrimary", "screenExpensesSecondary", "screenExpensesTertiary", "screenExpensesTitle", "screenExpensesSummary", "featureExpensesTitle", "featureExpensesSummary"],
-  ["moss", "chores", "JOB", "screenChoresPrimary", "screenChoresSecondary", "screenChoresTertiary", "screenChoresTitle", "screenChoresSummary", "featureChoresTitle", "featureChoresSummary"],
-] as const;
-
 const FAQ_KEY_PAIRS = [
   ["faqTrialQuestion", "faqTrialAnswer"],
   ["faqMembersQuestion", "faqMembersAnswer"],
@@ -266,31 +257,166 @@ function LandingProblem() {
 
 function LandingFeatures() {
   const t = useTranslations("landing");
-  const features: LandingFeaturePreview[] = LANDING_FEATURE_CONFIGS.map(
-    ([
-      accent,
-      id,
-      marker,
-      primaryMetricKey,
-      secondaryMetricKey,
-      tertiaryMetricKey,
-      screenTitleKey,
-      screenSummaryKey,
-      titleKey,
-      summaryKey,
-    ]) => ({
-      accent,
-      id,
-      marker,
-      primaryMetric: t(primaryMetricKey),
-      screenSummary: t(screenSummaryKey),
-      screenTitle: t(screenTitleKey),
-      secondaryMetric: t(secondaryMetricKey),
-      summary: t(summaryKey),
-      tertiaryMetric: t(tertiaryMetricKey),
-      title: t(titleKey),
-    }),
-  );
+  const features: LandingFeaturePreview[] = [
+    {
+      accent: "sage",
+      id: "calendar",
+      marker: "CAL",
+      preview: {
+        days: [
+          t("previewCalendarDayMon"),
+          t("previewCalendarDayTue"),
+          t("previewCalendarDayWed"),
+          t("previewCalendarDayThu"),
+          t("previewCalendarDayFri"),
+          t("previewCalendarDaySat"),
+          t("previewCalendarDaySun"),
+        ],
+        events: [
+          { day: "10", title: t("previewCalendarEventBins"), tone: "sage" },
+          { day: "12", title: t("previewCalendarEventSchool"), tone: "sun" },
+          { day: "17", title: t("previewCalendarEventDinner"), tone: "rose" },
+        ],
+        kind: "calendar",
+        upcoming: [
+          { day: t("previewCalendarUpcomingDayToday"), detail: t("previewCalendarUpcomingMetaToday"), title: t("previewCalendarUpcomingTitleToday") },
+          { day: t("previewCalendarUpcomingDayThu"), detail: t("previewCalendarUpcomingMetaThu"), title: t("previewCalendarUpcomingTitleThu") },
+          { day: t("previewCalendarUpcomingDaySat"), detail: t("previewCalendarUpcomingMetaSat"), title: t("previewCalendarUpcomingTitleSat") },
+        ],
+        upcomingLabel: t("previewCalendarUpcomingLabel"),
+      },
+      screenSummary: t("screenCalendarSummary"),
+      screenTitle: t("screenCalendarTitle"),
+      summary: t("featureCalendarSummary"),
+      title: t("featureCalendarTitle"),
+    },
+    {
+      accent: "rose",
+      id: "todos",
+      marker: "DO",
+      preview: {
+        kind: "todos",
+        sections: [
+          {
+            items: [
+              { label: t("previewTodosItemBoiler"), meta: t("previewTodosMetaBoiler") },
+              { label: t("previewTodosItemGift"), meta: t("previewTodosMetaGift") },
+            ],
+            title: t("previewTodosSectionOpen"),
+            tone: "rose",
+          },
+          {
+            items: [
+              { label: t("previewTodosItemPermission"), meta: t("previewTodosMetaPermission") },
+              { done: true, label: t("previewTodosItemLadder"), meta: t("previewTodosMetaLadder") },
+            ],
+            title: t("previewTodosSectionDone"),
+            tone: "sage",
+          },
+        ],
+      },
+      screenSummary: t("screenTodosSummary"),
+      screenTitle: t("screenTodosTitle"),
+      summary: t("featureTodosSummary"),
+      title: t("featureTodosTitle"),
+    },
+    {
+      accent: "sun",
+      id: "shopping",
+      marker: "SHOP",
+      preview: {
+        groups: [
+          {
+            items: [
+              { label: t("previewShoppingItemApples"), qty: t("previewShoppingQtySix") },
+              { label: t("previewShoppingItemYogurt"), qty: t("previewShoppingQtyTwo") },
+              { checked: true, label: t("previewShoppingItemBread"), qty: t("previewShoppingQtyOne") },
+            ],
+            title: t("previewShoppingGroupThisWeek"),
+          },
+          {
+            items: [
+              { label: t("previewShoppingItemOliveOil"), qty: t("previewShoppingQtyOne") },
+              { checked: true, label: t("previewShoppingItemLaundry"), qty: t("previewShoppingQtyOne") },
+              { label: t("previewShoppingItemCoffee"), qty: t("previewShoppingQtyTwo") },
+            ],
+            title: t("previewShoppingGroupTopUps"),
+          },
+        ],
+        kind: "shopping",
+      },
+      screenSummary: t("screenShoppingSummary"),
+      screenTitle: t("screenShoppingTitle"),
+      summary: t("featureShoppingSummary"),
+      title: t("featureShoppingTitle"),
+    },
+    {
+      accent: "sun",
+      id: "notes",
+      marker: "NOTE",
+      preview: {
+        cards: [
+          { meta: t("previewNotesMetaPinned"), snippet: t("previewNotesSnippetWifi"), title: t("previewNotesTitleWifi") },
+          { accent: true, meta: t("previewNotesMetaUpdatedToday"), snippet: t("previewNotesSnippetTrip"), title: t("previewNotesTitleTrip") },
+          { meta: t("previewNotesMetaSaved"), snippet: t("previewNotesSnippetVet"), title: t("previewNotesTitleVet") },
+        ],
+        kind: "notes",
+        pinnedLabel: t("previewNotesPinnedLabel"),
+      },
+      screenSummary: t("screenNotesSummary"),
+      screenTitle: t("screenNotesTitle"),
+      summary: t("featureNotesSummary"),
+      title: t("featureNotesTitle"),
+    },
+    {
+      accent: "rose",
+      id: "expenses",
+      marker: "EUR",
+      preview: {
+        entries: [
+          { amount: t("previewExpensesAmountGroceries"), label: t("previewExpensesLabelGroceries"), meta: t("previewExpensesMetaGroceries"), tone: "rose" },
+          { amount: t("previewExpensesAmountRepair"), label: t("previewExpensesLabelRepair"), meta: t("previewExpensesMetaRepair"), tone: "stone" },
+          { amount: t("previewExpensesAmountSplit"), label: t("previewExpensesLabelSplit"), meta: t("previewExpensesMetaSplit"), tone: "sage" },
+        ],
+        kind: "expenses",
+        recentLabel: t("previewExpensesRecentLabel"),
+        summaryAmount: t("previewExpensesSummaryAmount"),
+        summaryLabel: t("previewExpensesSummaryLabel"),
+        summaryNote: t("previewExpensesSummaryNote"),
+      },
+      screenSummary: t("screenExpensesSummary"),
+      screenTitle: t("screenExpensesTitle"),
+      summary: t("featureExpensesSummary"),
+      title: t("featureExpensesTitle"),
+    },
+    {
+      accent: "moss",
+      id: "chores",
+      marker: "JOB",
+      preview: {
+        kind: "chores",
+        sections: [
+          {
+            items: [
+              { assignee: t("previewChoresAssigneeMaja"), cadence: t("previewChoresCadenceWeekly"), label: t("previewChoresItemBathrooms"), state: t("previewChoresStateTomorrow") },
+              { assignee: t("previewChoresAssigneeLuka"), cadence: t("previewChoresCadenceDaily"), label: t("previewChoresItemKitchen"), state: t("previewChoresStateToday") },
+            ],
+            title: t("previewChoresSectionNextUp"),
+          },
+          {
+            items: [
+              { assignee: t("previewChoresAssigneeAna"), cadence: t("previewChoresCadenceRotation"), done: true, label: t("previewChoresItemBins"), state: t("previewChoresStateDone") },
+            ],
+            title: t("previewChoresSectionDone"),
+          },
+        ],
+      },
+      screenSummary: t("screenChoresSummary"),
+      screenTitle: t("screenChoresTitle"),
+      summary: t("featureChoresSummary"),
+      title: t("featureChoresTitle"),
+    },
+  ];
 
   return (
     <section className="mt-10 sm:mt-12">
