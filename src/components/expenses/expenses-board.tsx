@@ -524,7 +524,7 @@ function CustomSelect({
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className={`flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-sm text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#c85b45] focus:outline-none ${buttonClassName}`}
+        className={`flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#c85b45] focus:outline-none sm:text-sm ${buttonClassName}`}
         id={id}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -1046,67 +1046,71 @@ export function ExpensesBoard({
     findCategoryColorGroup(categoryForm.color);
 
   return (
-    <div className="mx-auto w-full max-w-[940px] px-4 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-[940px] px-0 py-5 sm:px-6 sm:py-6">
       {/* Month picker */}
-      <div className="mb-6 flex items-center gap-3">
-        <button
-          aria-label={t("previousMonth")}
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
-          onClick={prevMonth}
-          type="button"
-        >
-          <ChevronLeft aria-hidden className="h-4 w-4" />
-        </button>
-        <h1 className="font-serif text-2xl font-semibold text-[#171a18] sm:text-3xl">
-          {monthLabel}
-        </h1>
-        <label className="sr-only" htmlFor="expense-month">
-          {t("monthLabel")}
-        </label>
-        <div className="relative h-8 w-8">
-          <input
-            aria-label={t("chooseMonth")}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            id="expense-month"
-            max="2100-12"
-            min="2000-01"
-            onChange={(e) => setMonthFromPicker(e.target.value)}
-            type="month"
-            value={monthValue(year, month)}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none flex h-8 w-8 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451]"
-          >
-            <CalendarDays className="h-4 w-4" />
-          </span>
-        </div>
-        <button
-          aria-label={t("nextMonth")}
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
-          onClick={nextMonth}
-          type="button"
-        >
-          <ChevronRight aria-hidden className="h-4 w-4" />
-        </button>
-        {!isCurrentMonth ? (
+      <div className="mb-6 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="min-w-0 font-serif text-2xl font-semibold text-[#171a18] sm:text-3xl">
+            {monthLabel}
+          </h1>
           <button
-            className="rounded-md border border-[#dfddd6] bg-[#fffdf8] px-2.5 py-1.5 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
-            onClick={jumpToCurrentMonth}
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md border border-[#dfddd6] bg-[#fffdf8] px-3 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] disabled:opacity-50 sm:h-8 sm:px-2.5"
+            disabled={categories.length === 0}
+            onClick={openCategoryDialog}
             type="button"
           >
-            {t("today")}
+            <Settings aria-hidden className="h-4 w-4" />
+            <span>{t("categories")}</span>
           </button>
-        ) : null}
-        <button
-          className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-md border border-[#dfddd6] bg-[#fffdf8] px-2.5 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] disabled:opacity-50"
-          disabled={categories.length === 0}
-          onClick={openCategoryDialog}
-          type="button"
-        >
-          <Settings aria-hidden className="h-4 w-4" />
-          <span className="hidden sm:inline">{t("categories")}</span>
-        </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            aria-label={t("previousMonth")}
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-8 sm:w-8"
+            onClick={prevMonth}
+            type="button"
+          >
+            <ChevronLeft aria-hidden className="h-4 w-4" />
+          </button>
+          <label className="sr-only" htmlFor="expense-month">
+            {t("monthLabel")}
+          </label>
+          <div className="relative h-11 w-11 sm:h-8 sm:w-8">
+            <input
+              aria-label={t("chooseMonth")}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              id="expense-month"
+              max="2100-12"
+              min="2000-01"
+              onChange={(e) => setMonthFromPicker(e.target.value)}
+              type="month"
+              value={monthValue(year, month)}
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none flex h-full w-full items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451]"
+            >
+              <CalendarDays className="h-4 w-4" />
+            </span>
+          </div>
+          <button
+            aria-label={t("nextMonth")}
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-8 sm:w-8"
+            onClick={nextMonth}
+            type="button"
+          >
+            <ChevronRight aria-hidden className="h-4 w-4" />
+          </button>
+          {!isCurrentMonth ? (
+            <button
+              className="inline-flex h-11 items-center rounded-md border border-[#dfddd6] bg-[#fffdf8] px-3 py-1.5 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-auto"
+              onClick={jumpToCurrentMonth}
+              type="button"
+            >
+              {t("today")}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {showCategoryDialog ? (
@@ -1273,11 +1277,11 @@ export function ExpensesBoard({
 
       {/* Stats panel */}
       <div
-        className={`mb-6 grid grid-cols-3 gap-2 sm:gap-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
+        className={`mb-6 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
         <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
           <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#6e9274]">{t("income")}</p>
-          <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#2d4f34] truncate">
+          <p className="mt-1 break-words font-serif text-xl font-semibold text-[#2d4f34] sm:text-2xl">
             {formatAmount(stats.income, locale)}
           </p>
         </div>
@@ -1285,7 +1289,7 @@ export function ExpensesBoard({
           <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
             {t("expenses")}
           </p>
-          <p className="mt-1 font-serif text-lg sm:text-2xl font-semibold text-[#8d3028] truncate">
+          <p className="mt-1 break-words font-serif text-xl font-semibold text-[#8d3028] sm:text-2xl">
             {formatAmount(stats.expenses, locale)}
           </p>
         </div>
@@ -1294,12 +1298,12 @@ export function ExpensesBoard({
             {t("net")}
           </p>
           <p
-            className={`mt-1 font-serif text-lg sm:text-2xl font-semibold truncate ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
+            className={`mt-1 break-words font-serif text-xl font-semibold sm:text-2xl ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
           >
             {netSign}
             {formatAmount(stats.net, locale)}
           </p>
-          <p className="mt-1 text-[10px] sm:text-xs text-[#686e6a] truncate">
+          <p className="mt-1 text-[10px] leading-4 text-[#686e6a] sm:text-xs">
             {t("carriedIn", { amount: `${stats.carryover >= 0 ? "+" : ""}${formatAmount(stats.carryover, locale)}` })}
           </p>
         </div>
@@ -1618,10 +1622,10 @@ export function ExpensesBoard({
       </section>
 
       {/* Filter bar + add button */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <CustomSelect
           buttonClassName="py-1.5"
-          className="min-w-44"
+          className="w-full min-w-0 sm:min-w-44"
           id="expense-filter-category"
           onChange={setFilterCategoryId}
           options={filterCategoryOptions}
@@ -1629,7 +1633,7 @@ export function ExpensesBoard({
         />
 
         <button
-          className="ml-auto flex items-center gap-1.5 rounded-md bg-[#c85b45] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#b94e3f]"
+          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-[#c85b45] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#b94e3f] sm:ml-auto sm:h-auto sm:w-auto"
           onClick={openCreateForm}
           type="button"
         >
@@ -1681,7 +1685,7 @@ export function ExpensesBoard({
               </label>
               <input
                 autoFocus
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
                 id="exp-name"
                 onChange={(e) => updateForm({ name: e.target.value })}
                 placeholder={t("namePlaceholder")}
@@ -1700,7 +1704,7 @@ export function ExpensesBoard({
                 {t("amountLabel")}
               </label>
               <input
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
                 id="exp-amount"
                 min="0.01"
                 onChange={(e) => updateForm({ amount: e.target.value })}
@@ -1744,7 +1748,7 @@ export function ExpensesBoard({
                 {t("dateLabel")}
               </label>
               <input
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] focus:border-[#c85b45] focus:outline-none"
+                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] focus:border-[#c85b45] focus:outline-none sm:text-sm"
                 id="exp-date"
                 onChange={(e) => updateForm({ date: e.target.value })}
                 required
@@ -1765,7 +1769,7 @@ export function ExpensesBoard({
                 <div className="flex gap-2">
                   <input
                     autoFocus
-                    className="min-w-0 flex-1 rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                    className="min-w-0 flex-1 rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
                     id="exp-category"
                     onChange={(e) => updateForm({ newCategoryName: e.target.value })}
                     placeholder={t("newCategoryPlaceholder")}
@@ -1883,7 +1887,7 @@ export function ExpensesBoard({
                 <span className="font-normal text-[#9da39f]">{t("optionalLabel")}</span>
               </label>
               <textarea
-                className="w-full resize-none rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                className="w-full resize-none rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
                 id="exp-notes"
                 onChange={(e) => updateForm({ notes: e.target.value })}
                 placeholder={t("notesPlaceholder")}
@@ -1893,16 +1897,16 @@ export function ExpensesBoard({
             </div>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
-              className="rounded-md bg-[#c85b45] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b94e3f] disabled:opacity-50"
+              className="h-11 rounded-md bg-[#c85b45] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b94e3f] disabled:opacity-50 sm:h-auto"
               disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? t("saving") : editingId ? t("saveChanges") : t("save")}
             </button>
             <button
-              className="rounded-md border border-[#dfddd6] px-4 py-2 text-sm text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
+              className="h-11 rounded-md border border-[#dfddd6] px-4 py-2 text-sm text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-auto"
               onClick={resetForm}
               type="button"
             >
@@ -1923,7 +1927,134 @@ export function ExpensesBoard({
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border border-[#e0dcd4] bg-[#fffdf8] shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-            <div className="overflow-x-auto">
+            <div className="divide-y divide-[#e0dcd4] sm:hidden">
+              {displayedExpenses.map((expense) => (
+                <div className="grid gap-2 px-4 py-3" key={expense.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#171a18]">{expense.name}</p>
+                      <p className="mt-1 text-xs text-[#686e6a]">
+                        {formatExpenseDate(expense.date, locale)}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-sm font-medium tabular-nums ${
+                        expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
+                      }`}
+                    >
+                      {expense.type === "INCOME" ? "+" : "−"}
+                      {formatAmount(expense.amount, locale)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#686e6a]">
+                    {expense.categoryName ? (
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs text-[#545b57]"
+                        style={{
+                          backgroundColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}1f`,
+                          borderColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}66`,
+                        }}
+                      >
+                        <span
+                          aria-hidden
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: expense.categoryColor ?? UNCATEGORIZED_COLOR }}
+                        />
+                        {expense.categoryName}
+                      </span>
+                    ) : null}
+                    {expense.householdMemberName ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <MemberAvatar
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border font-serif text-[10px] font-semibold"
+                          color={expense.householdMemberColor}
+                          emoji={expense.householdMemberEmoji}
+                          fallbackLabel={expense.householdMemberName}
+                          name={expense.householdMemberName}
+                          title={expense.householdMemberName}
+                        />
+                        <span>{expense.householdMemberName}</span>
+                      </span>
+                    ) : null}
+                    {expense.splits.length > 0 ? (
+                      <span className="inline-flex max-w-full items-center gap-1.5">
+                        <span>{t("splitWith")}</span>
+                        <span className="truncate">
+                          {expense.splits
+                            .map((split) => split.householdMemberName)
+                            .filter((name): name is string => Boolean(name))
+                            .join(", ")}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
+                  {expense.notes ? (
+                    <p className="text-xs leading-5 text-[#8b918c]">{expense.notes}</p>
+                  ) : null}
+                  <div className="flex items-center justify-end gap-1">
+                    {confirmDeleteId === expense.id ? (
+                      <div className="flex flex-wrap items-center justify-end gap-1">
+                        <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+                        <button
+                          className="h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                          disabled={deletingId === expense.id}
+                          onClick={() => void handleDelete(expense.id)}
+                          type="button"
+                        >
+                          {t("confirmDelete")}
+                        </button>
+                        <button
+                          className="h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                          disabled={deletingId === expense.id}
+                          onClick={() => setConfirmDeleteId(null)}
+                          type="button"
+                        >
+                          {t("cancelDelete")}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          aria-label={t("editEntryAria", { name: expense.name })}
+                          className="flex h-9 w-9 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] disabled:opacity-40"
+                          disabled={deletingId === expense.id || isSubmitting}
+                          onClick={() => openEditForm(expense)}
+                          type="button"
+                        >
+                          <Pencil aria-hidden className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          aria-label={t("deleteEntryAria", { name: expense.name })}
+                          className="flex h-9 w-9 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] disabled:opacity-40"
+                          disabled={deletingId === expense.id}
+                          onClick={() => setConfirmDeleteId(expense.id)}
+                          type="button"
+                        >
+                          <Trash2 aria-hidden className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {showCarryoverRow ? (
+                <div className="grid gap-1 bg-[#fbfaf6] px-4 py-3">
+                  <p className="font-medium text-[#171a18]">{t("startingBalance")}</p>
+                  <p className="text-xs text-[#686e6a]">
+                    {t("carriedInFrom", { month: previousMonthLabel })}
+                  </p>
+                  <span
+                    className={`text-sm font-medium tabular-nums ${
+                      stats.carryover >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"
+                    }`}
+                  >
+                    {stats.carryover >= 0 ? "+" : "−"}
+                    {formatAmount(Math.abs(stats.carryover), locale)}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#e0dcd4] bg-[#f7f5f0]">

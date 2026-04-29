@@ -29,6 +29,7 @@ type AddHouseholdMemberDialogProps = Readonly<{
     prevState: HouseholdActionState,
     formData: FormData,
   ) => Promise<HouseholdActionState>;
+  onOpenChange?: (isOpen: boolean) => void;
 }>;
 
 function previewInitial(name: string) {
@@ -40,6 +41,7 @@ export function AddHouseholdMemberDialog({
   buttonClassName,
   buttonLabel,
   createMemberAction,
+  onOpenChange,
   pendingInvites,
   revokeInviteAction,
   sendInviteAction,
@@ -82,6 +84,7 @@ export function AddHouseholdMemberDialog({
   function openDialog() {
     setCurrentTime(Date.now());
     setIsOpen(true);
+    onOpenChange?.(true);
   }
 
   function formatExpiry(date: Date): string {
@@ -106,12 +109,14 @@ export function AddHouseholdMemberDialog({
 
   function closeDialog() {
     setIsOpen(false);
+    onOpenChange?.(false);
     resetDialogState();
   }
 
   function resetAfterSuccess() {
     router.refresh();
     setIsOpen(false);
+    onOpenChange?.(false);
     resetDialogState();
   }
 
@@ -230,7 +235,7 @@ export function AddHouseholdMemberDialog({
                       <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
                       <input
                         autoComplete="email"
-                        className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#202321] outline-none"
+                      className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#202321] outline-none sm:text-sm"
                         id="member-invite-email"
                         maxLength={320}
                         name="email"
@@ -264,7 +269,7 @@ export function AddHouseholdMemberDialog({
                       {t("nameLabel")}
                     </label>
                     <input
-                      className="h-11 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
+                      className="h-11 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
                       id="member-name"
                       maxLength={120}
                       name="name"

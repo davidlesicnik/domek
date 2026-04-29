@@ -395,7 +395,7 @@ function CustomSelect({
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-sm text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#6e9274] focus:outline-none"
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#6e9274] focus:outline-none sm:text-sm"
         id={id}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -768,14 +768,14 @@ export function ChoreBoard({
   return (
     <div className="grid gap-4">
       <section>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">{t("title")}</h1>
             <p className="mt-0.5 text-sm text-[#6d746f]">{headerSummary}</p>
           </div>
 
           <button
-            className="inline-flex h-9 items-center justify-center rounded-md bg-[#343734] px-3 text-sm font-semibold text-white transition hover:bg-[#454944] disabled:opacity-50"
+            className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#343734] px-3 text-sm font-semibold text-white transition hover:bg-[#454944] disabled:opacity-50 sm:h-9 sm:w-auto"
             disabled={boardBusy}
             onClick={openCreateDialog}
             type="button"
@@ -839,7 +839,7 @@ export function ChoreBoard({
                 <input
                   aria-describedby={nameError ? "chore-name-error" : undefined}
                   aria-invalid={nameError ? "true" : "false"}
-                  className={`h-10 w-full rounded-md px-3 text-sm text-[#202321] outline-none transition focus:bg-white ${
+                  className={`h-10 w-full rounded-md px-3 text-base text-[#202321] outline-none transition focus:bg-white sm:text-sm ${
                     nameError
                       ? "border border-[#d38171] bg-[#fff7f5] focus:border-[#c85b45]"
                       : "border border-[#cfd9cf] bg-white focus:border-[#6e9274]"
@@ -862,10 +862,10 @@ export function ChoreBoard({
                     {t("categoryLabel")}
                   </label>
                   {form.categoryId === "__new__" ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <input
                         autoFocus
-                        className="min-w-0 flex-1 rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 py-2 text-sm text-[#202321] placeholder:text-[#9da39f] focus:border-[#6e9274] focus:bg-white focus:outline-none"
+                        className="min-w-0 flex-1 rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 py-2 text-base text-[#202321] placeholder:text-[#9da39f] focus:border-[#6e9274] focus:bg-white focus:outline-none sm:text-sm"
                         id="chore-category"
                         onChange={(event) => setForm((current) => ({ ...current, newCategoryName: event.target.value }))}
                         placeholder={t("newCategoryPlaceholder")}
@@ -942,7 +942,7 @@ export function ChoreBoard({
                       {t("whoLabel")}
                     </label>
                     <select
-                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
+                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
                       id="chore-person"
                       onChange={(event) =>
                         setForm((current) => ({ ...current, assignedHouseholdMemberId: event.target.value }))
@@ -1072,7 +1072,7 @@ export function ChoreBoard({
                       {t("startsLabel")}
                     </label>
                     <input
-                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white"
+                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
                       id="chore-starts-at"
                       onChange={(event) =>
                         setForm((current) => {
@@ -1109,7 +1109,7 @@ export function ChoreBoard({
                         {t("everyLabel")}
                       </label>
                       <input
-                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274]"
+                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] sm:text-sm"
                         id="chore-interval-value"
                         inputMode="numeric"
                         min={1}
@@ -1125,7 +1125,7 @@ export function ChoreBoard({
                         {t("unitLabel")}
                       </label>
                       <select
-                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-sm text-[#202321] outline-none transition focus:border-[#6e9274]"
+                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] sm:text-sm"
                         id="chore-interval-unit"
                         onChange={(event) =>
                           setForm((current) => ({
@@ -1158,7 +1158,7 @@ export function ChoreBoard({
 
             <div className="mt-9 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#4b514d] transition hover:bg-[#f7f4ec]"
+                className="h-11 rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#4b514d] transition hover:bg-[#f7f4ec] sm:h-10"
                 disabled={isSubmitting}
                 onClick={closeCreateDialog}
                 type="button"
@@ -1166,7 +1166,7 @@ export function ChoreBoard({
                 {t("cancel")}
               </button>
               <button
-                className="h-10 rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
+                className="h-11 rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50 sm:h-10"
                 disabled={submitDisabled}
                 type="submit"
               >
@@ -1238,7 +1238,7 @@ export function ChoreBoard({
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-3">
-                                <p className="min-w-0 truncate font-medium text-[#171a18] sm:text-[15px]">{chore.name}</p>
+                                <p className="min-w-0 break-words font-medium text-[#171a18] sm:text-[15px]">{chore.name}</p>
                               </div>
 
                               <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:gap-3">
@@ -1287,9 +1287,9 @@ export function ChoreBoard({
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-start">
+                            <div className="flex w-full flex-wrap items-center justify-end gap-2 self-start sm:w-auto sm:flex-nowrap">
                               {confirmDeleteId === chore.id ? (
-                                <div className="flex items-center gap-1">
+                                <div className="flex flex-wrap items-center justify-end gap-1">
                                   <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
                                   <button
                                     className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"

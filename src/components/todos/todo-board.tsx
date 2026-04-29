@@ -98,7 +98,7 @@ function TodoQuickAddControls({
 
   return (
     <div className="relative" ref={rootRef}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <button
@@ -108,7 +108,7 @@ function TodoQuickAddControls({
                   ? t("assignedTo", { member: currentMemberLabel })
                   : t("assignSomeone")
               }
-              className={`flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm transition ${
+              className={`flex min-h-9 max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
                 selectedMember
                   ? "border-[#bfd0c1] bg-[#eef6ef] pr-8 text-[#45614c] hover:bg-[#e2f0e4]"
                   : "border-[#e0dcd4] bg-[#fbfaf6] text-[#5d635f] hover:bg-[#f7f4ec]"
@@ -130,7 +130,7 @@ function TodoQuickAddControls({
                   <UserRound aria-hidden className="h-4 w-4" />
                 </span>
               )}
-              <span>{currentMemberLabel ?? t("unassigned")}</span>
+              <span className="min-w-0 truncate">{currentMemberLabel ?? t("unassigned")}</span>
             </button>
             {selectedMember ? (
               <button
@@ -146,7 +146,7 @@ function TodoQuickAddControls({
               </button>
             ) : null}
             {activePopover === "member" ? (
-              <div className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-2 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+              <div className="absolute bottom-full left-0 z-20 mb-2 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-[#dedbd2] bg-[#fffdf8] p-2 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
                 <button
                   className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition ${
                     selectedMemberId === null
@@ -210,7 +210,7 @@ function TodoQuickAddControls({
                   ? t("dueDate", { date: formatDateLabel(selectedDueDate, fullDateFormatter) })
                   : t("addDueDate")
               }
-              className={`flex h-9 items-center gap-2 rounded-md border px-2.5 text-sm transition ${
+              className={`flex min-h-9 max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
                 selectedDueDate
                   ? "border-[#ded3a1] bg-[#fbf4cf] pr-8 text-[#64571f] hover:bg-[#f6eab5]"
                   : "border-[#e0dcd4] bg-[#fbfaf6] text-[#5d635f] hover:bg-[#f7f4ec]"

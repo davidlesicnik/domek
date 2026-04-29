@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ComponentProps, FormEvent, ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
@@ -36,6 +36,12 @@ type TodoEditorState = Readonly<{
   listName: string;
   memberId: string | null;
   text: string;
+}>;
+
+type SelectOption = Readonly<{
+  disabled?: boolean;
+  label: string;
+  value: string;
 }>;
 
 type MonthCursor = Readonly<{
@@ -111,6 +117,13 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+const plannerInputClassName =
+  "h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm";
+const plannerPrimaryButtonClassName =
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+const plannerSecondaryButtonClassName =
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+
 function parseDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
 
@@ -162,6 +175,13 @@ function getMonthDays({ year, monthIndex }: MonthCursor) {
   const firstCell = addDays(firstOfMonth, -firstWeekdayOffset);
 
   return Array.from({ length: cellCount }, (_, index) => addDays(firstCell, index));
+}
+
+function createUtcFormatter(locale: string, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    timeZone: "UTC",
+  });
 }
 
 type DashboardTranslations = ReturnType<typeof useTranslations>;
@@ -319,6 +339,44 @@ function calendarEventAgendaItem(
   };
 }
 
+function plannerItemMeta(item: DashboardAgendaItem, t: DashboardTranslations) {
+  return itemMeta(item, t);
+}
+
+function withoutScheduledItem(
+  currentItems: Record<string, DashboardAgendaItem[]>,
+  itemId: string,
+) {
+  const nextItems: Record<string, DashboardAgendaItem[]> = {};
+
+  for (const [dateKey, dayItems] of Object.entries(currentItems)) {
+    const filteredItems = dayItems.filter((candidate) => candidate.id !== itemId);
+
+    if (filteredItems.length > 0) {
+      nextItems[dateKey] = filteredItems;
+    }
+  }
+
+  return nextItems;
+}
+
+function withoutCalendarEvent(
+  currentEvents: Record<string, CalendarEventView[]>,
+  eventId: string,
+) {
+  const nextEvents: Record<string, CalendarEventView[]> = {};
+
+  for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
+    const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== eventId);
+
+    if (filteredEvents.length > 0) {
+      nextEvents[dateKey] = filteredEvents;
+    }
+  }
+
+  return nextEvents;
+}
+
 function withCalendarCountDelta(
   currentCounts: Record<string, DashboardMonthCellCounts>,
   dateKey: string,
@@ -378,6 +436,418 @@ function CalendarMemberPill({
   );
 }
 
+function PlannerField({ children, label }: Readonly<{ children: ReactNode; label: ReactNode }>) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+function PlannerInput(props: Readonly<ComponentProps<"input">>) {
+  return <input {...props} className={plannerInputClassName} />;
+}
+
+function PlannerInputField({
+  inputProps,
+  label,
+}: Readonly<{
+  inputProps: ComponentProps<"input">;
+  label: ReactNode;
+}>) {
+  return (
+    <PlannerField label={label}>
+      <PlannerInput {...inputProps} />
+    </PlannerField>
+  );
+}
+
+function PlannerSelectField({
+  label,
+  selectProps,
+}: Readonly<{
+  label: ReactNode;
+  selectProps: ComponentProps<typeof PlannerSelect>;
+}>) {
+  return (
+    <PlannerField label={label}>
+      <PlannerSelect {...selectProps} />
+    </PlannerField>
+  );
+}
+
+type PlannerFieldDefinition =
+  | Readonly<{
+      inputProps: ComponentProps<"input">;
+      key: string;
+      kind: "input";
+      label: ReactNode;
+    }>
+  | Readonly<{
+      key: string;
+      kind: "select";
+      label: ReactNode;
+      selectProps: ComponentProps<typeof PlannerSelect>;
+    }>;
+
+function PlannerFieldList({ fields }: Readonly<{ fields: PlannerFieldDefinition[] }>) {
+  return fields.map((field) =>
+    field.kind === "input" ? (
+      <PlannerInputField inputProps={field.inputProps} key={field.key} label={field.label} />
+    ) : (
+      <PlannerSelectField key={field.key} label={field.label} selectProps={field.selectProps} />
+    ),
+  );
+}
+
+function plannerInputFieldDefinition(
+  key: string,
+  label: ReactNode,
+  inputProps: ComponentProps<"input">,
+): PlannerFieldDefinition {
+  return {
+    inputProps,
+    key,
+    kind: "input",
+    label,
+  };
+}
+
+function plannerSelectFieldDefinition(
+  key: string,
+  label: ReactNode,
+  selectProps: ComponentProps<typeof PlannerSelect>,
+): PlannerFieldDefinition {
+  return {
+    key,
+    kind: "select",
+    label,
+    selectProps,
+  };
+}
+
+function PlannerEditorHeader({
+  closeLabel,
+  description,
+  disabled,
+  eyebrow,
+  onClose,
+  title,
+  titleId,
+}: Readonly<{
+  closeLabel: string;
+  description?: string | null;
+  disabled: boolean;
+  eyebrow: string;
+  onClose: () => void;
+  title: string;
+  titleId?: string;
+}>) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+          {eyebrow}
+        </p>
+        <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]" id={titleId}>
+          {title}
+        </h3>
+        {description ? <p className="mt-1 text-xs text-[#6c726e]">{description}</p> : null}
+      </div>
+      <button
+        aria-label={closeLabel}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
+        disabled={disabled}
+        onClick={onClose}
+        type="button"
+      >
+        <span aria-hidden>&times;</span>
+      </button>
+    </div>
+  );
+}
+
+function PlannerFormActions({
+  disabled,
+  error,
+  onCancel,
+  primaryLabel,
+  secondaryLabel,
+}: Readonly<{
+  disabled: boolean;
+  error: string | null;
+  onCancel: () => void;
+  primaryLabel: string;
+  secondaryLabel: string;
+}>) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      {error ? <p className="w-full text-sm font-semibold text-[#a6543c]">{error}</p> : null}
+      <button className={plannerPrimaryButtonClassName} disabled={disabled} type="submit">
+        {primaryLabel}
+      </button>
+      <button
+        className={plannerSecondaryButtonClassName}
+        disabled={disabled}
+        onClick={onCancel}
+        type="button"
+      >
+        {secondaryLabel}
+      </button>
+    </div>
+  );
+}
+
+function PlannerDialog({
+  children,
+  labelledBy,
+}: Readonly<{
+  children: ReactNode;
+  labelledBy: string;
+}>) {
+  return (
+    <div
+      aria-labelledby={labelledBy}
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+      role="dialog"
+    >
+      <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PlannerIconButton({
+  children,
+  className,
+  disabled = false,
+  onClick,
+  title,
+}: Readonly<{
+  children: ReactNode;
+  className?: string;
+  disabled?: boolean;
+  onClick: () => void;
+  title: string;
+}>) {
+  return (
+    <button
+      className={cx(
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50",
+        className,
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function PlannerDeleteButton({
+  disabled = false,
+  isDeleting = false,
+  onClick,
+  title,
+}: Readonly<{
+  disabled?: boolean;
+  isDeleting?: boolean;
+  onClick: () => void;
+  title: string;
+}>) {
+  return (
+    <button
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {isDeleting ? <span className="text-[10px] font-bold">…</span> : <Trash2 aria-hidden className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
+function PlannerItemBadge({
+  chipClassName,
+  label,
+  meta,
+  uppercase = false,
+}: Readonly<{
+  chipClassName: string;
+  label: string;
+  meta: string | null;
+  uppercase?: boolean;
+}>) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={cx(
+          "inline-flex items-center rounded-full border px-2 py-0.5 font-semibold",
+          uppercase ? "text-[10px] uppercase tracking-normal" : "text-[11px]",
+          chipClassName,
+        )}
+      >
+        {label}
+      </span>
+      {meta ? <span className={uppercase ? "text-[11px] font-medium text-[#8a918d]" : "text-[11px] font-medium text-[#7a817d]"}>{meta}</span> : null}
+    </div>
+  );
+}
+
+function PlannerMemberAvatar({
+  member,
+  sizeClassName,
+}: Readonly<{
+  member: NonNullable<DashboardAgendaItem["member"]> | CalendarMemberOption;
+  sizeClassName: string;
+}>) {
+  const title = "name" in member ? member.name ?? member.email ?? undefined : undefined;
+
+  return (
+    <MemberAvatar
+      className={sizeClassName}
+      color={member.color}
+      email={member.email}
+      emoji={member.emoji}
+      name={member.name}
+      title={title}
+    />
+  );
+}
+
+function PlannerQuickActionLink({
+  description,
+  href,
+  label,
+  onClick,
+}: Readonly<{
+  description: string;
+  href: string;
+  label: string;
+  onClick: () => void;
+}>) {
+  return (
+    <Link
+      className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+      href={href}
+      onClick={onClick}
+    >
+      <span>
+        <span className="block text-sm font-semibold text-[#202321]">{label}</span>
+        <span className="mt-1 block text-xs text-[#6a716d]">{description}</span>
+      </span>
+    </Link>
+  );
+}
+
+function PlannerSelect({
+  id,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: Readonly<{
+  id: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder: string;
+  value: string;
+}>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedOption = options.find((option) => option.value === value);
+  const listboxId = `${id}-listbox`;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative w-full" ref={rootRef}>
+      <button
+        aria-controls={listboxId}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-[#d8d2c8] bg-white px-3 text-left text-base font-medium text-[#202321] outline-none transition hover:border-[#cdbfb0] focus:border-[#9bb6a4] sm:text-sm"
+        id={id}
+        onClick={() => setIsOpen((open) => !open)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        role="combobox"
+        type="button"
+      >
+        <span className={selectedOption ? "truncate" : "truncate text-[#6d746f]"}>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <ChevronRight
+          aria-hidden
+          className={`h-4 w-4 shrink-0 text-[#6d746f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
+        />
+      </button>
+      {isOpen ? (
+        <div
+          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[80] max-h-60 overflow-y-auto rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+          id={listboxId}
+          role="listbox"
+        >
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={`flex w-full items-center rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
+                  option.disabled
+                    ? "cursor-not-allowed text-[#a1a7a3]"
+                    : isSelected
+                      ? "bg-[#eef6ef] text-[#2f4e35]"
+                      : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                }`}
+                disabled={option.disabled}
+                key={`${id}-${option.value}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                role="option"
+                type="button"
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DashboardCalendarEventCard({
   calendarEvent,
   isDeleting,
@@ -395,6 +865,7 @@ function DashboardCalendarEventCard({
 }>) {
   const agendaItem = calendarEventAgendaItem(calendarEvent, membersById, t);
   const styles = sourceStyles.calendar;
+  const meta = plannerItemMeta(agendaItem, t);
   const assignedMembers = calendarEvent.householdMemberIds
     .map((memberId) => membersById.get(memberId))
     .filter((member): member is CalendarMemberOption => Boolean(member));
@@ -403,54 +874,24 @@ function DashboardCalendarEventCard({
     <article className="group rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4 transition hover:bg-[#f4f1ea]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cx(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                styles.chip,
-              )}
-            >
-              {t(styles.labelKey)}
-            </span>
-            {itemMeta(agendaItem, t) ? (
-              <span className="text-[11px] font-medium text-[#7a817d]">{itemMeta(agendaItem, t)}</span>
-            ) : null}
-          </div>
+          <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
           <h3 className="mt-2 text-base font-semibold text-[#202321]">{calendarEvent.name}</h3>
         </div>
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-          <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50"
-            disabled={isDeleting}
-            onClick={onEdit}
-            title={t("editEvent")}
-            type="button"
-          >
+          <PlannerIconButton disabled={isDeleting} onClick={onEdit} title={t("editEvent")}>
             <Pencil aria-hidden className="h-3.5 w-3.5" />
-          </button>
-          <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
-            disabled={isDeleting}
-            onClick={onDelete}
-            title={t("deleteEvent")}
-            type="button"
-          >
-            {isDeleting ? <span className="text-[10px] font-bold">…</span> : <Trash2 aria-hidden className="h-3.5 w-3.5" />}
-          </button>
+          </PlannerIconButton>
+          <PlannerDeleteButton disabled={isDeleting} isDeleting={isDeleting} onClick={onDelete} title={t("deleteEvent")} />
         </div>
       </div>
 
       {assignedMembers.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {assignedMembers.map((member) => (
-            <MemberAvatar
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold"
-              color={member.color}
-              email={member.email}
-              emoji={member.emoji}
+            <PlannerMemberAvatar
               key={member.id}
-              name={member.name}
-              title={memberLabel(member, t)}
+              member={member}
+              sizeClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold"
             />
           ))}
         </div>
@@ -472,48 +913,23 @@ export function DashboardPlanner({
   const router = useRouter();
   const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
   const monthFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        month: "long",
-        timeZone: "UTC",
-        year: "numeric",
-      }),
+    () => createUtcFormatter(locale, { month: "long", year: "numeric" }),
     [locale],
   );
   const fullDateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "long",
-        timeZone: "UTC",
-        year: "numeric",
-      }),
+    () => createUtcFormatter(locale, { day: "numeric", month: "long", year: "numeric" }),
     [locale],
   );
   const agendaDateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "short",
-        timeZone: "UTC",
-        weekday: "long",
-      }),
+    () => createUtcFormatter(locale, { day: "numeric", month: "short", weekday: "long" }),
     [locale],
   );
   const weekdayFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: "UTC",
-        weekday: "long",
-      }),
+    () => createUtcFormatter(locale, { weekday: "long" }),
     [locale],
   );
   const shortWeekdayFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: "UTC",
-        weekday: "short",
-      }),
+    () => createUtcFormatter(locale, { weekday: "short" }),
     [locale],
   );
   const [visibleMonth, setVisibleMonth] = useState<MonthCursor>({
@@ -577,8 +993,6 @@ export function DashboardPlanner({
     .filter((member): member is CalendarMemberOption => Boolean(member));
   const selectedDateIsToday = selectedDateKey === todayKey;
   const effectiveSelectedAgendaDateKey = selectedDateIsToday ? todayKey : null;
-  const isCurrentMonthVisible =
-    visibleMonth.monthIndex === today.getUTCMonth() && visibleMonth.year === today.getUTCFullYear();
 
   useEffect(() => {
     if (!selectedDateIsToday || !effectiveSelectedAgendaDateKey) return;
@@ -659,6 +1073,22 @@ export function DashboardPlanner({
     });
   }
 
+  async function persistCalendarEvent(url: string, method: "PATCH" | "POST", input: CalendarEventInput) {
+    const response = await fetch(url, {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method,
+    });
+
+    if (!response.ok) {
+      setFormError(t("eventSaveError"));
+      return null;
+    }
+
+    const { event } = (await response.json()) as { event: CalendarEventView };
+    return event;
+  }
+
   async function saveEvent(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
 
@@ -687,33 +1117,21 @@ export function DashboardPlanner({
 
     try {
       if (editingEventId) {
-        const response = await fetch(`/api/calendar/events/${editingEventId}`, {
-          body: JSON.stringify(input),
-          headers: { "Content-Type": "application/json" },
-          method: "PATCH",
-        });
+        const updatedEvent = await persistCalendarEvent(
+          `/api/calendar/events/${editingEventId}`,
+          "PATCH",
+          input,
+        );
 
-        if (!response.ok) {
-          setFormError(t("eventSaveError"));
-
+        if (!updatedEvent) {
           return;
         }
-
-        const { event: updatedEvent } = (await response.json()) as { event: CalendarEventView };
         const previousEvent = Object.values(eventsByDate)
           .flat()
           .find((calendarEvent) => calendarEvent.id === editingEventId);
 
         setEventsByDate((currentEvents) => {
-          const nextEvents: Record<string, CalendarEventView[]> = {};
-
-          for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
-            const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== editingEventId);
-
-            if (filteredEvents.length > 0) {
-              nextEvents[dateKey] = filteredEvents;
-            }
-          }
+          const nextEvents = withoutCalendarEvent(currentEvents, editingEventId);
 
           nextEvents[updatedEvent.dateKey] = [
             ...(nextEvents[updatedEvent.dateKey] ?? []),
@@ -733,21 +1151,11 @@ export function DashboardPlanner({
 
         selectDate(updatedEvent.dateKey);
       } else {
-        const response = await fetch("/api/calendar/events", {
-          body: JSON.stringify(input),
-          headers: {
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        });
+        const savedEvent = await persistCalendarEvent("/api/calendar/events", "POST", input);
 
-        if (!response.ok) {
-          setFormError(t("eventSaveError"));
-
+        if (!savedEvent) {
           return;
         }
-
-        const { event: savedEvent } = (await response.json()) as { event: CalendarEventView };
 
         setEventsByDate((currentEvents) => ({
           ...currentEvents,
@@ -782,19 +1190,7 @@ export function DashboardPlanner({
         .flat()
         .find((calendarEvent) => calendarEvent.id === id);
 
-      setEventsByDate((currentEvents) => {
-        const nextEvents: Record<string, CalendarEventView[]> = {};
-
-        for (const [dateKey, dayEvents] of Object.entries(currentEvents)) {
-          const filteredEvents = dayEvents.filter((calendarEvent) => calendarEvent.id !== id);
-
-          if (filteredEvents.length > 0) {
-            nextEvents[dateKey] = filteredEvents;
-          }
-        }
-
-        return nextEvents;
-      });
+      setEventsByDate((currentEvents) => withoutCalendarEvent(currentEvents, id));
 
       if (deletedEvent) {
         setCalendarCounts((currentCounts) => withCalendarCountDelta(currentCounts, deletedEvent.dateKey, -1));
@@ -876,15 +1272,7 @@ export function DashboardPlanner({
       }
 
       setScheduledItemsByDate((currentItems) => {
-        const nextItems: Record<string, DashboardAgendaItem[]> = {};
-
-        for (const [dateKey, dayItems] of Object.entries(currentItems)) {
-          const filteredItems = dayItems.filter((item) => item.id !== editingTodo.id);
-
-          if (filteredItems.length > 0) {
-            nextItems[dateKey] = filteredItems;
-          }
-        }
+        const nextItems = withoutScheduledItem(currentItems, editingTodo.id);
 
         const member = todoMemberId
           ? calendarMembers.find((candidate) => candidate.id === todoMemberId) ?? null
@@ -936,19 +1324,7 @@ export function DashboardPlanner({
         return;
       }
 
-      setScheduledItemsByDate((currentItems) => {
-        const nextItems: Record<string, DashboardAgendaItem[]> = {};
-
-        for (const [dateKey, dayItems] of Object.entries(currentItems)) {
-          const filteredItems = dayItems.filter((candidate) => candidate.id !== item.id);
-
-          if (filteredItems.length > 0) {
-            nextItems[dateKey] = filteredItems;
-          }
-        }
-
-        return nextItems;
-      });
+      setScheduledItemsByDate((currentItems) => withoutScheduledItem(currentItems, item.id));
 
       if (editingTodo?.id === item.id) {
         closeTodoEditor();
@@ -962,65 +1338,48 @@ export function DashboardPlanner({
 
   function renderEventForm() {
     const isEditing = editingEventId !== null;
+    const eventCategoryOptions: SelectOption[] = calendarCategoryOptions.map((category) => ({
+      label: translateCalendarCategory(category, t),
+      value: category,
+    }));
+    const involvedMemberOptions: SelectOption[] = calendarMembers.map((member) => ({
+      disabled: selectedMemberIds.includes(member.id),
+      label: memberLabel(member, t),
+      value: member.id,
+    }));
+    const eventFields: PlannerFieldDefinition[] = [
+      plannerInputFieldDefinition("date", t("dateLabel"), {
+          onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
+          required: true,
+          type: "date",
+          value: composerDateKey,
+        }),
+      plannerInputFieldDefinition("name", t("nameLabel"), {
+          onChange: (changeEvent) => setEventName(changeEvent.target.value),
+          required: true,
+          type: "text",
+          value: eventName,
+        }),
+      plannerSelectFieldDefinition("category", t("categoryLabel"), {
+          id: "dashboard-event-category",
+          onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
+          options: eventCategoryOptions,
+          placeholder: t("categoryLabel"),
+          value: eventCategory,
+        }),
+    ];
 
     return (
       <form className="grid gap-4" onSubmit={saveEvent}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-              {t("calendarLabel")}
-            </p>
-            <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]">
-              {isEditing ? t("editEvent") : t("addEvent")}
-            </h3>
-          </div>
-          <button
-            aria-label={t("closeEventEditor")}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-            disabled={isSaving}
-            onClick={closeComposer}
-            type="button"
-          >
-            <span aria-hidden>&times;</span>
-          </button>
-        </div>
+        <PlannerEditorHeader
+          closeLabel={t("closeEventEditor")}
+          disabled={isSaving}
+          eyebrow={t("calendarLabel")}
+          onClose={closeComposer}
+          title={isEditing ? t("editEvent") : t("addEvent")}
+        />
 
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("dateLabel")}
-          <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            onChange={(changeEvent) => setComposerDateKey(changeEvent.target.value)}
-            required
-            type="date"
-            value={composerDateKey}
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("nameLabel")}
-          <input
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            onChange={(changeEvent) => setEventName(changeEvent.target.value)}
-            required
-            type="text"
-            value={eventName}
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-          {t("categoryLabel")}
-          <select
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            onChange={(changeEvent) => setEventCategory(changeEvent.target.value as CalendarCategory)}
-            value={eventCategory}
-          >
-            {calendarCategoryOptions.map((category) => (
-              <option key={category} value={category}>
-                {translateCalendarCategory(category, t)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <PlannerFieldList fields={eventFields} />
 
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
@@ -1033,43 +1392,38 @@ export function DashboardPlanner({
             {t("allDay")}
           </label>
           {!isAllDay ? (
-            <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-              {t("timeLabel")}
-              <input
-                className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-                onChange={(changeEvent) => setEventTime(changeEvent.target.value)}
-                required
-                type="time"
-                value={eventTime}
-              />
-            </label>
+            <PlannerFieldList
+              fields={[
+                plannerInputFieldDefinition("time", t("timeLabel"), {
+                    onChange: (changeEvent) => setEventTime(changeEvent.target.value),
+                    required: true,
+                    type: "time",
+                    value: eventTime,
+                  }),
+              ]}
+            />
           ) : null}
         </div>
 
         <div className="grid gap-2 text-sm font-semibold text-[#3f4642]">
           {t("whoInvolved")}
-          <select
-            className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-            disabled={calendarMembers.length === 0}
-            onChange={(changeEvent) => {
-              const memberId = changeEvent.target.value;
-              if (!memberId) return;
+          <PlannerSelect
+            id="dashboard-event-members"
+            onChange={(memberId) => {
               setSelectedMemberIds((currentIds) =>
                 currentIds.includes(memberId) ? currentIds : [...currentIds, memberId],
               );
-              changeEvent.target.value = "";
             }}
+            options={
+              calendarMembers.length > 0
+                ? involvedMemberOptions
+                : [{ disabled: true, label: t("noHouseholdMembers"), value: "__none__" }]
+            }
+            placeholder={
+              calendarMembers.length > 0 ? t("addHouseholdMember") : t("noHouseholdMembers")
+            }
             value=""
-          >
-            <option value="">
-              {calendarMembers.length > 0 ? t("addHouseholdMember") : t("noHouseholdMembers")}
-            </option>
-            {calendarMembers.map((member) => (
-              <option disabled={selectedMemberIds.includes(member.id)} key={member.id} value={member.id}>
-                {memberLabel(member, t)}
-              </option>
-            ))}
-          </select>
+          />
 
           {selectedMembers.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -1095,24 +1449,13 @@ export function DashboardPlanner({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {formError ? <p className="w-full text-sm font-semibold text-[#a6543c]">{formError}</p> : null}
-          <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-            disabled={isSaving}
-            type="submit"
-          >
-            {isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
-          </button>
-          <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-            disabled={isSaving}
-            onClick={closeComposer}
-            type="button"
-          >
-            {t("cancel")}
-          </button>
-        </div>
+        <PlannerFormActions
+          disabled={isSaving}
+          error={formError}
+          onCancel={closeComposer}
+          primaryLabel={isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
+          secondaryLabel={t("cancel")}
+        />
       </form>
     );
   }
@@ -1121,36 +1464,37 @@ export function DashboardPlanner({
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="order-2 lg:order-1" id="home-calendar" ref={calendarSectionRef}>
         <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
-          <div className="flex flex-col gap-4 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <button
-                aria-label={t("previousMonth")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4]"
-                onClick={() => goToMonth(-1)}
-                type="button"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-              </button>
-              <button
-                aria-label={t("nextMonth")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4]"
-                onClick={() => goToMonth(1)}
-                type="button"
-              >
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-              <div className="min-w-0 pl-1">
-                <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
-                  {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
-                </p>
-                <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
+          <div className="flex flex-col gap-3 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    aria-label={t("previousMonth")}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    onClick={() => goToMonth(-1)}
+                    type="button"
+                  >
+                    <ChevronLeft aria-hidden className="h-4 w-4" />
+                  </button>
+                  <button
+                    aria-label={t("nextMonth")}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    onClick={() => goToMonth(1)}
+                    type="button"
+                  >
+                    <ChevronRight aria-hidden className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                    {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
+                  </p>
+                  <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {!isCurrentMonthVisible ? (
+              {!selectedDateIsToday ? (
                 <button
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5]"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:h-9 sm:w-auto sm:shrink-0"
                   onClick={goToToday}
                   type="button"
                 >
@@ -1163,7 +1507,7 @@ export function DashboardPlanner({
           <div className="grid grid-cols-7 border-b border-[#e6e0d7] bg-[#fbfaf6]">
             {Array.from({ length: 7 }, (_, index) => addDays(createDate(2024, 0, 1), index)).map((weekday) => (
               <div
-                className="px-1 py-3 text-center text-[11px] font-bold uppercase tracking-normal text-[#626a65] sm:px-2"
+                className="px-1 py-2.5 text-center text-[10px] font-bold uppercase tracking-normal text-[#626a65] sm:px-2 sm:py-3 sm:text-[11px]"
                 key={weekday.toISOString()}
               >
                 {shortWeekdayFormatter.format(weekday)}
@@ -1182,7 +1526,7 @@ export function DashboardPlanner({
               return (
                 <div
                   className={cx(
-                    "relative min-h-[80px] border-b border-r border-[#e7e1d9] p-2 sm:min-h-[100px] xl:min-h-[130px]",
+                    "relative min-h-[68px] border-b border-r border-[#e7e1d9] p-1.5 sm:min-h-[100px] sm:p-2 xl:min-h-[130px]",
                     index % 7 === 6 && "border-r-0",
                     index >= monthDays.length - 7 && "border-b-0",
                     isSelectedDate
@@ -1206,7 +1550,7 @@ export function DashboardPlanner({
                         aria-current={isToday ? "date" : undefined}
                         aria-pressed={isSelectedDate}
                         className={cx(
-                          "pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold",
+                          "pointer-events-auto inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold sm:h-7 sm:w-7 sm:text-sm",
                           isToday
                             ? "bg-[#202321] text-white"
                             : isCurrentMonth
@@ -1229,25 +1573,25 @@ export function DashboardPlanner({
 
                     {counts?.total ? (
                       <>
-                        <div className="mt-3 flex items-center gap-1.5">
+                        <div className="mt-2 flex items-center gap-1 sm:mt-3 sm:gap-1.5">
                           {counts.calendar > 0 ? (
                             <span
                               aria-label={t("calendarItemCount", { count: counts.calendar })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("calendar") }}
                             />
                           ) : null}
                           {counts.chore > 0 ? (
                             <span
                               aria-label={t("choreCount", { count: counts.chore })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("chore") }}
                             />
                           ) : null}
                           {counts.todo > 0 ? (
                             <span
                               aria-label={t("todoItemCount", { count: counts.todo })}
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
                               style={{ backgroundColor: sourceDotColor("todo") }}
                             />
                           ) : null}
@@ -1325,6 +1669,7 @@ export function DashboardPlanner({
                   <div className="grid divide-y divide-[#e3ded6]">
                     {day.items.map((item) => {
                       const styles = sourceStyles[item.source];
+                      const meta = plannerItemMeta(item, t);
                       const itemContent = (
                         <>
                           <div className="flex items-start justify-between gap-3">
@@ -1332,31 +1677,20 @@ export function DashboardPlanner({
                               <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
                                 {item.title}
                               </h3>
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span
-                                  className={cx(
-                                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-normal",
-                                    styles.chip,
-                                  )}
-                                >
-                                  {t(styles.labelKey)}
-                                </span>
-                                {itemMeta(item, t) ? (
-                                  <span className="text-[11px] font-medium text-[#8a918d]">
-                                    {itemMeta(item, t)}
-                                  </span>
-                                ) : null}
+                              <div className="mt-2">
+                                <PlannerItemBadge
+                                  chipClassName={styles.chip}
+                                  label={t(styles.labelKey)}
+                                  meta={meta}
+                                  uppercase
+                                />
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               {item.member ? (
-                                <MemberAvatar
-                                  className="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                  color={item.member.color}
-                                  email={item.member.email}
-                                  emoji={item.member.emoji}
-                                  name={item.member.name}
-                                  title={item.member.name ?? item.member.email ?? undefined}
+                                <PlannerMemberAvatar
+                                  member={item.member}
+                                  sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
                                 />
                               ) : null}
                               <ChevronRight aria-hidden className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]" />
@@ -1445,6 +1779,7 @@ export function DashboardPlanner({
                 }
 
                 const styles = sourceStyles[item.source];
+                const meta = plannerItemMeta(item, t);
 
                 return (
                   <article
@@ -1454,31 +1789,13 @@ export function DashboardPlanner({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <Link className="block" href={item.href}>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cx(
-                                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                                styles.chip,
-                              )}
-                            >
-                              {t(styles.labelKey)}
-                            </span>
-                            {itemMeta(item, t) ? (
-                              <span className="text-[11px] font-medium text-[#7a817d]">
-                                {itemMeta(item, t)}
-                              </span>
-                            ) : null}
-                          </div>
+                          <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
                           <h3 className="mt-2 text-base font-semibold text-[#202321]">{item.title}</h3>
                           {item.member ? (
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                              <MemberAvatar
-                                className="flex h-7 w-7 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                color={item.member.color}
-                                email={item.member.email}
-                                emoji={item.member.emoji}
-                                name={item.member.name}
-                                title={item.member.name ?? item.member.email ?? undefined}
+                              <PlannerMemberAvatar
+                                member={item.member}
+                                sizeClassName="flex h-7 w-7 items-center justify-center rounded-md border text-[11px] font-semibold"
                               />
                             </div>
                           ) : null}
@@ -1486,38 +1803,24 @@ export function DashboardPlanner({
                       </div>
                       <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                         {item.source === "todo" ? (
-                          <button
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                            onClick={() => openTodoEditor(item)}
-                            title={t("editTask")}
-                            type="button"
-                          >
+                          <PlannerIconButton onClick={() => openTodoEditor(item)} title={t("editTask")}>
                             <Pencil aria-hidden className="h-3.5 w-3.5" />
-                          </button>
+                          </PlannerIconButton>
                         ) : (
-                          <button
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50"
+                          <PlannerIconButton
                             disabled={isDeletingScheduledItemId === item.id}
                             onClick={() => router.push(`/app/chores?edit=${item.id}`)}
                             title={t("editChore")}
-                            type="button"
                           >
                             <Pencil aria-hidden className="h-3.5 w-3.5" />
-                          </button>
+                          </PlannerIconButton>
                         )}
-                        <button
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+                        <PlannerDeleteButton
                           disabled={isDeletingScheduledItemId === item.id}
+                          isDeleting={isDeletingScheduledItemId === item.id}
                           onClick={() => deleteScheduledItem(item)}
                           title={item.source === "todo" ? t("deleteTask") : t("deleteChore")}
-                          type="button"
-                        >
-                          {isDeletingScheduledItemId === item.id ? (
-                            <span className="text-[10px] font-bold">…</span>
-                          ) : (
-                            <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                          )}
-                        </button>
+                        />
                       </div>
                     </div>
                   </article>
@@ -1538,28 +1841,16 @@ export function DashboardPlanner({
       </div>
 
       {isComposerOpen ? (
-        <div
-          aria-labelledby="dashboard-calendar-event-dialog-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
-          <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
-            <div className="sr-only" id="dashboard-calendar-event-dialog-title">
-              {editingEventId ? t("editEvent") : t("addEvent")}
-            </div>
-            {renderEventForm()}
+        <PlannerDialog labelledBy="dashboard-calendar-event-dialog-title">
+          <div className="sr-only" id="dashboard-calendar-event-dialog-title">
+            {editingEventId ? t("editEvent") : t("addEvent")}
           </div>
-        </div>
+          {renderEventForm()}
+        </PlannerDialog>
       ) : null}
 
       {showCreateMenu ? (
-        <div
-          aria-labelledby="dashboard-create-entry-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
+        <PlannerDialog labelledBy="dashboard-create-entry-title">
           <div className="w-full max-w-sm rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)]">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -1598,126 +1889,80 @@ export function DashboardPlanner({
                 </span>
               </button>
 
-              <Link
-                className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+              <PlannerQuickActionLink
+                description={t("taskDescription")}
                 href="/app/todos?create=1"
+                label={t("taskLabel")}
                 onClick={() => setShowCreateMenu(false)}
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#202321]">{t("taskLabel")}</span>
-                  <span className="mt-1 block text-xs text-[#6a716d]">{t("taskDescription")}</span>
-                </span>
-              </Link>
+              />
 
-              <Link
-                className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+              <PlannerQuickActionLink
+                description={t("choreDescription")}
                 href="/app/chores?create=1"
+                label={t("choreLabel")}
                 onClick={() => setShowCreateMenu(false)}
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#202321]">{t("choreLabel")}</span>
-                  <span className="mt-1 block text-xs text-[#6a716d]">{t("choreDescription")}</span>
-                </span>
-              </Link>
+              />
             </div>
           </div>
-        </div>
+        </PlannerDialog>
       ) : null}
 
       {editingTodo ? (
-        <div
-          aria-labelledby="dashboard-todo-editor-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
-          <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
-            <form className="grid gap-4" onSubmit={saveTodoEdit}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                    {t("todoLabel")}
-                  </p>
-                  <h3
-                    className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]"
-                    id="dashboard-todo-editor-title"
-                  >
-                    {t("editTask")}
-                  </h3>
-                  <p className="mt-1 text-xs text-[#6c726e]">{editingTodo.listName}</p>
-                </div>
-                <button
-                  aria-label={t("closeTaskEditor")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                  disabled={isSavingTodo}
-                  onClick={closeTodoEditor}
-                  type="button"
-                >
-                  <span aria-hidden>&times;</span>
-                </button>
-              </div>
+        <PlannerDialog labelledBy="dashboard-todo-editor-title">
+          {(() => {
+            const todoFields: PlannerFieldDefinition[] = [
+              plannerInputFieldDefinition("name", t("nameLabel"), {
+                  onChange: (event) => setTodoText(event.target.value),
+                  required: true,
+                  type: "text",
+                  value: todoText,
+                }),
+              plannerInputFieldDefinition("dueDate", t("dueDateLabel"), {
+                  onChange: (event) => setTodoDueDate(event.target.value),
+                  required: true,
+                  type: "date",
+                  value: todoDueDate,
+                }),
+              plannerSelectFieldDefinition("assigned", t("assignedToLabel"), {
+                  id: "dashboard-todo-member",
+                  onChange: (nextValue) => setTodoMemberId(nextValue || null),
+                  options: [
+                    { label: t("unassigned"), value: "" },
+                    ...calendarMembers.map((member) => ({
+                      label: memberLabel(member, t),
+                      value: member.id,
+                    })),
+                  ],
+                  placeholder: t("unassigned"),
+                  value: todoMemberId ?? "",
+                }),
+            ];
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("nameLabel")}
-                <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-                  onChange={(event) => setTodoText(event.target.value)}
-                  required
-                  type="text"
-                  value={todoText}
-                />
-              </label>
+            return (
+          <form className="grid gap-4" onSubmit={saveTodoEdit}>
+            <PlannerEditorHeader
+              closeLabel={t("closeTaskEditor")}
+              description={editingTodo.listName}
+              disabled={isSavingTodo}
+              eyebrow={t("todoLabel")}
+              onClose={closeTodoEditor}
+              title={t("editTask")}
+              titleId="dashboard-todo-editor-title"
+            />
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("dueDateLabel")}
-                <input
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-                  onChange={(event) => setTodoDueDate(event.target.value)}
-                  required
-                  type="date"
-                  value={todoDueDate}
-                />
-              </label>
+            <PlannerFieldList fields={todoFields} />
 
-              <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
-                {t("assignedToLabel")}
-                <select
-                  className="h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4]"
-                  onChange={(event) => setTodoMemberId(event.target.value || null)}
-                  value={todoMemberId ?? ""}
-                >
-                  <option value="">{t("unassigned")}</option>
-                  {calendarMembers.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {memberLabel(member, t)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                {todoFormError ? (
-                  <p className="w-full text-sm font-semibold text-[#a6543c]">{todoFormError}</p>
-                ) : null}
-                <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-                  disabled={isSavingTodo}
-                  type="submit"
-                >
-                  {isSavingTodo ? t("saving") : t("saveChanges")}
-                </button>
-                <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto"
-                  disabled={isSavingTodo}
-                  onClick={closeTodoEditor}
-                  type="button"
-                >
-                  {t("cancel")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <PlannerFormActions
+              disabled={isSavingTodo}
+              error={todoFormError}
+              onCancel={closeTodoEditor}
+              primaryLabel={isSavingTodo ? t("saving") : t("saveChanges")}
+              secondaryLabel={t("cancel")}
+            />
+          </form>
+            );
+          })()}
+        </PlannerDialog>
       ) : null}
     </section>
   );
