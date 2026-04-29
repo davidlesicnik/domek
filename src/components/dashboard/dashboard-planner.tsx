@@ -332,6 +332,10 @@ function calendarEventAgendaItem(
   };
 }
 
+function plannerItemMeta(item: DashboardAgendaItem, t: DashboardTranslations) {
+  return itemMeta(item, t);
+}
+
 function withCalendarCountDelta(
   currentCounts: Record<string, DashboardMonthCellCounts>,
   dateKey: string,
@@ -497,6 +501,86 @@ function PlannerDialog({
   );
 }
 
+function PlannerIconButton({
+  children,
+  className,
+  disabled = false,
+  onClick,
+  title,
+}: Readonly<{
+  children: ReactNode;
+  className?: string;
+  disabled?: boolean;
+  onClick: () => void;
+  title: string;
+}>) {
+  return (
+    <button
+      className={cx(
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50",
+        className,
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function PlannerDeleteButton({
+  disabled = false,
+  isDeleting = false,
+  onClick,
+  title,
+}: Readonly<{
+  disabled?: boolean;
+  isDeleting?: boolean;
+  onClick: () => void;
+  title: string;
+}>) {
+  return (
+    <button
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      type="button"
+    >
+      {isDeleting ? <span className="text-[10px] font-bold">…</span> : <Trash2 aria-hidden className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
+function PlannerItemBadge({
+  chipClassName,
+  label,
+  meta,
+  uppercase = false,
+}: Readonly<{
+  chipClassName: string;
+  label: string;
+  meta: string | null;
+  uppercase?: boolean;
+}>) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={cx(
+          "inline-flex items-center rounded-full border px-2 py-0.5 font-semibold",
+          uppercase ? "text-[10px] uppercase tracking-normal" : "text-[11px]",
+          chipClassName,
+        )}
+      >
+        {label}
+      </span>
+      {meta ? <span className={uppercase ? "text-[11px] font-medium text-[#8a918d]" : "text-[11px] font-medium text-[#7a817d]"}>{meta}</span> : null}
+    </div>
+  );
+}
+
 function PlannerSelect({
   id,
   onChange,
@@ -616,6 +700,7 @@ function DashboardCalendarEventCard({
 }>) {
   const agendaItem = calendarEventAgendaItem(calendarEvent, membersById, t);
   const styles = sourceStyles.calendar;
+  const meta = plannerItemMeta(agendaItem, t);
   const assignedMembers = calendarEvent.householdMemberIds
     .map((memberId) => membersById.get(memberId))
     .filter((member): member is CalendarMemberOption => Boolean(member));
@@ -624,40 +709,14 @@ function DashboardCalendarEventCard({
     <article className="group rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4 transition hover:bg-[#f4f1ea]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cx(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                styles.chip,
-              )}
-            >
-              {t(styles.labelKey)}
-            </span>
-            {itemMeta(agendaItem, t) ? (
-              <span className="text-[11px] font-medium text-[#7a817d]">{itemMeta(agendaItem, t)}</span>
-            ) : null}
-          </div>
+          <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
           <h3 className="mt-2 text-base font-semibold text-[#202321]">{calendarEvent.name}</h3>
         </div>
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-          <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50"
-            disabled={isDeleting}
-            onClick={onEdit}
-            title={t("editEvent")}
-            type="button"
-          >
+          <PlannerIconButton disabled={isDeleting} onClick={onEdit} title={t("editEvent")}>
             <Pencil aria-hidden className="h-3.5 w-3.5" />
-          </button>
-          <button
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
-            disabled={isDeleting}
-            onClick={onDelete}
-            title={t("deleteEvent")}
-            type="button"
-          >
-            {isDeleting ? <span className="text-[10px] font-bold">…</span> : <Trash2 aria-hidden className="h-3.5 w-3.5" />}
-          </button>
+          </PlannerIconButton>
+          <PlannerDeleteButton disabled={isDeleting} isDeleting={isDeleting} onClick={onDelete} title={t("deleteEvent")} />
         </div>
       </div>
 
@@ -1515,6 +1574,7 @@ export function DashboardPlanner({
                   <div className="grid divide-y divide-[#e3ded6]">
                     {day.items.map((item) => {
                       const styles = sourceStyles[item.source];
+                      const meta = plannerItemMeta(item, t);
                       const itemContent = (
                         <>
                           <div className="flex items-start justify-between gap-3">
@@ -1522,20 +1582,13 @@ export function DashboardPlanner({
                               <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
                                 {item.title}
                               </h3>
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span
-                                  className={cx(
-                                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-normal",
-                                    styles.chip,
-                                  )}
-                                >
-                                  {t(styles.labelKey)}
-                                </span>
-                                {itemMeta(item, t) ? (
-                                  <span className="text-[11px] font-medium text-[#8a918d]">
-                                    {itemMeta(item, t)}
-                                  </span>
-                                ) : null}
+                              <div className="mt-2">
+                                <PlannerItemBadge
+                                  chipClassName={styles.chip}
+                                  label={t(styles.labelKey)}
+                                  meta={meta}
+                                  uppercase
+                                />
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
@@ -1635,6 +1688,7 @@ export function DashboardPlanner({
                 }
 
                 const styles = sourceStyles[item.source];
+                const meta = plannerItemMeta(item, t);
 
                 return (
                   <article
@@ -1644,21 +1698,7 @@ export function DashboardPlanner({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <Link className="block" href={item.href}>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cx(
-                                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                                styles.chip,
-                              )}
-                            >
-                              {t(styles.labelKey)}
-                            </span>
-                            {itemMeta(item, t) ? (
-                              <span className="text-[11px] font-medium text-[#7a817d]">
-                                {itemMeta(item, t)}
-                              </span>
-                            ) : null}
-                          </div>
+                          <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
                           <h3 className="mt-2 text-base font-semibold text-[#202321]">{item.title}</h3>
                           {item.member ? (
                             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -1676,38 +1716,24 @@ export function DashboardPlanner({
                       </div>
                       <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
                         {item.source === "todo" ? (
-                          <button
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                            onClick={() => openTodoEditor(item)}
-                            title={t("editTask")}
-                            type="button"
-                          >
+                          <PlannerIconButton onClick={() => openTodoEditor(item)} title={t("editTask")}>
                             <Pencil aria-hidden className="h-3.5 w-3.5" />
-                          </button>
+                          </PlannerIconButton>
                         ) : (
-                          <button
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50"
+                          <PlannerIconButton
                             disabled={isDeletingScheduledItemId === item.id}
                             onClick={() => router.push(`/app/chores?edit=${item.id}`)}
                             title={t("editChore")}
-                            type="button"
                           >
                             <Pencil aria-hidden className="h-3.5 w-3.5" />
-                          </button>
+                          </PlannerIconButton>
                         )}
-                        <button
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+                        <PlannerDeleteButton
                           disabled={isDeletingScheduledItemId === item.id}
+                          isDeleting={isDeletingScheduledItemId === item.id}
                           onClick={() => deleteScheduledItem(item)}
                           title={item.source === "todo" ? t("deleteTask") : t("deleteChore")}
-                          type="button"
-                        >
-                          {isDeletingScheduledItemId === item.id ? (
-                            <span className="text-[10px] font-bold">…</span>
-                          ) : (
-                            <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                          )}
-                        </button>
+                        />
                       </div>
                     </div>
                   </article>
@@ -1737,12 +1763,7 @@ export function DashboardPlanner({
       ) : null}
 
       {showCreateMenu ? (
-        <div
-          aria-labelledby="dashboard-create-entry-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
-          role="dialog"
-        >
+        <PlannerDialog labelledBy="dashboard-create-entry-title">
           <div className="w-full max-w-sm rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)]">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -1804,7 +1825,7 @@ export function DashboardPlanner({
               </Link>
             </div>
           </div>
-        </div>
+        </PlannerDialog>
       ) : null}
 
       {editingTodo ? (

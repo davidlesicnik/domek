@@ -164,6 +164,64 @@ function DeleteIconButton({
   );
 }
 
+function ListItemRow<TItem extends ListItemView>({
+  confirmDeleteItemId,
+  item,
+  listId,
+  onCancelDelete,
+  onConfirmDelete,
+  onRequestDelete,
+  onToggle,
+  renderItemMeta,
+  rowClassName,
+  t,
+}: Readonly<{
+  confirmDeleteItemId: string | null;
+  item: TItem;
+  listId: string;
+  onCancelDelete: () => void;
+  onConfirmDelete: (listId: string, itemId: string) => void;
+  onRequestDelete: (itemId: string) => void;
+  onToggle: (listId: string, itemId: string, currentDone: boolean) => void;
+  renderItemMeta?: (item: TItem) => ReactNode;
+  rowClassName: string;
+  t: ReturnType<typeof useTranslations>;
+}>) {
+  return (
+    <li className={rowClassName} key={item.id}>
+      <input
+        checked={item.done}
+        className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
+        onChange={() => onToggle(listId, item.id, item.done)}
+        type="checkbox"
+      />
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block break-words text-sm leading-snug text-[#2d3230] ${
+            item.done ? "line-through" : ""
+          }`}
+        >
+          {item.text}
+        </span>
+        {renderItemMeta ? renderItemMeta(item) : null}
+      </span>
+      {confirmDeleteItemId === item.id ? (
+        <DeleteConfirmActions
+          onCancel={onCancelDelete}
+          onConfirm={() => onConfirmDelete(listId, item.id)}
+          t={t}
+        />
+      ) : (
+        <DeleteIconButton
+          ariaLabel={t("deleteItemAriaLabel")}
+          className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
+          onClick={() => onRequestDelete(item.id)}
+        />
+      )}
+    </li>
+  );
+}
+
 export function ListBoard<TItem extends ListItemView, TCreateItemInput extends object = { text: string }>({
   title,
   listsPath,
@@ -563,40 +621,23 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                   </li>
                 )}
                 {activeItems.map((item) => (
-                  <li
-                    className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
+                  <ListItemRow
+                    confirmDeleteItemId={confirmDeleteItemId}
+                    item={item}
+                    key={item.id}
+                    listId={selectedList.id}
+                    onCancelDelete={() => setConfirmDeleteItemId(null)}
+                    onConfirmDelete={handleDeleteItem}
+                    onRequestDelete={setConfirmDeleteItemId}
+                    onToggle={handleToggleItem}
+                    renderItemMeta={renderItemMeta}
+                    rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
                       enteringItemIds.includes(item.id)
                         ? "animate-[list-item-enter_520ms_cubic-bezier(0.16,1,0.3,1)] bg-[#f7fbf3]"
                         : ""
                     }`}
-                    key={item.id}
-                  >
-                    <input
-                      checked={item.done}
-                      className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
-                      onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
-                      type="checkbox"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block break-words text-sm leading-snug text-[#2d3230]">
-                        {item.text}
-                      </span>
-                      {renderItemMeta ? renderItemMeta(item) : null}
-                    </span>
-                    {confirmDeleteItemId === item.id ? (
-                      <DeleteConfirmActions
-                        onCancel={() => setConfirmDeleteItemId(null)}
-                        onConfirm={() => handleDeleteItem(selectedList.id, item.id)}
-                        t={t}
-                      />
-                    ) : (
-                      <DeleteIconButton
-                        ariaLabel={t("deleteItemAriaLabel")}
-                        className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
-                        onClick={() => setConfirmDeleteItemId(item.id)}
-                      />
-                    )}
-                  </li>
+                    t={t}
+                  />
                 ))}
                 {completedItems.length > 0 ? (
                   <>
@@ -606,40 +647,23 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                       </span>
                     </li>
                     {completedItems.map((item, index) => (
-                      <li
-                        className={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
+                      <ListItemRow
+                        confirmDeleteItemId={confirmDeleteItemId}
+                        item={item}
+                        key={item.id}
+                        listId={selectedList.id}
+                        onCancelDelete={() => setConfirmDeleteItemId(null)}
+                        onConfirmDelete={handleDeleteItem}
+                        onRequestDelete={setConfirmDeleteItemId}
+                        onToggle={handleToggleItem}
+                        renderItemMeta={renderItemMeta}
+                        rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
                           recentlyCompletedItemIds.includes(item.id)
                             ? "animate-[list-item-complete_420ms_cubic-bezier(0.22,1,0.36,1)]"
                             : ""
                         } ${index === completedItems.length - 1 ? "last:border-b-0" : ""}`}
-                        key={item.id}
-                      >
-                        <input
-                          checked={item.done}
-                          className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
-                          onChange={() => handleToggleItem(selectedList.id, item.id, item.done)}
-                          type="checkbox"
-                        />
-                    <span className="min-w-0 flex-1">
-                      <span className="block break-words text-sm leading-snug text-[#2d3230] line-through">
-                        {item.text}
-                      </span>
-                      {renderItemMeta ? renderItemMeta(item) : null}
-                    </span>
-                    {confirmDeleteItemId === item.id ? (
-                          <DeleteConfirmActions
-                            onCancel={() => setConfirmDeleteItemId(null)}
-                            onConfirm={() => handleDeleteItem(selectedList.id, item.id)}
-                            t={t}
-                          />
-                        ) : (
-                          <DeleteIconButton
-                            ariaLabel={t("deleteItemAriaLabel")}
-                            className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
-                            onClick={() => setConfirmDeleteItemId(item.id)}
-                          />
-                        )}
-                      </li>
+                        t={t}
+                      />
                     ))}
                   </>
                 ) : null}
