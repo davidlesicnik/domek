@@ -460,6 +460,30 @@ function PlannerSelectField({
   );
 }
 
+type PlannerFieldDefinition =
+  | Readonly<{
+      inputProps: ComponentProps<"input">;
+      key: string;
+      kind: "input";
+      label: ReactNode;
+    }>
+  | Readonly<{
+      key: string;
+      kind: "select";
+      label: ReactNode;
+      selectProps: ComponentProps<typeof PlannerSelect>;
+    }>;
+
+function PlannerFieldList({ fields }: Readonly<{ fields: PlannerFieldDefinition[] }>) {
+  return fields.map((field) =>
+    field.kind === "input" ? (
+      <PlannerInputField inputProps={field.inputProps} key={field.key} label={field.label} />
+    ) : (
+      <PlannerSelectField key={field.key} label={field.label} selectProps={field.selectProps} />
+    ),
+  );
+}
+
 function PlannerEditorHeader({
   closeLabel,
   description,
@@ -1300,6 +1324,42 @@ export function DashboardPlanner({
       label: memberLabel(member, t),
       value: member.id,
     }));
+    const eventFields: PlannerFieldDefinition[] = [
+      {
+        inputProps: {
+          onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
+          required: true,
+          type: "date",
+          value: composerDateKey,
+        },
+        key: "date",
+        kind: "input",
+        label: t("dateLabel"),
+      },
+      {
+        inputProps: {
+          onChange: (changeEvent) => setEventName(changeEvent.target.value),
+          required: true,
+          type: "text",
+          value: eventName,
+        },
+        key: "name",
+        kind: "input",
+        label: t("nameLabel"),
+      },
+      {
+        key: "category",
+        kind: "select",
+        label: t("categoryLabel"),
+        selectProps: {
+          id: "dashboard-event-category",
+          onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
+          options: eventCategoryOptions,
+          placeholder: t("categoryLabel"),
+          value: eventCategory,
+        },
+      },
+    ];
 
     return (
       <form className="grid gap-4" onSubmit={saveEvent}>
@@ -1311,36 +1371,7 @@ export function DashboardPlanner({
           title={isEditing ? t("editEvent") : t("addEvent")}
         />
 
-        <PlannerInputField
-          inputProps={{
-            onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
-            required: true,
-            type: "date",
-            value: composerDateKey,
-          }}
-          label={t("dateLabel")}
-        />
-
-        <PlannerInputField
-          inputProps={{
-            onChange: (changeEvent) => setEventName(changeEvent.target.value),
-            required: true,
-            type: "text",
-            value: eventName,
-          }}
-          label={t("nameLabel")}
-        />
-
-        <PlannerSelectField
-          label={t("categoryLabel")}
-          selectProps={{
-            id: "dashboard-event-category",
-            onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
-            options: eventCategoryOptions,
-            placeholder: t("categoryLabel"),
-            value: eventCategory,
-          }}
-        />
+        <PlannerFieldList fields={eventFields} />
 
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
@@ -1353,14 +1384,20 @@ export function DashboardPlanner({
             {t("allDay")}
           </label>
           {!isAllDay ? (
-            <PlannerInputField
-              inputProps={{
-                onChange: (changeEvent) => setEventTime(changeEvent.target.value),
-                required: true,
-                type: "time",
-                value: eventTime,
-              }}
-              label={t("timeLabel")}
+            <PlannerFieldList
+              fields={[
+                {
+                  inputProps: {
+                    onChange: (changeEvent) => setEventTime(changeEvent.target.value),
+                    required: true,
+                    type: "time",
+                    value: eventTime,
+                  },
+                  key: "time",
+                  kind: "input",
+                  label: t("timeLabel"),
+                },
+              ]}
             />
           ) : null}
         </div>
@@ -1869,6 +1906,51 @@ export function DashboardPlanner({
 
       {editingTodo ? (
         <PlannerDialog labelledBy="dashboard-todo-editor-title">
+          {(() => {
+            const todoFields: PlannerFieldDefinition[] = [
+              {
+                inputProps: {
+                  onChange: (event) => setTodoText(event.target.value),
+                  required: true,
+                  type: "text",
+                  value: todoText,
+                },
+                key: "name",
+                kind: "input",
+                label: t("nameLabel"),
+              },
+              {
+                inputProps: {
+                  onChange: (event) => setTodoDueDate(event.target.value),
+                  required: true,
+                  type: "date",
+                  value: todoDueDate,
+                },
+                key: "dueDate",
+                kind: "input",
+                label: t("dueDateLabel"),
+              },
+              {
+                key: "assigned",
+                kind: "select",
+                label: t("assignedToLabel"),
+                selectProps: {
+                  id: "dashboard-todo-member",
+                  onChange: (nextValue) => setTodoMemberId(nextValue || null),
+                  options: [
+                    { label: t("unassigned"), value: "" },
+                    ...calendarMembers.map((member) => ({
+                      label: memberLabel(member, t),
+                      value: member.id,
+                    })),
+                  ],
+                  placeholder: t("unassigned"),
+                  value: todoMemberId ?? "",
+                },
+              },
+            ];
+
+            return (
           <form className="grid gap-4" onSubmit={saveTodoEdit}>
             <PlannerEditorHeader
               closeLabel={t("closeTaskEditor")}
@@ -1880,42 +1962,7 @@ export function DashboardPlanner({
               titleId="dashboard-todo-editor-title"
             />
 
-            <PlannerInputField
-              inputProps={{
-                onChange: (event) => setTodoText(event.target.value),
-                required: true,
-                type: "text",
-                value: todoText,
-              }}
-              label={t("nameLabel")}
-            />
-
-            <PlannerInputField
-              inputProps={{
-                onChange: (event) => setTodoDueDate(event.target.value),
-                required: true,
-                type: "date",
-                value: todoDueDate,
-              }}
-              label={t("dueDateLabel")}
-            />
-
-            <PlannerSelectField
-              label={t("assignedToLabel")}
-              selectProps={{
-                id: "dashboard-todo-member",
-                onChange: (nextValue) => setTodoMemberId(nextValue || null),
-                options: [
-                  { label: t("unassigned"), value: "" },
-                  ...calendarMembers.map((member) => ({
-                    label: memberLabel(member, t),
-                    value: member.id,
-                  })),
-                ],
-                placeholder: t("unassigned"),
-                value: todoMemberId ?? "",
-              }}
-            />
+            <PlannerFieldList fields={todoFields} />
 
             <PlannerFormActions
               disabled={isSavingTodo}
@@ -1925,6 +1972,8 @@ export function DashboardPlanner({
               secondaryLabel={t("cancel")}
             />
           </form>
+            );
+          })()}
         </PlannerDialog>
       ) : null}
     </section>
