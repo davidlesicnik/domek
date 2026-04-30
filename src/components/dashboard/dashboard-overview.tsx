@@ -136,6 +136,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
       <DashboardPlanner
         agendaDays={agendaDays}
         calendarEvents={data.calendarEvents}
+        calendarGroups={data.calendarGroups}
         calendarMembers={data.calendarMembers}
         monthItemCountsByDate={monthItemCountsByDate}
         nonCalendarItemsByDate={data.nonCalendarItemsByDate}

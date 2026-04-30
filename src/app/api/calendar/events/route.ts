@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const calendarEvent = await createCalendarEvent(input, scope);
 
     if (!calendarEvent) {
-      return Response.json({ error: "Choose household members from this household." }, { status: 400 });
+      return Response.json({ error: "Choose a valid group and household members." }, { status: 400 });
     }
 
     return Response.json({ event: calendarEvent }, { status: 201 });

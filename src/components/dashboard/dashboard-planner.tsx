@@ -1,17 +1,16 @@
 "use client";
 
 import type { ComponentProps, FormEvent, ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Settings, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
-  calendarCategoryOptions,
-  type CalendarCategory,
   type CalendarEventInput,
   type CalendarEventView,
+  type CalendarGroupView,
   type CalendarMemberOption,
 } from "@/lib/calendar-types";
 import type {
@@ -19,11 +18,13 @@ import type {
   DashboardAgendaItem,
   DashboardMonthCellCounts,
 } from "@/lib/dashboard";
+import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
 import { getMemberColor } from "@/lib/member-colors";
 
 type DashboardPlannerProps = Readonly<{
   agendaDays: DashboardAgendaDay[];
   calendarEvents: CalendarEventView[];
+  calendarGroups: CalendarGroupView[];
   calendarMembers: CalendarMemberOption[];
   monthItemCountsByDate: Record<string, DashboardMonthCellCounts>;
   nonCalendarItemsByDate: Record<string, DashboardAgendaItem[]>;
@@ -39,6 +40,7 @@ type TodoEditorState = Readonly<{
 }>;
 
 type SelectOption = Readonly<{
+  color?: string;
   disabled?: boolean;
   label: string;
   value: string;
@@ -48,8 +50,6 @@ type MonthCursor = Readonly<{
   monthIndex: number;
   year: number;
 }>;
-
-const calendarCategories = ["care", "guests", "home", "school"] as const;
 
 const agendaSourceOrder: Record<DashboardAgendaItem["source"], number> = {
   calendar: 0,
@@ -78,41 +78,6 @@ const sourceStyles: Record<
   },
 };
 
-const categoryStyles: Record<
-  CalendarCategory,
-  Readonly<{
-    chip: string;
-    dot: string;
-    labelKey: "categoryCare" | "categoryGuests" | "categoryHome" | "categorySchool";
-    text: string;
-  }>
-> = {
-  care: {
-    chip: "border-[#c6d7c9] bg-[#edf4ee] text-[#476950]",
-    dot: "bg-[#6e9274]",
-    labelKey: "categoryCare",
-    text: "text-[#476950]",
-  },
-  guests: {
-    chip: "border-[#cdd1e5] bg-[#f0f2fa] text-[#5b648b]",
-    dot: "bg-[#8b91b5]",
-    labelKey: "categoryGuests",
-    text: "text-[#5b648b]",
-  },
-  home: {
-    chip: "border-[#e4d99b] bg-[#fbf4d7] text-[#776824]",
-    dot: "bg-[#c7ad32]",
-    labelKey: "categoryHome",
-    text: "text-[#776824]",
-  },
-  school: {
-    chip: "border-[#e8c5c1] bg-[#f8ebe9] text-[#8d5852]",
-    dot: "bg-[#c77d78]",
-    labelKey: "categorySchool",
-    text: "text-[#8d5852]",
-  },
-};
-
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -123,6 +88,7 @@ const plannerPrimaryButtonClassName =
   "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
 const plannerSecondaryButtonClassName =
   "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+const hexColorPattern = /^#[0-9A-Fa-f]{6}$/;
 
 function parseDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
@@ -205,30 +171,12 @@ function agendaDateLabel(
   return agendaDateFormatter.format(parseDateKey(dateKey));
 }
 
-function translateCalendarCategory(category: CalendarCategory, t: DashboardTranslations) {
-  return t(categoryStyles[category].labelKey);
-}
-
 function translateSourceDetail(item: DashboardAgendaItem, t: DashboardTranslations) {
   const detail = item.sourceDetail;
 
   if (!detail) return null;
 
-  if (item.source === "calendar") {
-    const category = calendarCategories.find((candidate) => t(categoryStyles[candidate].labelKey) === detail);
-    const englishCategory = calendarCategories.find((candidate) => {
-      const key = categoryStyles[candidate].labelKey;
-
-      return (
-        (key === "categoryCare" && detail === "Care") ||
-        (key === "categoryGuests" && detail === "Guests") ||
-        (key === "categoryHome" && detail === "Home") ||
-        (key === "categorySchool" && detail === "School")
-      );
-    });
-
-    return translateCalendarCategory(category ?? englishCategory ?? "home", t);
-  }
+  if (item.source === "calendar") return detail;
 
   if (item.source === "chore") {
     if (detail.startsWith("Assigned to ")) {
@@ -313,7 +261,6 @@ function sortDashboardItems(a: DashboardAgendaItem, b: DashboardAgendaItem) {
 function calendarEventAgendaItem(
   calendarEvent: CalendarEventView,
   membersById: Map<string, CalendarMemberOption>,
-  t: DashboardTranslations,
 ): DashboardAgendaItem {
   const firstAssignedMember = calendarEvent.householdMemberIds[0]
     ? membersById.get(calendarEvent.householdMemberIds[0]) ?? null
@@ -333,7 +280,7 @@ function calendarEventAgendaItem(
         }
       : null,
     source: "calendar",
-    sourceDetail: translateCalendarCategory(calendarEvent.category, t),
+    sourceDetail: calendarEvent.groupName,
     timeLabel: calendarEvent.time.kind === "all-day" ? "All day" : calendarEvent.time.value,
     title: calendarEvent.name,
   };
@@ -436,6 +383,38 @@ function CalendarMemberPill({
   );
 }
 
+type GroupFormState = Readonly<{
+  color: string;
+  id: string;
+  name: string;
+}>;
+
+const NEW_GROUP_OPTION = "__new__";
+
+function defaultGroupId(groups: CalendarGroupView[]) {
+  return groups[0]?.id ?? NEW_GROUP_OPTION;
+}
+
+function defaultGroupForm(groups: CalendarGroupView[]): GroupFormState {
+  const firstGroup = groups[0];
+
+  return firstGroup
+    ? { color: firstGroup.color, id: firstGroup.id, name: firstGroup.name }
+    : { color: EXPENSE_CATEGORY_COLOR_GROUPS[0].base, id: NEW_GROUP_OPTION, name: "" };
+}
+
+function findColorGroup(color: string) {
+  return (
+    EXPENSE_CATEGORY_COLOR_GROUPS.find((group) =>
+      group.shades.some((shade) => shade.toLowerCase() === color.toLowerCase()),
+    ) ?? EXPENSE_CATEGORY_COLOR_GROUPS[0]
+  );
+}
+
+function colorGroupLabel(name: string) {
+  return name;
+}
+
 function PlannerField({ children, label }: Readonly<{ children: ReactNode; label: ReactNode }>) {
   return (
     <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
@@ -446,7 +425,9 @@ function PlannerField({ children, label }: Readonly<{ children: ReactNode; label
 }
 
 function PlannerInput(props: Readonly<ComponentProps<"input">>) {
-  return <input {...props} className={plannerInputClassName} />;
+  const { className, ...rest } = props;
+
+  return <input {...rest} className={cx(plannerInputClassName, className)} />;
 }
 
 function PlannerInputField({
@@ -802,8 +783,17 @@ function PlannerSelect({
         role="combobox"
         type="button"
       >
-        <span className={selectedOption ? "truncate" : "truncate text-[#6d746f]"}>
-          {selectedOption?.label ?? placeholder}
+        <span className="flex min-w-0 items-center gap-2">
+          {selectedOption?.color ? (
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: selectedOption.color }}
+            />
+          ) : null}
+          <span className={selectedOption ? "truncate" : "truncate text-[#6d746f]"}>
+            {selectedOption?.label ?? placeholder}
+          </span>
         </span>
         <ChevronRight
           aria-hidden
@@ -838,7 +828,14 @@ function PlannerSelect({
                 role="option"
                 type="button"
               >
-                {option.label}
+                {option.color ? (
+                  <span
+                    aria-hidden
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: option.color }}
+                  />
+                ) : null}
+                <span className="truncate">{option.label}</span>
               </button>
             );
           })}
@@ -863,7 +860,7 @@ function DashboardCalendarEventCard({
   onEdit: () => void;
   t: DashboardTranslations;
 }>) {
-  const agendaItem = calendarEventAgendaItem(calendarEvent, membersById, t);
+  const agendaItem = calendarEventAgendaItem(calendarEvent, membersById);
   const styles = sourceStyles.calendar;
   const meta = plannerItemMeta(agendaItem, t);
   const assignedMembers = calendarEvent.householdMemberIds
@@ -903,6 +900,7 @@ function DashboardCalendarEventCard({
 export function DashboardPlanner({
   agendaDays,
   calendarEvents,
+  calendarGroups,
   calendarMembers,
   monthItemCountsByDate,
   nonCalendarItemsByDate,
@@ -938,10 +936,12 @@ export function DashboardPlanner({
   });
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [eventsByDate, setEventsByDate] = useState(() => groupEventsByDate(calendarEvents));
+  const [groups, setGroups] = useState(calendarGroups);
   const [calendarCounts, setCalendarCounts] = useState(monthItemCountsByDate);
   const [composerDateKey, setComposerDateKey] = useState(todayKey);
   const [eventName, setEventName] = useState("");
-  const [eventCategory, setEventCategory] = useState<CalendarCategory>("home");
+  const [eventGroupId, setEventGroupId] = useState(() => defaultGroupId(calendarGroups));
+  const [newGroupName, setNewGroupName] = useState("");
   const [isAllDay, setIsAllDay] = useState(true);
   const [eventTime, setEventTime] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -961,10 +961,26 @@ export function DashboardPlanner({
   const [todoMemberId, setTodoMemberId] = useState<string | null>(null);
   const [todoFormError, setTodoFormError] = useState<string | null>(null);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [groupForm, setGroupForm] = useState<GroupFormState>(() => defaultGroupForm(calendarGroups));
+  const [selectedColorGroupName, setSelectedColorGroupName] = useState<string>(findColorGroup(defaultGroupForm(calendarGroups).color).name);
+  const [groupError, setGroupError] = useState<string | null>(null);
+  const [isSavingGroup, setIsSavingGroup] = useState(false);
 
   useEffect(() => {
     setEventsByDate(groupEventsByDate(calendarEvents));
   }, [calendarEvents]);
+
+  useEffect(() => {
+    setGroups(calendarGroups);
+    setGroupForm(defaultGroupForm(calendarGroups));
+    setSelectedColorGroupName(findColorGroup(defaultGroupForm(calendarGroups).color).name);
+    setEventGroupId((currentGroupId) =>
+      currentGroupId === NEW_GROUP_OPTION || calendarGroups.some((group) => group.id === currentGroupId)
+        ? currentGroupId
+        : defaultGroupId(calendarGroups),
+    );
+  }, [calendarGroups]);
 
   useEffect(() => {
     setCalendarCounts(monthItemCountsByDate);
@@ -983,11 +999,11 @@ export function DashboardPlanner({
   const selectedEvents = useMemo(() => eventsByDate[selectedDateKey] ?? [], [eventsByDate, selectedDateKey]);
   const selectedDayItems = useMemo(() => {
     const calendarItems = selectedEvents.map((calendarEvent) =>
-      calendarEventAgendaItem(calendarEvent, membersById, t),
+      calendarEventAgendaItem(calendarEvent, membersById),
     );
 
     return [...calendarItems, ...(scheduledItemsByDate[selectedDateKey] ?? [])].sort(sortDashboardItems);
-  }, [membersById, scheduledItemsByDate, selectedDateKey, selectedEvents, t]);
+  }, [membersById, scheduledItemsByDate, selectedDateKey, selectedEvents]);
   const selectedMembers = selectedMemberIds
     .map((memberId) => membersById.get(memberId))
     .filter((member): member is CalendarMemberOption => Boolean(member));
@@ -1005,7 +1021,8 @@ export function DashboardPlanner({
   function resetComposer(defaultDateKey = selectedDateKey) {
     setComposerDateKey(defaultDateKey);
     setEventName("");
-    setEventCategory("home");
+    setEventGroupId(defaultGroupId(groups));
+    setNewGroupName("");
     setIsAllDay(true);
     setEventTime("");
     setSelectedMemberIds([]);
@@ -1041,7 +1058,8 @@ export function DashboardPlanner({
     setIsComposerOpen(true);
     setComposerDateKey(calendarEvent.dateKey);
     setEventName(calendarEvent.name);
-    setEventCategory(calendarEvent.category);
+    setEventGroupId(calendarEvent.groupId);
+    setNewGroupName("");
     setIsAllDay(calendarEvent.time.kind === "all-day");
     setEventTime(calendarEvent.time.kind === "time" ? calendarEvent.time.value : "");
     setSelectedMemberIds([...calendarEvent.householdMemberIds]);
@@ -1071,6 +1089,75 @@ export function DashboardPlanner({
     startTransition(() => {
       router.refresh();
     });
+  }
+
+  function openGroupDialog() {
+    setGroupForm(defaultGroupForm(groups));
+    setSelectedColorGroupName(findColorGroup(defaultGroupForm(groups).color).name);
+    setGroupError(null);
+    setShowGroupDialog(true);
+  }
+
+  function closeGroupDialog() {
+    if (isSavingGroup) {
+      return;
+    }
+
+    setShowGroupDialog(false);
+    setGroupError(null);
+  }
+
+  function selectGroupForEdit(groupId: string) {
+    if (groupId === NEW_GROUP_OPTION) {
+      const defaultColor = EXPENSE_CATEGORY_COLOR_GROUPS[0].base;
+
+      setGroupForm({ color: defaultColor, id: NEW_GROUP_OPTION, name: "" });
+      setSelectedColorGroupName(findColorGroup(defaultColor).name);
+      setGroupError(null);
+      return;
+    }
+
+    const group = groups.find((candidate) => candidate.id === groupId);
+
+    if (!group) {
+      return;
+    }
+
+    setGroupForm({ color: group.color, id: group.id, name: group.name });
+    setSelectedColorGroupName(findColorGroup(group.color).name);
+    setGroupError(null);
+  }
+
+  async function ensureCalendarGroupId() {
+    if (eventGroupId !== NEW_GROUP_OPTION) {
+      return eventGroupId;
+    }
+
+    const trimmedGroupName = newGroupName.trim();
+
+    if (!trimmedGroupName) {
+      setFormError(t("groupNameRequired"));
+      return null;
+    }
+
+    const response = await fetch("/api/calendar/groups", {
+      body: JSON.stringify({ name: trimmedGroupName }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      setFormError(t("groupCreateError"));
+      return null;
+    }
+
+    const { group } = (await response.json()) as { group: CalendarGroupView };
+
+    setGroups((currentGroups) => [...currentGroups, group].sort((a, b) => a.name.localeCompare(b.name)));
+    setEventGroupId(group.id);
+    setNewGroupName("");
+
+    return group.id;
   }
 
   async function persistCalendarEvent(url: string, method: "PATCH" | "POST", input: CalendarEventInput) {
@@ -1104,9 +1191,15 @@ export function DashboardPlanner({
       return;
     }
 
+    const ensuredGroupId = await ensureCalendarGroupId();
+
+    if (!ensuredGroupId) {
+      return;
+    }
+
     const input: CalendarEventInput = {
-      category: eventCategory,
       dateKey: composerDateKey,
+      groupId: ensuredGroupId,
       householdMemberIds: selectedMemberIds,
       name: trimmedEventName,
       time: isAllDay ? { kind: "all-day" } : { kind: "time", value: eventTime },
@@ -1173,6 +1266,77 @@ export function DashboardPlanner({
       setFormError(t("eventSaveError"));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function saveGroup(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+
+    const trimmedGroupName = groupForm.name.trim();
+
+    if (!trimmedGroupName) {
+      setGroupError(t("groupNameRequired"));
+      return;
+    }
+
+    if (!hexColorPattern.test(groupForm.color)) {
+      setGroupError(t("groupColorInvalid"));
+      return;
+    }
+
+    setGroupError(null);
+    setIsSavingGroup(true);
+
+    try {
+      const response = await fetch(
+        groupForm.id === NEW_GROUP_OPTION ? "/api/calendar/groups" : `/api/calendar/groups/${groupForm.id}`,
+        {
+          body: JSON.stringify({ color: groupForm.color, name: trimmedGroupName }),
+          headers: { "Content-Type": "application/json" },
+          method: groupForm.id === NEW_GROUP_OPTION ? "POST" : "PATCH",
+        },
+      );
+
+      if (!response.ok) {
+        setGroupError(groupForm.id === NEW_GROUP_OPTION ? t("groupCreateError") : t("groupSaveError"));
+        return;
+      }
+
+      const { group } = (await response.json()) as { group: CalendarGroupView };
+
+      setGroups((currentGroups) => {
+        const nextGroups = currentGroups
+          .filter((currentGroup) => currentGroup.id !== group.id)
+          .concat(group)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (groupForm.id === NEW_GROUP_OPTION && eventGroupId === NEW_GROUP_OPTION) {
+          setEventGroupId(group.id);
+          setNewGroupName("");
+        }
+
+        return nextGroups;
+      });
+
+      setEventsByDate((currentEvents) =>
+        Object.fromEntries(
+          Object.entries(currentEvents).map(([dateKey, dayEvents]) => [
+            dateKey,
+            dayEvents.map((calendarEvent) =>
+              calendarEvent.groupId === group.id
+                ? { ...calendarEvent, groupColor: group.color, groupName: group.name }
+                : calendarEvent,
+            ),
+          ]),
+        ),
+      );
+
+      setGroupForm({ color: group.color, id: group.id, name: group.name });
+      setSelectedColorGroupName(findColorGroup(group.color).name);
+      setShowGroupDialog(false);
+      refreshDashboard();
+    } finally {
+      setIsSavingGroup(false);
     }
   }
 
@@ -1338,10 +1502,14 @@ export function DashboardPlanner({
 
   function renderEventForm() {
     const isEditing = editingEventId !== null;
-    const eventCategoryOptions: SelectOption[] = calendarCategoryOptions.map((category) => ({
-      label: translateCalendarCategory(category, t),
-      value: category,
-    }));
+    const eventGroupOptions: SelectOption[] = [
+      ...groups.map((group) => ({
+        color: group.color,
+        label: group.name,
+        value: group.id,
+      })),
+      { label: t("newGroupOption"), value: NEW_GROUP_OPTION },
+    ];
     const involvedMemberOptions: SelectOption[] = calendarMembers.map((member) => ({
       disabled: selectedMemberIds.includes(member.id),
       label: memberLabel(member, t),
@@ -1360,13 +1528,6 @@ export function DashboardPlanner({
           type: "text",
           value: eventName,
         }),
-      plannerSelectFieldDefinition("category", t("categoryLabel"), {
-          id: "dashboard-event-category",
-          onChange: (nextValue) => setEventCategory(nextValue as CalendarCategory),
-          options: eventCategoryOptions,
-          placeholder: t("categoryLabel"),
-          value: eventCategory,
-        }),
     ];
 
     return (
@@ -1380,6 +1541,44 @@ export function DashboardPlanner({
         />
 
         <PlannerFieldList fields={eventFields} />
+
+        <PlannerField label={t("groupLabel")}>
+          {eventGroupId === NEW_GROUP_OPTION ? (
+            <div className="flex w-full gap-2">
+              <PlannerInput
+                autoFocus
+                className="flex-1"
+                maxLength={60}
+                onChange={(changeEvent) => setNewGroupName(changeEvent.target.value)}
+                placeholder={t("newGroupNamePlaceholder")}
+                required
+                type="text"
+                value={newGroupName}
+              />
+              <button
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                onClick={() => {
+                  setEventGroupId(groups[0]?.id ?? "");
+                  setNewGroupName("");
+                }}
+                type="button"
+              >
+                {t("cancel")}
+              </button>
+            </div>
+          ) : (
+            <PlannerSelect
+              id="dashboard-event-group"
+              onChange={(nextValue) => {
+                setEventGroupId(nextValue);
+                setNewGroupName("");
+              }}
+              options={eventGroupOptions}
+              placeholder={t("groupLabel")}
+              value={eventGroupId}
+            />
+          )}
+        </PlannerField>
 
         <div className="grid gap-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
@@ -1462,6 +1661,119 @@ export function DashboardPlanner({
 
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+      {showGroupDialog ? (
+        <PlannerDialog labelledBy="dashboard-group-dialog-title">
+          <form className="grid gap-4" onSubmit={saveGroup}>
+            <PlannerEditorHeader
+              closeLabel={t("closeGroupEditor")}
+              disabled={isSavingGroup}
+              eyebrow={t("groupsLabel")}
+              onClose={closeGroupDialog}
+              title={groupForm.id === NEW_GROUP_OPTION ? t("addGroup") : t("editGroup")}
+              titleId="dashboard-group-dialog-title"
+            />
+
+            {groupError ? <p className="text-sm font-semibold text-[#a6543c]">{groupError}</p> : null}
+
+            <PlannerField label={t("groupLabel")}>
+              <PlannerSelect
+                id="dashboard-group-select"
+                onChange={selectGroupForEdit}
+                options={[
+                  ...groups.map((group) => ({
+                    color: group.color,
+                    label: group.name,
+                    value: group.id,
+                  })),
+                  { label: t("newGroupOption"), value: NEW_GROUP_OPTION },
+                ]}
+                placeholder={t("groupLabel")}
+                value={groupForm.id}
+              />
+            </PlannerField>
+
+            <PlannerField label={t("nameLabel")}>
+              <PlannerInput
+                maxLength={60}
+                onChange={(changeEvent) => setGroupForm((currentGroup) => ({ ...currentGroup, name: changeEvent.target.value }))}
+                required
+                type="text"
+                value={groupForm.name}
+              />
+            </PlannerField>
+
+            <PlannerField label={t("groupColorLabel")}>
+              <div className="grid gap-3 rounded-md border border-[#d8d2c8] bg-white p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {EXPENSE_CATEGORY_COLOR_GROUPS.map((group) => (
+                    <button
+                      aria-label={t("chooseGroupColorFamily", { color: colorGroupLabel(group.name) })}
+                      className={cx(
+                        "h-8 w-8 rounded-md border transition",
+                        selectedColorGroupName === group.name
+                          ? "border-[#171a18] ring-2 ring-[#171a18]/15"
+                          : "border-[#d8d2c8] hover:border-[#a9a398]",
+                      )}
+                      key={group.name}
+                      onClick={() => {
+                        setSelectedColorGroupName(group.name);
+                        setGroupForm((currentGroup) => ({ ...currentGroup, color: group.base }));
+                      }}
+                      style={{ backgroundColor: group.base }}
+                      type="button"
+                    />
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 border-t border-[#ece8df] pt-3">
+                  {(EXPENSE_CATEGORY_COLOR_GROUPS.find((group) => group.name === selectedColorGroupName) ??
+                    findColorGroup(groupForm.color)
+                  ).shades.map((color) => (
+                    <button
+                      aria-label={t("chooseGroupColorShade", { value: color })}
+                      className={cx(
+                        "h-8 w-8 rounded-md border transition",
+                        groupForm.color.toLowerCase() === color.toLowerCase()
+                          ? "border-[#171a18] ring-2 ring-[#171a18]/15"
+                          : "border-[#d8d2c8] hover:border-[#a9a398]",
+                      )}
+                      key={color}
+                      onClick={() => setGroupForm((currentGroup) => ({ ...currentGroup, color }))}
+                      style={{ backgroundColor: color }}
+                      type="button"
+                    />
+                  ))}
+                </div>
+
+                <label className="flex items-center gap-2 border-t border-[#ece8df] pt-3 text-xs text-[#686e6a]">
+                  <span>{t("customColor")}</span>
+                  <input
+                    className="h-8 w-12 rounded-md border border-[#d8d2c8] bg-white p-1 focus:border-[#9bb6a4] focus:outline-none"
+                    onChange={(changeEvent) => {
+                      const nextColor = changeEvent.target.value;
+
+                      setGroupForm((currentGroup) => ({ ...currentGroup, color: nextColor }));
+                      setSelectedColorGroupName(findColorGroup(nextColor).name);
+                    }}
+                    type="color"
+                    value={groupForm.color}
+                  />
+                  <span className="font-mono uppercase">{groupForm.color}</span>
+                </label>
+              </div>
+            </PlannerField>
+
+            <PlannerFormActions
+              disabled={isSavingGroup}
+              error={null}
+              onCancel={closeGroupDialog}
+              primaryLabel={isSavingGroup ? t("saving") : groupForm.id === NEW_GROUP_OPTION ? t("saveGroup") : t("saveChanges")}
+              secondaryLabel={t("cancel")}
+            />
+          </form>
+        </PlannerDialog>
+      ) : null}
+
       <div className="order-2 lg:order-1" id="home-calendar" ref={calendarSectionRef}>
         <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
           <div className="flex flex-col gap-3 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4">
@@ -1492,15 +1804,25 @@ export function DashboardPlanner({
                   <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
                 </div>
               </div>
-              {!selectedDateIsToday ? (
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                 <button
-                  className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:h-9 sm:w-auto sm:shrink-0"
-                  onClick={goToToday}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] sm:h-9 sm:w-auto sm:shrink-0"
+                  onClick={openGroupDialog}
                   type="button"
                 >
-                  {t("today")}
+                  <Settings aria-hidden className="h-4 w-4" />
+                  {t("groupsLabel")}
                 </button>
-              ) : null}
+                {!selectedDateIsToday ? (
+                  <button
+                    className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:h-9 sm:w-auto sm:shrink-0"
+                    onClick={goToToday}
+                    type="button"
+                  >
+                    {t("today")}
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
 
