@@ -16,12 +16,14 @@ type CookieUpdate = Readonly<{
 
 const PUBLIC_PATHS = [
   "/",
+  "/blog",
   "/contact",
   "/cookies",
   "/login",
   "/pricing",
   "/privacy",
   "/refund-policy",
+  "/sitemap.xml",
   "/terms",
   "/api/paddle/webhook",
   "/auth/callback",
@@ -30,8 +32,17 @@ const PUBLIC_PATHS = [
   "/api/auth/signout",
 ];
 
+const NON_LOCALIZED_PATHS = [
+  "/blog",
+  "/sitemap.xml",
+];
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+function isNonLocalizedPath(pathname: string): boolean {
+  return NON_LOCALIZED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 function isOnboardingPath(pathname: string): boolean {
@@ -207,8 +218,9 @@ export async function proxy(request: NextRequest) {
   const legacyEnglishRedirect = redirectLegacyEnglishLocale(request);
   if (legacyEnglishRedirect) return legacyEnglishRedirect;
 
-  // Skip intl for API routes, auth route handlers, and Next.js internals
+  // Skip intl for standalone public routes, API routes, auth route handlers, and Next.js internals
   if (
+    isNonLocalizedPath(pathname) ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/_next/")
