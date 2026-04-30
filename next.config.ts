@@ -74,7 +74,7 @@ const nextConfig: NextConfig = {
   ],
   output: "standalone",
   outputFileTracingIncludes: {
-    "/**": ["./messages/**"],
+    "/**": ["./content/**", "./messages/**"],
   },
   async headers() {
     return [

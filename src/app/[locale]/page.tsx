@@ -1,4 +1,5 @@
 import { CheckCircle2, X } from "lucide-react";
+import NextLink from "next/link";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
@@ -82,6 +83,12 @@ function LandingHeaderButtons({ hasSession }: { hasSession: boolean }) {
 
   return (
     <div className="flex items-center gap-3">
+      <NextLink
+        className="inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-[#686e6a] transition hover:text-[#202321]"
+        href="/blog"
+      >
+        Blog
+      </NextLink>
       <Link
         className="inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-medium text-[#686e6a] transition hover:text-[#202321]"
         href="/pricing"
