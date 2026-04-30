@@ -1,4 +1,4 @@
-const LOCALHOST_ORIGIN = "http://localhost:3000";
+const DEFAULT_SITE_ORIGIN = "https://domekapp.com";
 
 export function getSiteOrigin(): string {
   const appUrl = process.env.APP_URL?.trim();
@@ -7,7 +7,7 @@ export function getSiteOrigin(): string {
     return new URL(appUrl).origin;
   }
 
-  return LOCALHOST_ORIGIN;
+  return DEFAULT_SITE_ORIGIN;
 }
 
 export function getSiteUrl(pathname = "/"): string {
