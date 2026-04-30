@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   "/pricing",
   "/privacy",
   "/refund-policy",
+  "/sitemap.xml",
   "/terms",
   "/api/paddle/webhook",
   "/auth/callback",
