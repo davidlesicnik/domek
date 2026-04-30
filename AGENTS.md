@@ -86,18 +86,29 @@ All requests pass through `src/proxy.ts` before reaching any page. It checks the
 
 Current public paths are listed at the top of `src/proxy.ts`. When debugging unexpected redirects to `/login`, check `PUBLIC_PATHS` first.
 
+Standalone public routes that should bypass locale prefixing, such as `/blog`, `/blog/rss.xml`, `/robots.txt`, and `/sitemap.xml`, must also be considered in `NON_LOCALIZED_PATHS`. If a route exists outside `src/app/[locale]/` and unexpectedly redirects or 404s under `/<locale>/...`, check `NON_LOCALIZED_PATHS` first.
+
 ## Internationalization (i18n)
 
 i18n is a first-class requirement. The app supports English (`en`) and Slovenian (`sl`) via URL path prefixes (`/en/...`, `/sl/...`) using **next-intl**.
 
 Rules that apply to every new feature or page:
 
-- **New pages** must live under `src/app/[locale]/`. Never add a new page outside this segment (except route handlers under `src/app/api/` and `src/app/auth/`).
+- **New pages** must live under `src/app/[locale]/`. Never add a new page outside this segment (except route handlers under `src/app/api/` and `src/app/auth/`, plus the existing standalone SEO surfaces such as `/blog`, `/blog/rss.xml`, `/robots.txt`, and `/sitemap.xml`).
 - **New user-facing strings** must be added to both `messages/en.json` and `messages/sl.json` before shipping. Do not hardcode display strings in components.
-- **Links and redirects** must use `@/i18n/navigation` (`Link`, `redirect`, `useRouter`, `usePathname`), not `next/link` or `next/navigation`. Exception: route handlers and `src/proxy.ts` keep native Next.js imports.
+- **Links and redirects** must use `@/i18n/navigation` (`Link`, `redirect`, `useRouter`, `usePathname`), not `next/link` or `next/navigation`. Exception: route handlers and `src/proxy.ts` keep native Next.js imports, and links that must intentionally stay outside locale prefixing (for example `/blog`) should use native `next/link`.
 - **`Intl` formatting** (dates, numbers) must use the current locale. In Server Components use `await getLocale()` from `next-intl/server`; in Client Components use `useLocale()` from `next-intl`.
 - Translation files live at `messages/en.json` and `messages/sl.json`. Namespace keys by feature area (e.g. `nav`, `footer`, `onboarding`).
 - Legal prose pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only — no Slovenian translation required for them.
+
+## Blog
+
+- The SEO blog is intentionally English-only and lives outside the locale-prefixed tree at `/blog`.
+- Blog content is repo-managed MDX in `content/blog/*.mdx`; do not move it into the database or `messages/*.json`.
+- The content loader and frontmatter schema live in `src/lib/blog.tsx`. Keep frontmatter typed and validated server-side.
+- Use optional per-article CTA fields (`ctaTitle`, `ctaBody`, `ctaLabel`, `ctaHref`) when the article needs a contextual bottom CTA. Keep article CTAs to one block at the end unless the user explicitly asks for a different pattern.
+- `src/app/sitemap.ts` and `src/app/robots.ts` are part of the blog/SEO surface. If you add new public SEO pages, include them in sitemap/robots considerations.
+- `src/lib/site.ts` defines the canonical origin used by metadata routes. Do not revert it to localhost fallbacks for sitemap or robots output.
 
 ## Security Notes
 

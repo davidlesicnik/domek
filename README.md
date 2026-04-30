@@ -5,6 +5,7 @@ Domek is a container-first household planner for shared household coordination.
 ## Features
 
 - **Dashboard** — home board with feature navigation
+- **Blog** — English-only SEO content published from repo-managed MDX with a standalone `/blog` surface, RSS feed, `robots.txt`, and sitemap support
 - **Household management** — invite members by email, assign roles (owner/member), set member colors, transfer ownership, leave or delete a household
 - **Calendar** — shared household calendar with per-event member assignment
 - **To-do lists** — shared task lists with item completion tracking
@@ -47,6 +48,54 @@ Setup notes live in `docs/supabase-auth-email-setup.md`.
 
 For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. The Docker web service uses `CONTAINER_DATABASE_URL` so it can reach the same database through the Compose-internal `postgres` hostname.
 
+## Blog and SEO
+
+The marketing blog is a standalone, English-only surface at:
+
+- `/blog`
+- `/blog/[slug]`
+- `/blog/rss.xml`
+
+Blog content lives in `content/blog/*.mdx` and is loaded by `src/lib/blog.tsx`.
+
+### Blog frontmatter
+
+Each article should include:
+
+- `title`
+- `description`
+- `publishedAt`
+- `slug`
+- `topic`
+- `authorName`
+- `seoTitle` optional
+- `seoDescription` optional
+- `canonicalPath` optional
+- `draft` optional
+- `ctaTitle` optional
+- `ctaBody` optional
+- `ctaLabel` optional
+- `ctaHref` optional
+
+Draft posts are excluded from the blog index, sitemap, RSS, and public routes.
+
+### Routing notes
+
+The blog is intentionally **not** locale-prefixed. It bypasses `next-intl` and must stay in the standalone route space rather than `src/app/[locale]/`.
+
+If you add more standalone public SEO routes, update `src/proxy.ts` in both places:
+
+- `PUBLIC_PATHS` so unauthenticated visitors and crawlers are not redirected to `/login`
+- `NON_LOCALIZED_PATHS` so the route bypasses locale prefixing
+
+### Sitemap and robots
+
+- `src/app/sitemap.ts` generates the blog sitemap entries
+- `src/app/robots.ts` serves a standard `robots.txt`
+- Canonical sitemap and metadata URLs are built from `src/lib/site.ts`
+
+When `APP_URL` is unset, the site URL helper falls back to `https://domekapp.com` so generated metadata, `robots.txt`, and `sitemap.xml` do not point at localhost.
+
 ## Environment
 
 Required for local development (see `.env.example`):
@@ -67,7 +116,7 @@ ENABLE_DEVELOPMENT_ACCESS_BYPASS="false"
 DEVELOPMENT_ACCESS_CODE=""
 ```
 
-`APP_URL` is optional locally (defaults to `http://localhost:3000`) but required in production so invite links resolve to the correct origin.
+`APP_URL` is optional locally. When it is unset, auth and invite flows still rely on request origin in development, while blog metadata, `robots.txt`, and `sitemap.xml` fall back to `https://domekapp.com`. Set `APP_URL` in production so invite links and metadata resolve to the canonical origin.
 
 `ENABLE_DEVELOPMENT_ACCESS_BYPASS` and `DEVELOPMENT_ACCESS_CODE` are local-development-only escape hatches for onboarding. The bypass is disabled by default and the app rejects it when `NODE_ENV=production`.
 
