@@ -1,6 +1,6 @@
-import type { CalendarEventCategory, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-import type { CalendarEventView, CalendarMemberOption } from "@/lib/calendar-types";
+import type { CalendarEventView, CalendarGroupView, CalendarMemberOption } from "@/lib/calendar-types";
 import type { ExpenseScope, ExpenseView, MonthStats } from "@/lib/expenses";
 import { getMonthStats, listExpenses } from "@/lib/expenses";
 import type { ChoreScope, ChoreView } from "@/lib/chores";
@@ -70,6 +70,7 @@ export type DashboardData = Readonly<{
   actionSummary: DashboardActionSummary;
   agendaDays: DashboardAgendaDay[];
   calendarEvents: CalendarEventView[];
+  calendarGroups: CalendarGroupView[];
   calendarMembers: CalendarMemberOption[];
   expenseSnapshot: DashboardExpenseSnapshot;
   members: DashboardMember[];
@@ -88,13 +89,25 @@ type DashboardTodoItem = Prisma.TodoItemGetPayload<{
 
 const dashboardCalendarEventSelect = {
   allDay: true,
-  category: true,
   dateKey: true,
+  group: {
+    select: {
+      color: true,
+      id: true,
+      name: true,
+    },
+  },
   householdMemberIds: true,
   id: true,
   name: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
+
+const dashboardCalendarGroupSelect = {
+  color: true,
+  id: true,
+  name: true,
+} satisfies Prisma.CalendarGroupSelect;
 
 const dashboardTodoItemSelect = {
   assignedHouseholdMember: {
@@ -119,20 +132,6 @@ const dashboardTodoItemSelect = {
   },
   text: true,
 } satisfies Prisma.TodoItemSelect;
-
-const calendarCategoryLabels: Record<CalendarEventCategory, string> = {
-  CARE: "Care",
-  GUESTS: "Guests",
-  HOME: "Home",
-  SCHOOL: "School",
-};
-
-const dashboardCalendarCategoryToCalendar = {
-  CARE: "care",
-  GUESTS: "guests",
-  HOME: "home",
-  SCHOOL: "school",
-} as const satisfies Record<CalendarEventCategory, CalendarEventView["category"]>;
 
 const agendaSourceOrder: Record<DashboardAgendaSource, number> = {
   calendar: 0,
@@ -193,10 +192,22 @@ function toCalendarMemberOption(member: DashboardMember): CalendarMemberOption {
   };
 }
 
+function toCalendarGroupView(
+  group: Prisma.CalendarGroupGetPayload<{ select: typeof dashboardCalendarGroupSelect }>,
+): CalendarGroupView {
+  return {
+    color: group.color,
+    id: group.id,
+    name: group.name,
+  };
+}
+
 function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEventView {
   return {
-    category: dashboardCalendarCategoryToCalendar[calendarEvent.category],
     dateKey: calendarEvent.dateKey,
+    groupColor: calendarEvent.group.color,
+    groupId: calendarEvent.group.id,
+    groupName: calendarEvent.group.name,
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
@@ -240,7 +251,7 @@ function calendarAgendaItem(
     id: calendarEvent.id,
     member: firstAssignedMember,
     source: "calendar",
-    sourceDetail: calendarCategoryLabels[calendarEvent.category],
+    sourceDetail: calendarEvent.group.name,
     timeLabel: calendarEvent.allDay ? "All day" : calendarEvent.time ?? "00:00",
     title: calendarEvent.name,
   };
@@ -383,7 +394,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData | 
   const expenseScope: ExpenseScope = { householdId, userId };
   const choreScope: ChoreScope = { householdId, userId };
 
-  const [members, calendarEvents, todos, chores, expenseStats, monthlyExpenses] = await Promise.all([
+  const [members, calendarEvents, calendarGroups, todos, chores, expenseStats, monthlyExpenses] = await Promise.all([
     prisma.householdMember.findMany({
       orderBy: [{ name: "asc" }, { createdAt: "asc" }],
       select: {
@@ -402,6 +413,11 @@ export async function getDashboardData(userId: string): Promise<DashboardData | 
     prisma.calendarEvent.findMany({
       orderBy: [{ dateKey: "asc" }, { allDay: "desc" }, { time: "asc" }, { createdAt: "asc" }],
       select: dashboardCalendarEventSelect,
+      where: { householdId },
+    }),
+    prisma.calendarGroup.findMany({
+      orderBy: { name: "asc" },
+      select: dashboardCalendarGroupSelect,
       where: { householdId },
     }),
     prisma.todoItem.findMany({
@@ -481,6 +497,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData | 
     },
     agendaDays: groupAgendaItems(agendaItems),
     calendarEvents: calendarEvents.map(toCalendarEventView),
+    calendarGroups: calendarGroups.map(toCalendarGroupView),
     calendarMembers: dashboardMembers.map(toCalendarMemberOption),
     expenseSnapshot: {
       entries: monthlyExpenses.slice(0, 3).map(toExpenseEntry),
