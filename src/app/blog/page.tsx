@@ -59,7 +59,6 @@ export default async function BlogIndexPage() {
 
       <section className="grid gap-8 rounded-md bg-[#fffdf8] px-6 py-8 shadow-[0_8px_40px_rgba(31,35,30,0.06)] sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.75fr)] lg:items-start">
         <div>
-          <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">English-only journal</p>
           <h1 className="mt-3 max-w-3xl font-serif text-[clamp(2.4rem,8vw,4.4rem)] font-semibold leading-[0.94] tracking-normal text-[#171a18]">
             Practical home-board ideas that help the week run more smoothly.
           </h1>
