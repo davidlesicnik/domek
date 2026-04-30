@@ -104,9 +104,9 @@ function toCalendarEventView(
 ): CalendarEventView {
   return {
     dateKey: calendarEvent.dateKey,
-    groupColor: calendarEvent.group.color,
-    groupId: calendarEvent.group.id,
-    groupName: calendarEvent.group.name,
+    groupColor: calendarEvent.group?.color ?? "#8b918c",
+    groupId: calendarEvent.group?.id ?? "",
+    groupName: calendarEvent.group?.name ?? "",
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,

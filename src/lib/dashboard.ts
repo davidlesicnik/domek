@@ -205,9 +205,9 @@ function toCalendarGroupView(
 function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEventView {
   return {
     dateKey: calendarEvent.dateKey,
-    groupColor: calendarEvent.group.color,
-    groupId: calendarEvent.group.id,
-    groupName: calendarEvent.group.name,
+    groupColor: calendarEvent.group?.color ?? "#8b918c",
+    groupId: calendarEvent.group?.id ?? "",
+    groupName: calendarEvent.group?.name ?? "",
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
@@ -251,7 +251,7 @@ function calendarAgendaItem(
     id: calendarEvent.id,
     member: firstAssignedMember,
     source: "calendar",
-    sourceDetail: calendarEvent.group.name,
+    sourceDetail: calendarEvent.group?.name ?? null,
     timeLabel: calendarEvent.allDay ? "All day" : calendarEvent.time ?? "00:00",
     title: calendarEvent.name,
   };

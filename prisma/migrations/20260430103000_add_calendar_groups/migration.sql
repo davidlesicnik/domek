@@ -6,7 +6,7 @@ CREATE TABLE "CalendarGroup" (
     "householdId" TEXT NOT NULL,
     "createdByUserId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "CalendarGroup_pkey" PRIMARY KEY ("id")
 );
@@ -58,7 +58,6 @@ WHERE "group"."householdId" = "event"."householdId"
     WHEN 'SCHOOL' THEN 'School'
   END;
 
-ALTER TABLE "CalendarEvent" ALTER COLUMN "groupId" SET NOT NULL;
 ALTER TABLE "CalendarEvent" DROP COLUMN "category";
 
 -- CreateIndex
