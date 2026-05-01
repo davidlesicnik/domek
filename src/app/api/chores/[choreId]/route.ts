@@ -1,3 +1,4 @@
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
 import {
@@ -25,6 +26,7 @@ export async function PATCH(
       return Response.json({ error: "Invalid chore." }, { status: 400 });
     }
 
+    revalidateDashboard();
     return Response.json({ chore });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
@@ -51,6 +53,7 @@ export async function DELETE(
       return Response.json({ error: "Not found." }, { status: 404 });
     }
 
+    revalidateDashboard();
     return Response.json({ ok: true });
   } catch (error) {
     if (error instanceof ZodError) {

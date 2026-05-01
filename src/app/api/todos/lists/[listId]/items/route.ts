@@ -1,3 +1,4 @@
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
 import {
@@ -25,6 +26,7 @@ export async function POST(
       return Response.json({ error: "Not found." }, { status: 404 });
     }
 
+    revalidateDashboard();
     return Response.json({ item }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {

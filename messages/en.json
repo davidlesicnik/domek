@@ -435,6 +435,8 @@
     "tomorrow": "Tomorrow",
     "calendarLabel": "Calendar",
     "editEvent": "Edit event",
+    "openEventActions": "Open event actions",
+    "eventActions": "Event actions",
     "addEvent": "Add event",
     "deleteEvent": "Delete event",
     "closeEventEditor": "Close event editor",

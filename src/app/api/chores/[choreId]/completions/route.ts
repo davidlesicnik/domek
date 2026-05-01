@@ -1,3 +1,4 @@
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
 import { completeChore, getCurrentChoreScope, parseChoreId } from "@/lib/chores";
@@ -18,6 +19,7 @@ export async function POST(
       return Response.json({ error: "Not found." }, { status: 404 });
     }
 
+    revalidateDashboard();
     return Response.json({ chore }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {

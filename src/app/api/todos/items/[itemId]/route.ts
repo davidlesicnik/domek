@@ -1,3 +1,4 @@
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
 import {
@@ -30,6 +31,7 @@ export async function PATCH(
         return Response.json({ error: "Not found." }, { status: 404 });
       }
 
+      revalidateDashboard();
       return Response.json({ item });
     }
 
@@ -40,6 +42,7 @@ export async function PATCH(
       return Response.json({ error: "Not found." }, { status: 404 });
     }
 
+    revalidateDashboard();
     return Response.json({ item });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
@@ -67,5 +70,6 @@ export async function DELETE(
     return Response.json({ error: "Not found." }, { status: 404 });
   }
 
+  revalidateDashboard();
   return Response.json({ ok: true });
 }
