@@ -2150,18 +2150,18 @@ export function DashboardPlanner({
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
-                              {item.member ? (
-                                <PlannerMemberAvatar
-                                  member={item.member}
-                                  sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                />
-                              ) : null}
                               {calendarEvent ? (
                                 <DashboardCalendarEventMobileMenu
                                   isDeleting={isDeletingEventId === calendarEvent.id}
                                   onDelete={() => deleteEvent(calendarEvent.id)}
                                   onEdit={() => openEditor(calendarEvent)}
                                   t={t}
+                                />
+                              ) : null}
+                              {item.member ? (
+                                <PlannerMemberAvatar
+                                  member={item.member}
+                                  sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
                                 />
                               ) : null}
                             </div>
@@ -2195,6 +2195,14 @@ export function DashboardPlanner({
                                   </div>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
+                                  {calendarEvent ? (
+                                    <DashboardCalendarEventMobileMenu
+                                      isDeleting={isDeletingEventId === calendarEvent.id}
+                                      onDelete={() => deleteEvent(calendarEvent.id)}
+                                      onEdit={() => openEditor(calendarEvent)}
+                                      t={t}
+                                    />
+                                  ) : null}
                                   {item.member ? (
                                     <PlannerMemberAvatar
                                       member={item.member}
@@ -2204,14 +2212,6 @@ export function DashboardPlanner({
                                 </div>
                               </div>
                             </button>
-                            {calendarEvent ? (
-                              <DashboardCalendarEventMobileMenu
-                                isDeleting={isDeletingEventId === calendarEvent.id}
-                                onDelete={() => deleteEvent(calendarEvent.id)}
-                                onEdit={() => openEditor(calendarEvent)}
-                                t={t}
-                              />
-                            ) : null}
                           </div>
                         );
                       }
