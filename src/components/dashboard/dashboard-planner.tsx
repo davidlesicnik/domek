@@ -2164,7 +2164,6 @@ export function DashboardPlanner({
                                   t={t}
                                 />
                               ) : null}
-                              <ChevronRight aria-hidden className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]" />
                             </div>
                           </div>
                         </>
@@ -2202,10 +2201,6 @@ export function DashboardPlanner({
                                       sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
                                     />
                                   ) : null}
-                                  <ChevronRight
-                                    aria-hidden
-                                    className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]"
-                                  />
                                 </div>
                               </div>
                             </button>
