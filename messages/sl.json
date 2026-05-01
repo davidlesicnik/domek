@@ -435,6 +435,8 @@
     "tomorrow": "Jutri",
     "calendarLabel": "Koledar",
     "editEvent": "Uredi dogodek",
+    "openEventActions": "Odpri dejanja dogodka",
+    "eventActions": "Dejanja dogodka",
     "addEvent": "Dodaj dogodek",
     "deleteEvent": "Izbriši dogodek",
     "closeEventEditor": "Zapri urejanje dogodka",

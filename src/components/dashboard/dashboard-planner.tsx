@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, FormEvent, ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Pencil, Settings, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Settings, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
@@ -553,19 +553,28 @@ function PlannerFormActions({
   disabled,
   error,
   onCancel,
+  primaryButtonProps,
   primaryLabel,
   secondaryLabel,
 }: Readonly<{
   disabled: boolean;
   error: string | null;
   onCancel: () => void;
+  primaryButtonProps?: ComponentProps<"button">;
   primaryLabel: string;
   secondaryLabel: string;
 }>) {
+  const { className: primaryButtonClassName, ...primaryButtonRest } = primaryButtonProps ?? {};
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
       {error ? <p className="w-full text-sm font-semibold text-[#a6543c]">{error}</p> : null}
-      <button className={plannerPrimaryButtonClassName} disabled={disabled} type="submit">
+      <button
+        className={cx(plannerPrimaryButtonClassName, primaryButtonClassName)}
+        disabled={disabled}
+        type="submit"
+        {...primaryButtonRest}
+      >
         {primaryLabel}
       </button>
       <button
@@ -874,11 +883,24 @@ function DashboardCalendarEventCard({
           <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
           <h3 className="mt-2 text-base font-semibold text-[#202321]">{calendarEvent.name}</h3>
         </div>
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-          <PlannerIconButton disabled={isDeleting} onClick={onEdit} title={t("editEvent")}>
-            <Pencil aria-hidden className="h-3.5 w-3.5" />
-          </PlannerIconButton>
-          <PlannerDeleteButton disabled={isDeleting} isDeleting={isDeleting} onClick={onDelete} title={t("deleteEvent")} />
+        <div className="relative shrink-0">
+          <DashboardCalendarEventMobileMenu
+            isDeleting={isDeleting}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            t={t}
+          />
+          <div className="hidden items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 sm:flex">
+            <PlannerIconButton disabled={isDeleting} onClick={onEdit} title={t("editEvent")}>
+              <Pencil aria-hidden className="h-3.5 w-3.5" />
+            </PlannerIconButton>
+            <PlannerDeleteButton
+              disabled={isDeleting}
+              isDeleting={isDeleting}
+              onClick={onDelete}
+              title={t("deleteEvent")}
+            />
+          </div>
         </div>
       </div>
 
@@ -894,6 +916,101 @@ function DashboardCalendarEventCard({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function DashboardCalendarEventMobileMenu({
+  isDeleting,
+  onDelete,
+  onEdit,
+  t,
+}: Readonly<{
+  isDeleting: boolean;
+  onDelete: () => void;
+  onEdit: () => void;
+  t: DashboardTranslations;
+}>) {
+  const [showMobileActions, setShowMobileActions] = useState(false);
+  const mobileActionsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showMobileActions) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!mobileActionsRef.current?.contains(event.target as Node)) {
+        setShowMobileActions(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setShowMobileActions(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showMobileActions]);
+
+  return (
+    <div className="relative sm:hidden" ref={mobileActionsRef}>
+      <button
+        aria-expanded={showMobileActions}
+        aria-haspopup="menu"
+        aria-label={t("openEventActions")}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#f4f1ea] focus:bg-[#f4f1ea] focus:outline-none"
+        disabled={isDeleting}
+        onClick={(event) => {
+          event.stopPropagation();
+          setShowMobileActions((current) => !current);
+        }}
+        type="button"
+      >
+        <MoreHorizontal aria-hidden className="h-4 w-4" />
+      </button>
+
+      {showMobileActions ? (
+        <div
+          aria-label={t("eventActions")}
+          className="absolute right-0 top-[calc(100%+0.35rem)] z-20 min-w-36 rounded-md border border-[#ddd7cd] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+          role="menu"
+        >
+          <button
+            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-[#4d5451] transition hover:bg-[#f4f1ea]"
+            onClick={(event) => {
+              event.stopPropagation();
+              setShowMobileActions(false);
+              onEdit();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            <Pencil aria-hidden className="h-4 w-4" />
+            <span>{t("editEvent")}</span>
+          </button>
+          <button
+            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-[#a6543c] transition hover:bg-[#f7ecea]"
+            onClick={(event) => {
+              event.stopPropagation();
+              setShowMobileActions(false);
+              onDelete();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            <Trash2 aria-hidden className="h-4 w-4" />
+            <span>{t("deleteEvent")}</span>
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1178,6 +1295,12 @@ export function DashboardPlanner({
 
   async function saveEvent(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
+
+    const nativeSubmitEvent = formEvent.nativeEvent as Event & { submitter?: HTMLElement | null };
+
+    if (!(nativeSubmitEvent.submitter instanceof HTMLElement) || nativeSubmitEvent.submitter.dataset.explicitSubmit !== "true") {
+      return;
+    }
 
     const trimmedEventName = eventName.trim();
 
@@ -1548,8 +1671,17 @@ export function DashboardPlanner({
               <PlannerInput
                 autoFocus
                 className="flex-1"
+                enterKeyHint="done"
                 maxLength={60}
                 onChange={(changeEvent) => setNewGroupName(changeEvent.target.value)}
+                onKeyDown={(keyboardEvent) => {
+                  if (keyboardEvent.key !== "Enter") {
+                    return;
+                  }
+
+                  keyboardEvent.preventDefault();
+                  keyboardEvent.currentTarget.blur();
+                }}
                 placeholder={t("newGroupNamePlaceholder")}
                 required
                 type="text"
@@ -1652,6 +1784,7 @@ export function DashboardPlanner({
           disabled={isSaving}
           error={formError}
           onCancel={closeComposer}
+          primaryButtonProps={{ "data-explicit-submit": "true" }}
           primaryLabel={isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
           secondaryLabel={t("cancel")}
         />
@@ -1992,6 +2125,10 @@ export function DashboardPlanner({
                     {day.items.map((item) => {
                       const styles = sourceStyles[item.source];
                       const meta = plannerItemMeta(item, t);
+                      const calendarEvent =
+                        item.source === "calendar"
+                          ? (eventsByDate[item.dateKey] ?? []).find((event) => event.id === item.id) ?? null
+                          : null;
                       const itemContent = (
                         <>
                           <div className="flex items-start justify-between gap-3">
@@ -2015,6 +2152,14 @@ export function DashboardPlanner({
                                   sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
                                 />
                               ) : null}
+                              {calendarEvent ? (
+                                <DashboardCalendarEventMobileMenu
+                                  isDeleting={isDeletingEventId === calendarEvent.id}
+                                  onDelete={() => deleteEvent(calendarEvent.id)}
+                                  onEdit={() => openEditor(calendarEvent)}
+                                  t={t}
+                                />
+                              ) : null}
                               <ChevronRight aria-hidden className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]" />
                             </div>
                           </div>
@@ -2023,14 +2168,52 @@ export function DashboardPlanner({
 
                       if (item.source === "calendar") {
                         return (
-                          <button
-                            className="group block cursor-pointer px-4 py-4 text-left transition hover:bg-[#f4f1ea]"
+                          <div
+                            className="group flex items-start gap-3 px-4 py-4 transition hover:bg-[#f4f1ea]"
                             key={`${item.source}-${item.id}`}
-                            onClick={() => focusCalendarDate(item.dateKey)}
-                            type="button"
                           >
-                            {itemContent}
-                          </button>
+                            <button
+                              className="min-w-0 flex-1 text-left"
+                              onClick={() => focusCalendarDate(item.dateKey)}
+                              type="button"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
+                                    {item.title}
+                                  </h3>
+                                  <div className="mt-2">
+                                    <PlannerItemBadge
+                                      chipClassName={styles.chip}
+                                      label={t(styles.labelKey)}
+                                      meta={meta}
+                                      uppercase
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  {item.member ? (
+                                    <PlannerMemberAvatar
+                                      member={item.member}
+                                      sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
+                                    />
+                                  ) : null}
+                                  <ChevronRight
+                                    aria-hidden
+                                    className="h-4 w-4 text-[#a9aeaa] transition group-hover:text-[#717874]"
+                                  />
+                                </div>
+                              </div>
+                            </button>
+                            {calendarEvent ? (
+                              <DashboardCalendarEventMobileMenu
+                                isDeleting={isDeletingEventId === calendarEvent.id}
+                                onDelete={() => deleteEvent(calendarEvent.id)}
+                                onEdit={() => openEditor(calendarEvent)}
+                                t={t}
+                              />
+                            ) : null}
+                          </div>
                         );
                       }
 

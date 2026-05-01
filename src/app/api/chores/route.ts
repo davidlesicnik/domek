@@ -1,3 +1,4 @@
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
 import { createChore, getCurrentChoreScope, parseCreateChoreInput } from "@/lib/chores";
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid chore." }, { status: 400 });
     }
 
+    revalidateDashboard();
     return Response.json({ chore }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
