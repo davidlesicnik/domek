@@ -1296,9 +1296,13 @@ export function DashboardPlanner({
   async function saveEvent(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
 
-    const nativeSubmitEvent = formEvent.nativeEvent as Event & { submitter?: HTMLElement | null };
+    const nativeSubmitEvent = formEvent.nativeEvent as Event & { submitter?: HTMLButtonElement | null };
 
-    if (!(nativeSubmitEvent.submitter instanceof HTMLElement) || nativeSubmitEvent.submitter.dataset.explicitSubmit !== "true") {
+    if (
+      !(nativeSubmitEvent.submitter instanceof HTMLButtonElement) ||
+      nativeSubmitEvent.submitter.name !== "intent" ||
+      nativeSubmitEvent.submitter.value !== "save-event"
+    ) {
       return;
     }
 
@@ -1784,7 +1788,7 @@ export function DashboardPlanner({
           disabled={isSaving}
           error={formError}
           onCancel={closeComposer}
-          primaryButtonProps={{ "data-explicit-submit": "true" }}
+          primaryButtonProps={{ name: "intent", value: "save-event" }}
           primaryLabel={isSaving ? t("saving") : isEditing ? t("updateEvent") : t("saveEvent")}
           secondaryLabel={t("cancel")}
         />
