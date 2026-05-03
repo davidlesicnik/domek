@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -9,6 +10,23 @@ import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { routing } from "@/i18n/routing";
 
 import "../globals.css";
+
+export const metadata: Metadata = {
+  applicationName: "Domek",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Domek",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f8a5b",
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
