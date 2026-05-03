@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/refund-policy",
   "/sitemap.xml",
+  "/manifest.webmanifest",
   "/terms",
   "/api/paddle/webhook",
   "/auth/callback",
@@ -35,6 +36,7 @@ const PUBLIC_PATHS = [
 const NON_LOCALIZED_PATHS = [
   "/blog",
   "/sitemap.xml",
+  "/manifest.webmanifest",
 ];
 
 function isPublicPath(pathname: string): boolean {
