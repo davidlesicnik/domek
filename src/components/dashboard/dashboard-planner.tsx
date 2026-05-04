@@ -686,7 +686,7 @@ function PlannerItemBadge({
       >
         {label}
       </span>
-      {meta ? <span className={uppercase ? "text-[11px] font-medium text-[var(--text-subtle)]" : "text-[11px] font-medium text-[var(--text-subtle)]"}>{meta}</span> : null}
+      {meta ? <span className="text-[11px] font-medium text-[var(--text-subtle)]">{meta}</span> : null}
     </div>
   );
 }
