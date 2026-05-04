@@ -3,6 +3,7 @@
 import type { ComponentProps, FormEvent, ReactNode } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Settings, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { createPortal } from "react-dom";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
@@ -750,15 +751,33 @@ function PlannerSelect({
   value: string;
 }>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const selectedOption = options.find((option) => option.value === value);
   const listboxId = `${id}-listbox`;
 
   useEffect(() => {
     if (!isOpen) return;
 
+    function updateMenuPosition() {
+      const triggerRect = rootRef.current?.getBoundingClientRect();
+      if (!triggerRect) return;
+
+      setMenuStyle({
+        left: triggerRect.left,
+        top: triggerRect.bottom + 4,
+        width: triggerRect.width,
+      });
+    }
+
     function handlePointerDown(event: PointerEvent) {
       if (rootRef.current?.contains(event.target as Node)) return;
+      if (menuRef.current?.contains(event.target as Node)) return;
       setIsOpen(false);
     }
 
@@ -766,11 +785,16 @@ function PlannerSelect({
       if (event.key === "Escape") setIsOpen(false);
     }
 
+    updateMenuPosition();
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
     };
   }, [isOpen]);
 
@@ -809,47 +833,56 @@ function PlannerSelect({
           className={`h-4 w-4 shrink-0 text-[#6d746f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
         />
       </button>
-      {isOpen ? (
-        <div
-          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[80] max-h-60 overflow-y-auto rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
-          id={listboxId}
-          role="listbox"
-        >
-          {options.map((option) => {
-            const isSelected = option.value === value;
+      {isOpen && menuStyle
+        ? createPortal(
+            <div
+              className="fixed z-[90] max-h-60 overflow-y-auto rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+              id={listboxId}
+              ref={menuRef}
+              role="listbox"
+              style={{
+                left: menuStyle.left,
+                top: menuStyle.top,
+                width: menuStyle.width,
+              }}
+            >
+              {options.map((option) => {
+                const isSelected = option.value === value;
 
-            return (
-              <button
-                aria-selected={isSelected}
-                className={`flex w-full items-center rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
-                  option.disabled
-                    ? "cursor-not-allowed text-[#a1a7a3]"
-                    : isSelected
-                      ? "bg-[#eef6ef] text-[#2f4e35]"
-                      : "text-[#4d5451] hover:bg-[#f4f1ea]"
-                }`}
-                disabled={option.disabled}
-                key={`${id}-${option.value}`}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                role="option"
-                type="button"
-              >
-                {option.color ? (
-                  <span
-                    aria-hidden
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: option.color }}
-                  />
-                ) : null}
-                <span className="truncate">{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+                return (
+                  <button
+                    aria-selected={isSelected}
+                    className={`flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
+                      option.disabled
+                        ? "cursor-not-allowed text-[#a1a7a3]"
+                        : isSelected
+                          ? "bg-[#eef6ef] text-[#2f4e35]"
+                          : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                    }`}
+                    disabled={option.disabled}
+                    key={`${id}-${option.value}`}
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                    role="option"
+                    type="button"
+                  >
+                    {option.color ? (
+                      <span
+                        aria-hidden
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: option.color }}
+                      />
+                    ) : null}
+                    <span className="truncate">{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -2175,12 +2208,12 @@ export function DashboardPlanner({
                             className="group flex items-start gap-3 px-4 py-4 transition hover:bg-[#f4f1ea]"
                             key={`${item.source}-${item.id}`}
                           >
-                            <button
-                              className="min-w-0 flex-1 text-left"
-                              onClick={() => focusCalendarDate(item.dateKey)}
-                              type="button"
-                            >
-                              <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                              <button
+                                className="min-w-0 flex-1 text-left"
+                                onClick={() => focusCalendarDate(item.dateKey)}
+                                type="button"
+                              >
                                 <div className="min-w-0">
                                   <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
                                     {item.title}
@@ -2194,24 +2227,24 @@ export function DashboardPlanner({
                                     />
                                   </div>
                                 </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                  {calendarEvent ? (
-                                    <DashboardCalendarEventMobileMenu
-                                      isDeleting={isDeletingEventId === calendarEvent.id}
-                                      onDelete={() => deleteEvent(calendarEvent.id)}
-                                      onEdit={() => openEditor(calendarEvent)}
-                                      t={t}
-                                    />
-                                  ) : null}
-                                  {item.member ? (
-                                    <PlannerMemberAvatar
-                                      member={item.member}
-                                      sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
-                                    />
-                                  ) : null}
-                                </div>
+                              </button>
+                              <div className="flex shrink-0 items-center gap-2">
+                                {calendarEvent ? (
+                                  <DashboardCalendarEventMobileMenu
+                                    isDeleting={isDeletingEventId === calendarEvent.id}
+                                    onDelete={() => deleteEvent(calendarEvent.id)}
+                                    onEdit={() => openEditor(calendarEvent)}
+                                    t={t}
+                                  />
+                                ) : null}
+                                {item.member ? (
+                                  <PlannerMemberAvatar
+                                    member={item.member}
+                                    sizeClassName="flex h-8 w-8 items-center justify-center rounded-md border text-[11px] font-semibold"
+                                  />
+                                ) : null}
                               </div>
-                            </button>
+                            </div>
                           </div>
                         );
                       }
@@ -2355,58 +2388,56 @@ export function DashboardPlanner({
 
       {showCreateMenu ? (
         <PlannerDialog labelledBy="dashboard-create-entry-title">
-          <div className="w-full max-w-sm rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
-                  {t("addSomething")}
-                </p>
-                <h2
-                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
-                  id="dashboard-create-entry-title"
-                >
-                  {t("pickWhatToAdd")}
-                </h2>
-              </div>
-              <button
-                aria-label={t("closeAddMenu")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
-                onClick={() => setShowCreateMenu(false)}
-                type="button"
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+                {t("addSomething")}
+              </p>
+              <h2
+                className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
+                id="dashboard-create-entry-title"
               >
-                <span aria-hidden>&times;</span>
-              </button>
+                {t("pickWhatToAdd")}
+              </h2>
             </div>
+            <button
+              aria-label={t("closeAddMenu")}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
+              onClick={() => setShowCreateMenu(false)}
+              type="button"
+            >
+              <span aria-hidden>&times;</span>
+            </button>
+          </div>
 
-            <div className="mt-5 grid gap-2">
-              <button
-                className="flex items-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 py-3 text-left transition hover:bg-[#e2f0e4]"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  openComposer(selectedDateKey);
-                }}
-                type="button"
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#2f4e35]">{t("eventLabel")}</span>
-                  <span className="mt-1 block text-xs text-[#5d6d61]">{t("eventDescription")}</span>
-                </span>
-              </button>
+          <div className="mt-5 grid gap-2">
+            <button
+              className="flex items-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 py-3 text-left transition hover:bg-[#e2f0e4]"
+              onClick={() => {
+                setShowCreateMenu(false);
+                openComposer(selectedDateKey);
+              }}
+              type="button"
+            >
+              <span>
+                <span className="block text-sm font-semibold text-[#2f4e35]">{t("eventLabel")}</span>
+                <span className="mt-1 block text-xs text-[#5d6d61]">{t("eventDescription")}</span>
+              </span>
+            </button>
 
-              <PlannerQuickActionLink
-                description={t("taskDescription")}
-                href="/app/todos?create=1"
-                label={t("taskLabel")}
-                onClick={() => setShowCreateMenu(false)}
-              />
+            <PlannerQuickActionLink
+              description={t("taskDescription")}
+              href="/app/todos?create=1"
+              label={t("taskLabel")}
+              onClick={() => setShowCreateMenu(false)}
+            />
 
-              <PlannerQuickActionLink
-                description={t("choreDescription")}
-                href="/app/chores?create=1"
-                label={t("choreLabel")}
-                onClick={() => setShowCreateMenu(false)}
-              />
-            </div>
+            <PlannerQuickActionLink
+              description={t("choreDescription")}
+              href="/app/chores?create=1"
+              label={t("choreLabel")}
+              onClick={() => setShowCreateMenu(false)}
+            />
           </div>
         </PlannerDialog>
       ) : null}
