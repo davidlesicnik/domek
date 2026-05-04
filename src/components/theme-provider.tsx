@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ThemeProvider, useTheme } from "next-themes";
 import { ThemePreference } from "@prisma/client";
 
@@ -18,21 +18,49 @@ const ThemePreferenceContext = createContext<ThemePreferenceController | null>(n
 
 function ThemePreferenceBridge({
   children,
+  forcedTheme,
   setForcedTheme,
 }: Readonly<{
   children: ReactNode;
+  forcedTheme: ForcedThemeName | undefined;
   setForcedTheme: (forcedTheme: ForcedThemeName | undefined) => void;
 }>) {
   const { setTheme } = useTheme();
+  const deferredThemeUpdateTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (deferredThemeUpdateTimeoutRef.current !== null) {
+        window.clearTimeout(deferredThemeUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const value = useMemo<ThemePreferenceController>(
     () => ({
       applyThemePreference(themePreference) {
-        setForcedTheme(themePreferenceToForcedTheme(themePreference));
-        setTheme(themePreferenceToNextTheme(themePreference));
+        const nextForcedTheme = themePreferenceToForcedTheme(themePreference);
+        const nextTheme = themePreferenceToNextTheme(themePreference);
+
+        if (deferredThemeUpdateTimeoutRef.current !== null) {
+          window.clearTimeout(deferredThemeUpdateTimeoutRef.current);
+          deferredThemeUpdateTimeoutRef.current = null;
+        }
+
+        if (nextForcedTheme === undefined && forcedTheme !== undefined) {
+          setForcedTheme(undefined);
+          deferredThemeUpdateTimeoutRef.current = window.setTimeout(() => {
+            setTheme(nextTheme);
+            deferredThemeUpdateTimeoutRef.current = null;
+          }, 0);
+          return;
+        }
+
+        setForcedTheme(nextForcedTheme);
+        setTheme(nextTheme);
       },
     }),
-    [setTheme, setForcedTheme],
+    [forcedTheme, setTheme, setForcedTheme],
   );
 
   return <ThemePreferenceContext.Provider value={value}>{children}</ThemePreferenceContext.Provider>;
@@ -58,7 +86,9 @@ export function AppThemeProvider({ children, forcedTheme: initialForcedTheme }: 
       enableSystem={true}
       forcedTheme={forcedTheme}
     >
-      <ThemePreferenceBridge setForcedTheme={setForcedTheme}>{children}</ThemePreferenceBridge>
+      <ThemePreferenceBridge forcedTheme={forcedTheme} setForcedTheme={setForcedTheme}>
+        {children}
+      </ThemePreferenceBridge>
     </ThemeProvider>
   );
 }
