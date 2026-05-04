@@ -29,25 +29,25 @@ export function CookiePreferences() {
   }
 
   return (
-    <div className="rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-4">
+    <div className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:flex sm:items-center sm:justify-between sm:gap-4">
       <div>
-        <p className="text-xs font-bold uppercase tracking-normal text-[#777f7a]">
+        <p className="text-xs font-bold uppercase tracking-normal text-[var(--text-subtle)]">
           Cookie preference
         </p>
-        <p className="mt-1 text-sm font-semibold text-[#202321]">
+        <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
           {consent === "accepted" ? "Accepted" : consent === "rejected" ? "Rejected" : "Not set"}
         </p>
       </div>
       <div className="mt-4 flex flex-col gap-2 sm:mt-0 sm:flex-row">
         <button
-          className="h-10 rounded-md border border-[#cfc8bd] bg-[#fffdf8] px-4 text-sm font-semibold text-[#3c413e] shadow-sm transition hover:bg-[#f4f1ea]"
+          className="h-10 rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-4 text-sm font-semibold text-[var(--text-strong)] shadow-sm transition hover:bg-[var(--surface-secondary)]"
           onClick={() => chooseConsent("rejected")}
           type="button"
         >
           Reject cookies
         </button>
         <button
-          className="h-10 rounded-md border border-[#3c413e] bg-[#3c413e] px-4 text-sm font-semibold text-[#fffdf8] shadow-sm transition hover:bg-[#202321]"
+          className="h-10 rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] shadow-sm transition hover:bg-[var(--button-primary-hover)]"
           onClick={() => chooseConsent("accepted")}
           type="button"
         >

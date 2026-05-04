@@ -31,8 +31,8 @@ export function AccountDropdown({
         aria-label={t("ariaLabel")}
         className={`flex cursor-pointer items-center transition ${
           showName
-            ? "w-full gap-3 rounded-md py-2.5 pl-0 pr-2 text-left text-[13px] font-medium text-[#7a817d] hover:bg-[#f4f1ea] hover:text-[#202321]"
-            : "h-11 w-11 justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] text-[#202321] hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+            ? "w-full gap-3 rounded-md py-2.5 pl-0 pr-2 text-left text-[13px] font-medium text-[var(--text-subtle)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+            : "h-11 w-11 justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] text-[var(--text-primary)] hover:border-[var(--focus-ring)] hover:bg-[var(--surface-secondary)]"
         }`}
         onClick={() => setIsOpen((v) => !v)}
         type="button"
@@ -57,18 +57,18 @@ export function AccountDropdown({
             onClick={() => setIsOpen(false)}
           />
           <div
-            className={`absolute top-full z-50 mt-2 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-[#dedbd2] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)] ${
+            className={`absolute top-full z-50 mt-2 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 shadow-[var(--shadow-float)] ${
               align === "left" ? "left-0" : "right-0"
             }`}
           >
-            <p className="text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+            <p className="text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
               {t("signedIn")}
             </p>
-            <p className="mt-1 break-words text-sm font-semibold text-[#202321]">
+            <p className="mt-1 break-words text-sm font-semibold text-[var(--text-primary)]">
               {userName ?? t("householdMember")}
             </p>
             <Link
-              className="mt-3 flex h-9 items-center justify-center rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-xs font-semibold text-[#202321] transition hover:bg-[#eef7ef]"
+              className="mt-3 flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)]"
               href="/app/account"
               onClick={() => setIsOpen(false)}
               prefetch={true}
@@ -77,7 +77,7 @@ export function AccountDropdown({
             </Link>
             <form action="/api/auth/signout" className="mt-2" method="post">
               <button
-                className="flex h-9 w-full items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df]"
+                className="flex h-9 w-full items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)]"
                 type="submit"
               >
                 {t("signOut")}

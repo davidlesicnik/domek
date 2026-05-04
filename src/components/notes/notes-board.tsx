@@ -272,24 +272,24 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
-      <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">{t("title")}</h1>
+      <h1 className="mb-5 font-serif text-2xl font-semibold text-[var(--text-strong)] sm:mb-6">{t("title")}</h1>
       <div className="grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-5">
         {/* Left pane: note list */}
         <aside
-          className={`flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+          className={`flex-col rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] ${
             isMobileDetailOpen ? "hidden sm:flex" : "flex"
           }`}
         >
           <ul className="flex-1 overflow-y-auto">
-            <li className="border-b border-[#e7e2d9]">
+            <li className="border-b border-[var(--border-muted)]">
               <button
-                className="hidden w-full items-center gap-2 px-3 py-3 text-left text-sm font-medium text-[#6e7e72] transition hover:bg-[#f4f1ea] hover:text-[#45614c] sm:flex"
+                className="hidden w-full items-center gap-2 px-3 py-3 text-left text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] hover:text-[var(--accent-sage-text)] sm:flex"
                 onClick={openNewNote}
                 type="button"
               >
                 <span
                   aria-hidden
-                  className="flex h-5 w-5 items-center justify-center rounded-md border border-[#d7ddd4] bg-[#fbfaf6] text-[#7b887d]"
+                  className="flex h-5 w-5 items-center justify-center rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] text-[var(--text-subtle)]"
                 >
                   <PlusIcon className="h-3.5 w-3.5" />
                 </span>
@@ -297,15 +297,15 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
               </button>
             </li>
             {notes.length === 0 && pane.mode !== "new" && (
-              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">{t("emptyList")}</li>
+              <li className="px-4 py-6 text-center text-sm text-[var(--text-subtle)]">{t("emptyList")}</li>
             )}
             {pane.mode === "new" && (
-              <li className="flex items-center border-b border-[#e0dcd4] border-l-4 border-l-[#6e9274] bg-[#f6faf6]">
+              <li className="flex items-center border-b border-[var(--border-muted)] border-l-4 border-l-[var(--accent-sage-strong)] bg-[var(--accent-sage-surface)]">
                 <span className="min-w-0 flex-1 px-3 py-3 text-left">
-                  <span className="block truncate text-sm font-semibold text-[#426148]">
-                    {editTitle.trim() || <span className="italic text-[#9ab5a0]">{t("newNote")}</span>}
+                  <span className="block truncate text-sm font-semibold text-[var(--accent-sage-text)]">
+                    {editTitle.trim() || <span className="italic text-[var(--text-subtle)]">{t("newNote")}</span>}
                   </span>
-                  <span className="mt-1 block truncate text-xs text-[#64806a]">
+                  <span className="mt-1 block truncate text-xs text-[var(--accent-sage-text)]">
                     {notePreview(editBody, t)}
                   </span>
                 </span>
@@ -316,16 +316,16 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
               return (
                 <li
-                  className={`group flex items-center border-b border-[#e0dcd4] last:border-b-0 transition ${
+                  className={`group flex items-center border-b border-[var(--border-muted)] last:border-b-0 transition ${
                     isSelected
-                      ? "border-l-4 border-l-[#6e9274] bg-[#f6faf6]"
-                      : "border-l-4 border-l-transparent hover:bg-[#f4f1ea]"
+                      ? "border-l-4 border-l-[var(--accent-sage-strong)] bg-[var(--accent-sage-surface)]"
+                      : "border-l-4 border-l-transparent hover:bg-[var(--surface-secondary)]"
                   }`}
                   key={note.id}
                 >
                   <button
                       className={`min-w-0 flex-1 px-3 py-3 text-left ${
-                        isSelected ? "text-[#426148]" : "text-[#4d5451]"
+                        isSelected ? "text-[var(--accent-sage-text)]" : "text-[var(--text-primary)]"
                       }`}
                     onClick={() => openNote(note)}
                     type="button"
@@ -335,7 +335,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                     </span>
                     <span
                       className={`mt-1 block truncate text-xs ${
-                        isSelected ? "text-[#64806a]" : "text-[#8b857d]"
+                        isSelected ? "text-[var(--accent-sage-text)]" : "text-[var(--text-subtle)]"
                       }`}
                     >
                       {notePreview(note.body, t)}
@@ -343,16 +343,16 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                   </button>
                   {confirmDeleteId === note.id ? (
                     <div className="mr-2 flex max-w-[9rem] shrink-0 flex-wrap items-center gap-1 sm:max-w-none">
-                      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{t("deleteConfirm")}</span>
                       <button
-                        className="min-h-7 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                        className="min-h-7 rounded bg-[var(--accent-rose-soft)] px-2 py-1 text-xs font-medium text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)]"
                         onClick={() => handleDelete(note.id)}
                         type="button"
                       >
                         {t("confirmDelete")}
                       </button>
                       <button
-                        className="min-h-7 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                        className="min-h-7 rounded bg-[var(--surface-secondary)] px-2 py-1 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)]"
                         onClick={() => setConfirmDeleteId(null)}
                         type="button"
                       >
@@ -362,7 +362,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                   ) : (
                     <button
                       aria-label={t("deleteNoteAria", { title: note.title })}
-                      className="mr-2 shrink-0 rounded p-2 text-[#b0aca5] opacity-100 transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:opacity-0 sm:group-hover:opacity-100"
+                      className="mr-2 shrink-0 rounded p-2 text-[var(--text-subtle)] opacity-100 transition hover:bg-[var(--accent-rose-soft)] hover:text-[var(--accent-rose-text)] sm:opacity-0 sm:group-hover:opacity-100"
                       onClick={() => setConfirmDeleteId(note.id)}
                       type="button"
                     >
@@ -377,24 +377,24 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
         {/* Right pane: editor */}
         <div
-          className={`min-h-[480px] min-w-0 rounded-md border border-[#e3ddd2] bg-[linear-gradient(180deg,#fffdf8_0%,#fff9f0_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(223,216,204,0.48)] ${
+          className={`min-h-[480px] min-w-0 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-soft)] ${
             isMobileDetailOpen ? "flex flex-col" : "hidden sm:flex sm:flex-col"
           }`}
         >
           {pane.mode === "idle" ? (
             <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
-              <p className="font-serif text-lg text-[#5d635f]">{t("nothingSelected")}</p>
-              <p className="mt-1 text-sm text-[#9a9e9b]">
+              <p className="font-serif text-lg text-[var(--text-muted)]">{t("nothingSelected")}</p>
+              <p className="mt-1 text-sm text-[var(--text-subtle)]">
                 {t("nothingSelectedHint")}
               </p>
             </div>
           ) : (
             <div className="flex flex-1 flex-col">
-              <div className="border-b border-[#e6dfd3] bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,250,241,0.58))] px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
+              <div className="border-b border-[var(--border-muted)] bg-[var(--surface-secondary)] px-4 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
                 <div className="flex items-start gap-3">
                   <button
                     aria-label={t("backToNotes")}
-                    className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white/90 text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                    className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] sm:hidden"
                     onClick={() => setIsMobileDetailOpen(false)}
                     type="button"
                   >
@@ -403,13 +403,13 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                   <div className="min-w-0 flex-1">
                     <input
                       autoFocus={pane.mode === "new"}
-                      className="min-w-0 w-full bg-transparent font-serif text-[1.4rem] font-semibold text-[#171a18] placeholder:font-serif placeholder:text-[#c0bbb4] focus:outline-none"
+                      className="min-w-0 w-full bg-transparent font-serif text-[1.4rem] font-semibold text-[var(--text-strong)] placeholder:font-serif placeholder:text-[var(--input-placeholder)] focus:outline-none"
                       onChange={(e) => setEditTitle(e.target.value)}
                       placeholder={t("untitledPlaceholder")}
                       type="text"
                       value={editTitle}
                     />
-                    <div className="mt-3 text-sm text-[#7a746a]">
+                    <div className="mt-3 text-sm text-[var(--text-muted)]">
                       <p>{saveMessage}</p>
                     </div>
                   </div>
@@ -417,7 +417,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
               </div>
 
               <textarea
-                className="flex-1 resize-none bg-transparent px-4 pt-6 pb-5 text-[15px] leading-[1.95] text-[#2d3230] placeholder:text-[#c0bbb4] focus:outline-none sm:px-6 sm:pt-7 sm:pb-6"
+                className="flex-1 resize-none bg-transparent px-4 pt-6 pb-5 text-[15px] leading-[1.95] text-[var(--text-primary)] placeholder:text-[var(--input-placeholder)] focus:outline-none sm:px-6 sm:pt-7 sm:pb-6"
                 onChange={(e) => setEditBody(e.target.value)}
                 placeholder={t("bodyPlaceholder")}
                 value={editBody}
@@ -430,7 +430,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
       {!isMobileDetailOpen && (
         <button
           aria-label={t("addNoteAria")}
-          className="fixed bottom-[calc(5.75rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[#7aab86] bg-[#dff0e3] text-3xl font-bold leading-none text-[#3a6645] shadow-[0_14px_34px_rgba(31,35,30,0.22)] transition hover:bg-[#cce8d2] sm:hidden"
+          className="fixed bottom-[calc(5.75rem_+_env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] text-3xl font-bold leading-none text-[var(--accent-sage-text)] shadow-[var(--shadow-float)] transition hover:bg-[var(--surface-secondary)] sm:hidden"
           onClick={openNewNote}
           type="button"
         >

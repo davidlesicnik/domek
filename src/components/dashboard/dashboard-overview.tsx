@@ -94,34 +94,34 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
 
   return (
     <div className="grid gap-8">
-      <section className="rounded-md border border-[#e9e4da] bg-[#fffdf9] p-5 shadow-[0_20px_45px_rgba(31,35,30,0.07)] sm:p-8">
+      <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-float)] sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="font-serif text-[1.95rem] font-semibold leading-[1.04] tracking-normal text-[#171a18] sm:text-5xl sm:leading-[1.02]">
+            <h1 className="font-serif text-[1.95rem] font-semibold leading-[1.04] tracking-normal text-[var(--text-strong)] sm:text-5xl sm:leading-[1.02]">
               {summaryState.title}
             </h1>
-            <p className="mt-3 max-w-xl text-base leading-7 text-[#686e6a]">{summaryState.summary}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-[#5f6662] sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+            <p className="mt-3 max-w-xl text-base leading-7 text-[var(--text-muted)]">{summaryState.summary}</p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-[var(--text-muted)] sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.todosThisWeek}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("tasksDue", { count: actionSummary.todosThisWeek })}
                 </span>
               </span>
-              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[#c9ceca] sm:block" />
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[var(--border-strong)] sm:block" />
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.calendarThisWeek}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("events", { count: actionSummary.calendarThisWeek })}
                 </span>
               </span>
-              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[#c9ceca] sm:block" />
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[#ece7de] bg-[#fbfaf6] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-                <span className="font-serif text-xl font-semibold leading-none text-[#171a18] sm:text-[30px]">
+              <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[var(--border-strong)] sm:block" />
+              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+                <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.overdueChores}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
@@ -144,21 +144,21 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
       />
 
       {hasExpenseActivity ? (
-        <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-5 shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
+        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--text-muted)]">
                 {t("moneyThisMonth")}
               </p>
-              <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+              <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]">
                 {monthLabel}
               </h2>
-              <p className="mt-2 max-w-lg text-sm leading-6 text-[#6c726e]">
+              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--text-muted)]">
                 {t("moneySummary")}
               </p>
             </div>
             <Link
-              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea] sm:h-9 sm:w-auto sm:shrink-0"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-3 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] sm:h-9 sm:w-auto sm:shrink-0"
               href="/app/expenses"
             >
               {t("openExpenses")}
@@ -187,16 +187,16 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
           </div>
 
           {expenseSnapshot.entries.length > 0 ? (
-            <div className="mt-5 overflow-hidden rounded-md border border-[#e3ded6] bg-[#fbfaf6]">
-              <div className="grid divide-y divide-[#e3ded6]">
+            <div className="mt-5 overflow-hidden rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)]">
+              <div className="grid divide-y divide-[var(--border-muted)]">
                 {expenseSnapshot.entries.map((expense) => (
                   <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" key={expense.id}>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-[#202321]">{expense.name}</p>
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{expense.name}</p>
                         {expense.categoryName ? (
                           <span
-                            className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium text-[#5d635f]"
+                            className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]"
                             style={{
                               backgroundColor: `${expense.categoryColor ?? "#c8c4bb"}1f`,
                               borderColor: `${expense.categoryColor ?? "#c8c4bb"}66`,
@@ -211,7 +211,7 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#717874]">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--text-subtle)]">
                         <span>{formatExpenseDate(expense.date, locale)}</span>
                         {expense.householdMemberName ? (
                           <>
@@ -245,21 +245,21 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
           ) : null}
         </section>
       ) : (
-        <section className="rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-5">
+        <section className="rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--text-muted)]">
                 {t("moneyThisMonth")}
               </p>
-              <h2 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]">
+              <h2 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[var(--text-strong)]">
                 {t("noExpensesTitle")}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[#6c726e]">
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                 {t("noExpensesSummary")}
               </p>
             </div>
             <Link
-              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea] sm:h-9 sm:w-auto sm:shrink-0"
+              className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-3 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] sm:h-9 sm:w-auto sm:shrink-0"
               href="/app/expenses"
             >
               {t("addExpense")}

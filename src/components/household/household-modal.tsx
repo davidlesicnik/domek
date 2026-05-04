@@ -66,7 +66,7 @@ function HouseholdMemberAvatar({ member }: { member: Member }) {
       />
       {tooltip ? (
         <div
-          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[#d8d2c8] bg-[#fffdf8] px-2 py-1 text-xs text-[#2a2e2b] shadow-sm"
+          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-[var(--shadow-soft)]"
           style={{ left: tooltip.x, top: tooltip.y + 6 }}
         >
           {title}
@@ -90,13 +90,13 @@ export function HouseholdHeaderControls({
 
   return (
     <>
-      <div className="hidden items-center gap-1.5 rounded-md border border-[#e2dfd8] bg-[#f4f1ea] px-2 py-1.5 sm:flex">
+      <div className="hidden items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-secondary)] px-2 py-1.5 sm:flex">
         {members.map((member) => (
           <HouseholdMemberAvatar key={member.id} member={member} />
         ))}
         {isOwner ? (
           <AddHouseholdMemberDialog
-            buttonClassName="flex h-8 items-center gap-1.5 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#202321] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+            buttonClassName="flex h-8 items-center gap-1.5 rounded-md border border-[var(--input-border)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--accent-sage-border)] hover:bg-[var(--accent-sage-surface)]"
             buttonLabel={t("addButton")}
             createMemberAction={createMemberAction}
             pendingInvites={pendingInvites}
@@ -110,14 +110,14 @@ export function HouseholdHeaderControls({
         <button
           aria-expanded={isMobileOpen}
           aria-label={t("mobileHeaderMenu")}
-          className="inline-flex h-11 max-w-[8.8rem] items-center gap-1.5 rounded-md border border-[#d8d2c8] bg-[#fffdf8] px-2.5 text-sm font-medium text-[#202321] transition hover:bg-[#f7f4ec]"
+          className="inline-flex h-11 max-w-[8.8rem] items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)]"
           onClick={() => setIsMobileOpen((current) => !current)}
           type="button"
         >
           <span className="truncate">{householdName}</span>
           <ChevronDown
             aria-hidden
-            className={`h-4 w-4 text-[#6d746f] transition-transform ${isMobileOpen ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-[var(--text-subtle)] transition-transform ${isMobileOpen ? "rotate-180" : ""}`}
           />
         </button>
 
@@ -129,9 +129,9 @@ export function HouseholdHeaderControls({
               onClick={() => setIsMobileOpen(false)}
               type="button"
             />
-            <div className="absolute right-0 top-full z-50 mt-2 w-[min(17rem,calc(100vw-2rem))] rounded-md border border-[#dedbd2] bg-[#fffdf8] p-2.5 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+            <div className="absolute right-0 top-full z-50 mt-2 w-[min(17rem,calc(100vw-2rem))] rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-[var(--shadow-float)]">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-normal text-[#8b918c]">
+                <p className="text-[10px] font-semibold uppercase tracking-normal text-[var(--text-subtle)]">
                   {t("mobileMembersTitle")}
                 </p>
                 <div className="-space-x-1 mt-1.5 flex flex-wrap items-center">
@@ -143,10 +143,10 @@ export function HouseholdHeaderControls({
                 </div>
               </div>
 
-              <div className="mt-2.5 grid gap-1.5 border-t border-[#eee9df] pt-2.5">
+              <div className="mt-2.5 grid gap-1.5 border-t border-[var(--border-muted)] pt-2.5">
                 {isOwner ? (
                   <AddHouseholdMemberDialog
-                    buttonClassName="inline-flex h-9 items-center justify-center rounded-md border border-[#bfd0c1] bg-[#eef6ef] px-3 text-sm font-medium text-[#2f4e35] transition hover:border-[#9ab59d] hover:bg-[#e2f0e4]"
+                    buttonClassName="inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-sm font-medium text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)]"
                     buttonLabel={t("mobileInviteMember")}
                     createMemberAction={createMemberAction}
                     onOpenChange={(isOpen) => {
@@ -160,13 +160,13 @@ export function HouseholdHeaderControls({
                   />
                 ) : null}
                 <Link
-                  className="inline-flex h-8 items-center justify-between rounded-md px-2.5 text-sm font-medium text-[#5d635f] transition hover:bg-[#f7f4ec] hover:text-[#202321]"
+                  className="inline-flex h-8 items-center justify-between rounded-md px-2.5 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
                   href="/app/household"
                   onClick={() => setIsMobileOpen(false)}
                   prefetch={true}
                 >
                   <span>{t("mobileHouseholdSettings")}</span>
-                  <Settings aria-hidden className="h-3.5 w-3.5 text-[#6d746f]" />
+                  <Settings aria-hidden className="h-3.5 w-3.5 text-[var(--text-subtle)]" />
                 </Link>
               </div>
             </div>

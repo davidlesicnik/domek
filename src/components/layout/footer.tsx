@@ -15,10 +15,10 @@ export async function Footer() {
   ];
 
   return (
-    <footer className="border-t border-[#dfddd6] bg-[#fdfcf8] px-4 pt-6 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+    <footer className="border-t border-[var(--border-default)] bg-[var(--shell-background)] px-4 pt-6 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <p className="text-xs text-[#9ea49f]">{t("tagline")}</p>
+          <p className="text-xs text-[var(--text-subtle)]">{t("tagline")}</p>
           <LocaleSwitcher />
         </div>
         <nav aria-label="Legal">
@@ -27,7 +27,7 @@ export async function Footer() {
               <li key={href}>
                 <Link
                   href={href}
-                  className="text-xs text-[#9ea49f] underline-offset-2 transition hover:text-[#686e6a] hover:underline"
+                  className="text-xs text-[var(--text-subtle)] underline-offset-2 transition hover:text-[var(--text-muted)] hover:underline"
                 >
                   {label}
                 </Link>

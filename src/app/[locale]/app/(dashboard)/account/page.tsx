@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BillingSubscriptionStatus } from "@prisma/client";
 import { getTranslations, getLocale } from "next-intl/server";
 
+import { ThemeSettings, type ThemePreferenceActionState } from "@/components/account/theme-settings";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
@@ -13,6 +14,7 @@ import {
   PaddleSubscriptionCancelError,
 } from "@/lib/paddle-server";
 import { createSupabaseServerClient } from "@/lib/supabase";
+import { isThemePreference } from "@/lib/theme";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -163,6 +165,36 @@ async function deleteAccountAction(formData: FormData) {
   return await redirect("/login");
 }
 
+async function updateThemePreferenceAction(
+  _prevState: ThemePreferenceActionState,
+  formData: FormData,
+): Promise<ThemePreferenceActionState> {
+  "use server";
+
+  const session = await requireAppSession();
+  const value = formData.get("themePreference");
+
+  if (!isThemePreference(value)) {
+    return {
+      error: "invalid_theme_preference",
+      success: false,
+      themePreference: session.user.themePreference,
+    };
+  }
+
+  const user = await prisma.user.update({
+    data: { themePreference: value },
+    select: { themePreference: true },
+    where: { id: session.user.id },
+  });
+
+  return {
+    error: null,
+    success: true,
+    themePreference: user.themePreference,
+  };
+}
+
 type AccountPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
@@ -238,43 +270,48 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   return (
     <div className="grid gap-6">
       <div>
-        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
           {t("settingsLabel")}
         </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
+        <h1 className="mt-1 font-serif text-3xl font-semibold tracking-normal text-[var(--text-strong)]">
           {t("title")}
         </h1>
       </div>
 
-      <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-[#3c413e]">{t("signedInAs")}</h2>
-        <p className="mt-2 text-sm font-semibold text-[#202321]">
+      <ThemeSettings
+        action={updateThemePreferenceAction}
+        currentThemePreference={session.user.themePreference}
+      />
+
+      <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+        <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("signedInAs")}</h2>
+        <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
           {session.user.name ?? session.user.email ?? t("unknownUser")}
         </p>
         {session.user.name && session.user.email ? (
-          <p className="mt-0.5 text-xs text-[#686e6a]">{session.user.email}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">{session.user.email}</p>
         ) : null}
       </section>
 
       {billingSubscription ? (
-        <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 sm:p-5">
+        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-[#3c413e]">{t("subscriptionTitle")}</h2>
+              <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("subscriptionTitle")}</h2>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex h-7 items-center rounded-full border border-[#cfd9cf] bg-[#f8fbf7] px-3 text-xs font-semibold text-[#526c56]">
+                <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)]">
                   {t(statusKeys[billingSubscription.status] as Parameters<typeof t>[0])}
                 </span>
                 {billingSubscription.scheduledCancellationAt ? (
-                  <span className="inline-flex h-7 items-center rounded-full border border-[#dfd8c8] bg-[#fbf7ef] px-3 text-xs font-semibold text-[#7b6d49]">
+                  <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sun-border)] bg-[var(--accent-sun-surface)] px-3 text-xs font-semibold text-[var(--accent-sun-text)]">
                     {t("endsDate", { date: formatDate(billingSubscription.scheduledCancellationAt) ?? "" })}
                   </span>
                 ) : null}
               </div>
-              <div className="mt-4 grid gap-2 text-xs text-[#686e6a]">
+              <div className="mt-4 grid gap-2 text-xs text-[var(--text-muted)]">
                 <p>
                   {t("nextPayment")}{" "}
-                  <span className="font-medium text-[#202321]">
+                  <span className="font-medium text-[var(--text-primary)]">
                     {billingSubscription.scheduledCancellationAt
                       ? t("noFurtherPayment")
                       : formatDate(nextPaymentDate) ?? t("notAvailable")}
@@ -283,7 +320,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 {accessEndsDate ? (
                   <p>
                     {t("accessUntil")}{" "}
-                    <span className="font-medium text-[#202321]">{formatDate(accessEndsDate)}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{formatDate(accessEndsDate)}</span>
                   </p>
                 ) : null}
               </div>
@@ -293,7 +330,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             !billingSubscription.scheduledCancellationAt ? (
               <form action={cancelSubscriptionAction}>
                 <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fbe8df] sm:h-9 sm:w-auto"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)] sm:h-9 sm:w-auto"
                   type="submit"
                 >
                   {t("cancelAfterBilling")}
@@ -301,21 +338,21 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               </form>
             ) : null}
           </div>
-          <p className="mt-4 text-xs leading-5 text-[#8b918c]">
+          <p className="mt-4 text-xs leading-5 text-[var(--text-subtle)]">
             {t("cancelNote")}
           </p>
         </section>
       ) : null}
 
-      <section className="rounded-md border border-[#e8b4a8] bg-[#fff8f6] p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-[#a6543c]">{t("deleteTitle")}</h2>
+      <section className="rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+        <h2 className="text-sm font-semibold text-[var(--accent-rose-text)]">{t("deleteTitle")}</h2>
         {isOwnerWithMembers ? (
           <>
-            <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
+            <p className="mt-1 text-xs leading-5 text-[var(--accent-rose-text)]">
               {t("ownerWithMembersNote")}
             </p>
             <Link
-              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8] sm:h-9 sm:w-auto"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--accent-rose-strong)] bg-[var(--accent-rose-surface)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-soft)] sm:h-9 sm:w-auto"
               href="/app/household"
             >
               {t("goToHouseholdSettings")}
@@ -323,16 +360,16 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           </>
         ) : (
           <>
-            <p className="mt-1 text-xs leading-5 text-[#6b3a2d]">
+            <p className="mt-1 text-xs leading-5 text-[var(--accent-rose-text)]">
               {membership?.role === "OWNER" ? t("deleteOwnerNote") : t("deleteMemberNote")}
             </p>
             {errorMessage ? (
-              <p className="mt-3 text-xs font-medium text-[#a6543c]">{errorMessage}</p>
+              <p className="mt-3 text-xs font-medium text-[var(--accent-rose-text)]">{errorMessage}</p>
             ) : null}
             <form action={deleteAccountAction} className="mt-4 grid gap-3">
-              <label className="flex cursor-pointer items-start gap-2 text-xs text-[#6b3a2d]">
+              <label className="flex cursor-pointer items-start gap-2 text-xs text-[var(--accent-rose-text)]">
                 <input
-                  className="mt-0.5 shrink-0"
+                  className="mt-0.5 shrink-0 accent-[var(--accent-rose-strong)]"
                   name="confirm"
                   required
                   type="checkbox"
@@ -342,7 +379,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               </label>
               <div>
                 <button
-                  className="h-11 w-full rounded-md border border-[#c85b45] bg-[#fff0ec] px-4 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fde0d8] sm:h-9 sm:w-auto"
+                  className="h-11 w-full rounded-md border border-[var(--accent-rose-strong)] bg-[var(--accent-rose-surface)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-soft)] sm:h-9 sm:w-auto"
                   type="submit"
                 >
                   {t("deleteButton")}

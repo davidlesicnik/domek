@@ -173,27 +173,30 @@ function dueDateTone(dateIso: string, t: ChoresTranslator) {
     const overdueLabel = t("daysOverdue", { count: Math.abs(daysDiff) });
     return {
       emphasis: "strong" as const,
-      badge: "border-[#e7c9c2] bg-[#fbefeb] text-[#8d3028]",
+      badge:
+        "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]",
       label: overdueLabel,
       text: overdueLabel,
-      row: "bg-[#fffaf8]",
+      row: "bg-[color:var(--accent-rose-soft)]/60",
     };
   }
 
   if (daysDiff === 0) {
     return {
       emphasis: "strong" as const,
-      badge: "border-[#e5dcc5] bg-[#fbf7ea] text-[#735316]",
+      badge:
+        "border-[color:var(--accent-sun-border)] bg-[color:var(--accent-sun-surface)] text-[color:var(--accent-sun-text)]",
       label: t("dueToday"),
       text: t("dueToday"),
-      row: "bg-[#fffdf7]",
+      row: "bg-[color:var(--accent-sun-surface)]/60",
     };
   }
 
   const label = dueDateLabel(dateIso, t);
   return {
     emphasis: "soft" as const,
-    badge: "border-[#dde2dc] bg-[#f7f9f6] text-[#6b736d]",
+    badge:
+      "border-[color:var(--border-muted)] bg-[color:var(--surface-secondary)] text-[color:var(--text-muted)]",
     label,
     text: label,
     row: "",
@@ -388,14 +391,14 @@ function CustomSelect({
 
   return (
     <div
-      className="relative w-full [--select-bg:#f8f6f1] [--select-border:#e6e1d8] [--select-hover-border:#d3cec4] [--select-panel:#fffdf8] [--select-text:#4d5451]"
+      className="relative w-full [--select-bg:var(--surface-secondary)] [--select-border:var(--border-muted)] [--select-hover-border:var(--border-strong)] [--select-panel:var(--surface-primary)] [--select-text:var(--text-primary)]"
       ref={rootRef}
     >
       <button
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#6e9274] focus:outline-none sm:text-sm"
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
         id={id}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -407,17 +410,17 @@ function CustomSelect({
         role="combobox"
         type="button"
       >
-        <span className={selectedOption ? "truncate" : "truncate text-[#9da39f]"}>
+        <span className={selectedOption ? "truncate" : "truncate text-[color:var(--input-placeholder)]"}>
           {selectedOption?.label ?? placeholder}
         </span>
         <ChevronRight
           aria-hidden
-          className={`h-4 w-4 shrink-0 text-[#8e948f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
+          className={`h-4 w-4 shrink-0 text-[color:var(--text-subtle)] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
         />
       </button>
       {isOpen ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[70] max-h-60 overflow-y-auto rounded-md border border-[var(--select-border)] bg-[var(--select-panel)] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[70] max-h-60 overflow-y-auto rounded-md border border-[var(--select-border)] bg-[var(--select-panel)] p-1 shadow-[var(--shadow-float)]"
           id={listboxId}
           role="listbox"
         >
@@ -428,7 +431,9 @@ function CustomSelect({
               <button
                 aria-selected={isSelected}
                 className={`flex w-full items-center rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
-                  isSelected ? "bg-[#eef6ef] text-[#2f4e35]" : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                  isSelected
+                    ? "bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                    : "text-[color:var(--text-primary)] hover:bg-[color:var(--surface-secondary)]"
                 }`}
                 key={option.value}
                 onClick={() => {
@@ -770,12 +775,12 @@ export function ChoreBoard({
       <section>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">{t("title")}</h1>
-            <p className="mt-0.5 text-sm text-[#6d746f]">{headerSummary}</p>
+            <h1 className="font-serif text-2xl font-semibold tracking-normal text-[color:var(--text-strong)]">{t("title")}</h1>
+            <p className="mt-0.5 text-sm text-[color:var(--text-muted)]">{headerSummary}</p>
           </div>
 
           <button
-            className="inline-flex h-11 w-full items-center justify-center rounded-md bg-[#343734] px-3 text-sm font-semibold text-white transition hover:bg-[#454944] disabled:opacity-50 sm:h-9 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[color:var(--button-primary-border)] bg-[color:var(--button-primary-bg)] px-3 text-sm font-semibold text-[color:var(--button-primary-text)] transition hover:bg-[color:var(--button-primary-hover)] disabled:opacity-50 sm:h-9 sm:w-auto"
             disabled={boardBusy}
             onClick={openCreateDialog}
             type="button"
@@ -785,32 +790,32 @@ export function ChoreBoard({
         </div>
 
         {members.length === 0 ? (
-          <p className="mt-2 text-xs text-[#686e6a]">
+          <p className="mt-2 text-xs text-[color:var(--text-muted)]">
             {t("noPeopleNote")}
           </p>
         ) : null}
 
-        {error ? <p className="mt-2 text-xs font-medium text-[#a6543c]">{error}</p> : null}
+        {error ? <p className="mt-2 text-xs font-medium text-[color:var(--accent-rose-text)]">{error}</p> : null}
       </section>
 
       {showCreateDialog ? (
         <div
           aria-labelledby="chore-create-dialog-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
           role="dialog"
         >
           <form
-            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5"
+            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-4 shadow-[var(--shadow-float)] sm:max-h-[calc(100dvh-2rem)] sm:p-5"
             onSubmit={onCreateSubmit}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)]">
                   {t("label")}
                 </p>
                 <h2
-                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
+                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[color:var(--text-strong)]"
                   id="chore-create-dialog-title"
                 >
                   {editingId ? t("editTitle") : t("addTitle")}
@@ -818,7 +823,7 @@ export function ChoreBoard({
               </div>
               <button
                 aria-label={t("closeDialog")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] text-xl font-semibold leading-none text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)]"
                 disabled={isSubmitting}
                 onClick={closeCreateDialog}
                 type="button"
@@ -828,21 +833,21 @@ export function ChoreBoard({
             </div>
 
             {error ? (
-              <p className="mb-4 rounded-md bg-[#f8e7e3] px-3 py-2 text-sm text-[#8d3028]">{error}</p>
+              <p className="mb-4 rounded-md border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-3 py-2 text-sm text-[color:var(--accent-rose-text)]">{error}</p>
             ) : null}
 
             <div className="grid gap-6">
               <section>
-                <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-name">
+                <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-name">
                   {t("nameLabel")}
                 </label>
                 <input
                   aria-describedby={nameError ? "chore-name-error" : undefined}
                   aria-invalid={nameError ? "true" : "false"}
-                  className={`h-10 w-full rounded-md px-3 text-base text-[#202321] outline-none transition focus:bg-white sm:text-sm ${
+                  className={`h-10 w-full rounded-md px-3 text-base text-[color:var(--text-primary)] outline-none transition focus:bg-[color:var(--input-background)] sm:text-sm ${
                     nameError
-                      ? "border border-[#d38171] bg-[#fff7f5] focus:border-[#c85b45]"
-                      : "border border-[#cfd9cf] bg-white focus:border-[#6e9274]"
+                      ? "border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] focus:border-[color:var(--accent-rose-strong)]"
+                      : "border border-[color:var(--input-border)] bg-[color:var(--input-background)] focus:border-[color:var(--focus-ring)]"
                   }`}
                   id="chore-name"
                   maxLength={200}
@@ -853,19 +858,19 @@ export function ChoreBoard({
                   value={form.name}
                 />
                 {nameError ? (
-                  <p className="mt-2 text-xs text-[#a6543c]" id="chore-name-error">
+                  <p className="mt-2 text-xs text-[color:var(--accent-rose-text)]" id="chore-name-error">
                     {nameError}
                   </p>
                 ) : null}
                 <div className="mt-3">
-                  <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-category">
+                  <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-category">
                     {t("categoryLabel")}
                   </label>
                   {form.categoryId === "__new__" ? (
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <input
                         autoFocus
-                        className="min-w-0 flex-1 rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 py-2 text-base text-[#202321] placeholder:text-[#9da39f] focus:border-[#6e9274] focus:bg-white focus:outline-none sm:text-sm"
+                        className="min-w-0 flex-1 rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-secondary)] px-3 py-2 text-base text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:bg-[color:var(--input-background)] focus:outline-none sm:text-sm"
                         id="chore-category"
                         onChange={(event) => setForm((current) => ({ ...current, newCategoryName: event.target.value }))}
                         placeholder={t("newCategoryPlaceholder")}
@@ -875,7 +880,7 @@ export function ChoreBoard({
                       />
                       <button
                         aria-label={t("cancelNewCategory")}
-                        className="shrink-0 rounded-md border border-[#dfe6e0] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+                        className="shrink-0 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 text-sm font-medium text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)]"
                         onClick={() => setForm((current) => ({ ...current, categoryId: "", newCategoryName: "" }))}
                         type="button"
                       >
@@ -894,9 +899,9 @@ export function ChoreBoard({
                 </div>
               </section>
 
-              <section className="border-t border-[#ece6db] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">{t("assignmentHeading")}</h3>
-                <div className="mt-3 grid grid-cols-1 gap-1 rounded-md border border-[#e6e0d6] bg-[#f7f4ed] p-1 sm:grid-cols-3">
+              <section className="border-t border-[color:var(--border-muted)] pt-5">
+                <h3 className="text-sm font-semibold text-[color:var(--text-primary)]">{t("assignmentHeading")}</h3>
+                <div className="mt-3 grid grid-cols-1 gap-1 rounded-md border border-[color:var(--border-muted)] bg-[color:var(--surface-secondary)] p-1 sm:grid-cols-3">
                   {[
                     { value: "UNASSIGNED", label: t("assignmentUnassigned") },
                     { value: "FIXED", label: t("assignmentFixed") },
@@ -908,8 +913,8 @@ export function ChoreBoard({
                       <button
                         className={`min-h-9 rounded-[6px] px-4 py-1.5 text-xs font-semibold transition ${
                           form.assignmentType === option.value
-                            ? "bg-[#eaf4ea] text-[#45614c]"
-                            : "bg-transparent text-[#4b514d] hover:bg-[#f1ede5]"
+                            ? "bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                            : "bg-transparent text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)]"
                         } disabled:cursor-not-allowed disabled:opacity-45`}
                         disabled={disabled}
                         key={option.value}
@@ -931,18 +936,18 @@ export function ChoreBoard({
                 </div>
 
                 {form.assignmentType === "UNASSIGNED" ? (
-                  <p className="mt-3 text-xs text-[#7b817d]">
+                  <p className="mt-3 text-xs text-[color:var(--text-subtle)]">
                     {t("unassignedHelp")}
                   </p>
                 ) : null}
 
                 {form.assignmentType === "FIXED" ? (
                   <div className="mt-4">
-                    <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-person">
+                    <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-person">
                       {t("whoLabel")}
                     </label>
                     <select
-                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
+                      className="h-10 w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-secondary)] px-3 text-base text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--focus-ring)] focus:bg-[color:var(--input-background)] sm:text-sm"
                       id="chore-person"
                       onChange={(event) =>
                         setForm((current) => ({ ...current, assignedHouseholdMemberId: event.target.value }))
@@ -961,7 +966,7 @@ export function ChoreBoard({
 
                 {form.assignmentType === "ROTATING" ? (
                   <div className="mt-4">
-                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">{t("peopleLabel")}</p>
+                    <p className="mb-2 text-xs font-semibold text-[color:var(--text-primary)]">{t("peopleLabel")}</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {members.map((member) => {
                         const selected = form.rotationMemberIds.includes(member.id);
@@ -969,8 +974,8 @@ export function ChoreBoard({
                           <button
                             className={`flex items-center gap-3 rounded-md border px-3 py-2 text-left transition ${
                               selected
-                                ? "border-[#6e9274] bg-[#eef7ef]"
-                                : "border-[#d8d2c8] bg-white hover:border-[#b9c5b9]"
+                                ? "border-[color:var(--focus-ring)] bg-[color:var(--accent-sage-surface)]"
+                                : "border-[color:var(--border-default)] bg-[color:var(--input-background)] hover:border-[color:var(--border-strong)]"
                             }`}
                             key={member.id}
                             onClick={() => toggleRotationMember(member.id)}
@@ -983,27 +988,27 @@ export function ChoreBoard({
                               emoji={member.emoji}
                               name={member.name}
                             />
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#202321]">
+                            <span className="min-w-0 flex-1 truncate text-sm font-medium text-[color:var(--text-primary)]">
                               {displayNameForMember(member, memberFallback)}
                             </span>
-                            {selected ? <Check aria-hidden className="h-4 w-4 shrink-0 text-[#45614c]" /> : null}
+                            {selected ? <Check aria-hidden className="h-4 w-4 shrink-0 text-[color:var(--accent-sage-text)]" /> : null}
                           </button>
                         );
                       })}
                     </div>
-                    <p className="mt-2 text-xs text-[#7b817d]">{t("rotationHelp")}</p>
+                    <p className="mt-2 text-xs text-[color:var(--text-subtle)]">{t("rotationHelp")}</p>
                   </div>
                 ) : null}
 
                 {members.length === 0 ? (
-                  <p className="mt-3 text-xs text-[#7b817d]">
+                  <p className="mt-3 text-xs text-[color:var(--text-subtle)]">
                     {t("addMembersLater")}
                   </p>
                 ) : null}
               </section>
 
-              <section className="border-t border-[#ece6db] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">{t("scheduleHeading")}</h3>
+              <section className="border-t border-[color:var(--border-muted)] pt-5">
+                <h3 className="text-sm font-semibold text-[color:var(--text-primary)]">{t("scheduleHeading")}</h3>
                 <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   {[
                     { value: "DAILY", label: t("recurrenceDaily") },
@@ -1014,8 +1019,8 @@ export function ChoreBoard({
                     <button
                       className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
                         form.recurrenceType === option.value
-                          ? "border-[#6e9274] bg-[#eef7ef] text-[#2f4e35]"
-                          : "border-[#d8d2c8] bg-white text-[#4b514d] hover:border-[#b9c5b9]"
+                          ? "border-[color:var(--focus-ring)] bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                          : "border-[color:var(--border-default)] bg-[color:var(--input-background)] text-[color:var(--text-muted)] hover:border-[color:var(--border-strong)]"
                       }`}
                       key={option.value}
                       onClick={() => {
@@ -1034,7 +1039,7 @@ export function ChoreBoard({
 
                 {form.recurrenceType === "WEEKLY" ? (
                   <div className="mt-3">
-                    <p className="mb-2 text-xs font-semibold text-[#3c413e]">{t("daysLabel")}</p>
+                    <p className="mb-2 text-xs font-semibold text-[color:var(--text-primary)]">{t("daysLabel")}</p>
                     <div className="flex flex-wrap gap-2">
                       {WEEKDAY_OPTIONS.map((day) => {
                         const selected = form.weeklyDays.includes(day.value);
@@ -1043,8 +1048,8 @@ export function ChoreBoard({
                           <button
                             className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
                               selected
-                                ? "border-[#5f8666] bg-[#dcecdc] text-[#1f3523]"
-                                : "border-[#d8d2c8] bg-white text-[#4b514d] hover:border-[#b9c5b9]"
+                                ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                                : "border-[color:var(--border-default)] bg-[color:var(--input-background)] text-[color:var(--text-muted)] hover:border-[color:var(--border-strong)]"
                             }`}
                             key={day.value}
                             onClick={() => toggleWeeklyDay(day.value)}
@@ -1068,11 +1073,11 @@ export function ChoreBoard({
                   }`}
                 >
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-starts-at">
+                    <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-starts-at">
                       {t("startsLabel")}
                     </label>
                     <input
-                      className="h-10 w-full rounded-md border border-[#dfe6e0] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
+                      className="h-10 w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-secondary)] px-3 text-base text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--focus-ring)] focus:bg-[color:var(--input-background)] sm:text-sm"
                       id="chore-starts-at"
                       onChange={(event) =>
                         setForm((current) => {
@@ -1099,17 +1104,17 @@ export function ChoreBoard({
                     />
                   </div>
                   {form.recurrenceType === "WEEKLY" && weeklyDateAdjustmentMessage ? (
-                    <p className="self-end pb-2 text-xs text-[#7b817d]">{weeklyDateAdjustmentMessage}</p>
+                    <p className="self-end pb-2 text-xs text-[color:var(--text-subtle)]">{weeklyDateAdjustmentMessage}</p>
                   ) : null}
 
                   {form.recurrenceType === "CUSTOM" ? (
                     <>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-interval-value">
+                      <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-interval-value">
                         {t("everyLabel")}
                       </label>
                       <input
-                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] sm:text-sm"
+                        className="h-10 w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 text-base text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--focus-ring)] sm:text-sm"
                         id="chore-interval-value"
                         inputMode="numeric"
                         min={1}
@@ -1121,11 +1126,11 @@ export function ChoreBoard({
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-[#3c413e]" htmlFor="chore-interval-unit">
+                      <label className="mb-1 block text-xs font-semibold text-[color:var(--text-primary)]" htmlFor="chore-interval-unit">
                         {t("unitLabel")}
                       </label>
                       <select
-                        className="h-10 w-full rounded-md border border-[#cfd9cf] bg-white px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] sm:text-sm"
+                        className="h-10 w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 text-base text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--focus-ring)] sm:text-sm"
                         id="chore-interval-unit"
                         onChange={(event) =>
                           setForm((current) => ({
@@ -1145,10 +1150,10 @@ export function ChoreBoard({
                 </div>
               </section>
 
-              <section className="border-t border-[#dce7dd] pt-5">
-                <h3 className="text-sm font-semibold text-[#202321]">{t("previewHeading")}</h3>
-                <div className="mt-3 rounded-md bg-[#f3f8f2] px-4 py-3 text-sm text-[#314236]">
-                  <p className="font-medium text-[#2f4e35]">
+              <section className="border-t border-[color:var(--accent-sage-border)] pt-5">
+                <h3 className="text-sm font-semibold text-[color:var(--text-primary)]">{t("previewHeading")}</h3>
+                <div className="mt-3 rounded-md border border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] px-4 py-3 text-sm text-[color:var(--accent-sage-text)]">
+                  <p className="font-medium text-[color:var(--accent-sage-text)]">
                     {previewAssignmentText} · {previewSchedule(form, locale, t, weekdayLabels)}
                   </p>
                   <p className="mt-1 leading-6">{t("previewStarts", { date: formatPreviewDate(previewDueDate(form), locale, t) })}</p>
@@ -1158,7 +1163,7 @@ export function ChoreBoard({
 
             <div className="mt-9 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                className="h-11 rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#4b514d] transition hover:bg-[#f7f4ec] sm:h-10"
+                className="h-11 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-4 text-sm font-semibold text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)] sm:h-10"
                 disabled={isSubmitting}
                 onClick={closeCreateDialog}
                 type="button"
@@ -1166,7 +1171,7 @@ export function ChoreBoard({
                 {t("cancel")}
               </button>
               <button
-                className="h-11 rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50 sm:h-10"
+                className="h-11 rounded-md border border-[color:var(--button-primary-border)] bg-[color:var(--button-primary-bg)] px-4 text-sm font-semibold text-[color:var(--button-primary-text)] transition hover:bg-[color:var(--button-primary-hover)] disabled:opacity-50 sm:h-10"
                 disabled={submitDisabled}
                 type="submit"
               >
@@ -1177,13 +1182,13 @@ export function ChoreBoard({
         </div>
       ) : null}
 
-      <section className="rounded-md border border-[#dedbd2] bg-[#fffdf8]">
+      <section className="rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] shadow-[var(--shadow-soft)]">
         {orderedChores.length === 0 ? (
-          <p className="p-5 text-sm text-[#686e6a]">
+          <p className="p-5 text-sm text-[color:var(--text-muted)]">
             {t("emptyState")}
           </p>
         ) : (
-          <div className="divide-y divide-[#eee9df]">
+          <div className="divide-y divide-[color:var(--border-muted)]">
             {[
               { key: "overdue" as const, label: t("sectionOverdue"), chores: groupedChores.overdue },
               { key: "today" as const, label: t("sectionToday"), chores: groupedChores.today },
@@ -1194,7 +1199,7 @@ export function ChoreBoard({
               return section.chores.length > 0 || section.key === "today" ? (
                 <section
                   className={`p-4 ${
-                    section.key === "today" && !isTodayEmpty ? "bg-[#fffaf1]" : ""
+                    section.key === "today" && !isTodayEmpty ? "bg-[color:var(--accent-sun-surface)]/45" : ""
                   } ${
                     section.key === "upcoming" ? "mt-2" : ""
                   }`}
@@ -1204,13 +1209,13 @@ export function ChoreBoard({
                     className={`text-xs font-semibold uppercase tracking-[0.08em] ${
                       isTodayEmpty ? "mb-1" : "mb-3"
                     } ${
-                      section.key === "today" ? "text-[#6f5a1b]" : "text-[#7f857f]"
+                      section.key === "today" ? "text-[color:var(--accent-sun-text)]" : "text-[color:var(--text-subtle)]"
                     }`}
                   >
                     {section.label}
                   </h2>
                   {isTodayEmpty ? (
-                    <p className="text-sm font-medium text-[#5f4e1d]">{t("nothingDueToday")}</p>
+                    <p className="text-sm font-medium text-[color:var(--accent-sun-text)]">{t("nothingDueToday")}</p>
                   ) : (
                     <ul className="grid gap-2">
                       {section.chores.map((chore) => {
@@ -1231,14 +1236,14 @@ export function ChoreBoard({
 
                         return (
                           <li
-                            className={`group flex flex-col gap-2 rounded-md border border-[#ebe6da] p-3 transition-all duration-300 sm:flex-row sm:items-start sm:justify-between ${
+                            className={`group flex flex-col gap-2 rounded-md border border-[color:var(--border-muted)] bg-[color:var(--surface-primary)] p-3 transition-all duration-300 sm:flex-row sm:items-start sm:justify-between ${
                               dueTone.row
-                            } ${isCompletingChore ? "scale-[0.985] border-[#bfd4c2] bg-[#f3f8f2] opacity-45" : ""}`}
+                            } ${isCompletingChore ? "scale-[0.985] border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] opacity-45" : ""}`}
                             key={chore.id}
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-3">
-                                <p className="min-w-0 break-words font-medium text-[#171a18] sm:text-[15px]">{chore.name}</p>
+                                <p className="min-w-0 break-words font-medium text-[color:var(--text-strong)] sm:text-[15px]">{chore.name}</p>
                               </div>
 
                               <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:gap-3">
@@ -1255,7 +1260,7 @@ export function ChoreBoard({
                                     />
                                   ) : null}
                                   {showAssignmentText ? (
-                                    <span className="truncate text-sm font-medium text-[#343936]">{assignmentLabel}</span>
+                                    <span className="truncate text-sm font-medium text-[color:var(--text-primary)]">{assignmentLabel}</span>
                                   ) : null}
                                 </div>
                                 {dueTone.emphasis === "strong" ? (
@@ -1273,12 +1278,12 @@ export function ChoreBoard({
                                 )}
                               </div>
 
-                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#6d746f]">
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
                                 <span>{formatCompactIntervalLabel(chore, t, weekdayLabels)}</span>
-                                {chore.categoryName ? <span className="text-[#b3b7b2]">•</span> : null}
+                                {chore.categoryName ? <span className="text-[color:var(--text-subtle)]">•</span> : null}
                                 {chore.categoryName ? (
                                   <span
-                                    className="inline-flex max-w-full truncate rounded-md border border-[#ddd7cd] bg-[#f7f4ed] px-2 py-1 text-[11px] font-medium text-[#5b655f]"
+                                    className="inline-flex max-w-full truncate rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-secondary)] px-2 py-1 text-[11px] font-medium text-[color:var(--text-muted)]"
                                     title={chore.categoryName}
                                   >
                                     {chore.categoryName}
@@ -1290,9 +1295,9 @@ export function ChoreBoard({
                             <div className="flex w-full flex-wrap items-center justify-end gap-2 self-start sm:w-auto sm:flex-nowrap">
                               {confirmDeleteId === chore.id ? (
                                 <div className="flex flex-wrap items-center justify-end gap-1">
-                                  <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+                                  <span className="text-xs text-[color:var(--text-muted)]">{t("deleteConfirm")}</span>
                                   <button
-                                    className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                                    className="h-7 rounded border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-1.5 text-xs font-medium text-[color:var(--accent-rose-text)] transition hover:bg-[color:var(--accent-rose-surface)]"
                                     disabled={isDeleting}
                                     onClick={() => removeChore(chore.id)}
                                     type="button"
@@ -1300,7 +1305,7 @@ export function ChoreBoard({
                                     {t("confirmDelete")}
                                   </button>
                                   <button
-                                    className="h-7 rounded bg-[#ebe8de] px-1.5 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                                    className="h-7 rounded border border-[color:var(--border-default)] bg-[color:var(--surface-secondary)] px-1.5 text-xs font-medium text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-muted)]"
                                     disabled={isDeleting}
                                     onClick={() => setConfirmDeleteId(null)}
                                     type="button"
@@ -1312,7 +1317,7 @@ export function ChoreBoard({
                                 <div className="flex items-center gap-1">
                                   <button
                                     aria-label={t("editChoreAria", { name: chore.name })}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] focus:bg-[#e8efe9] focus:text-[#526c56] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-sage-surface)] hover:text-[color:var(--accent-sage-text)] focus:bg-[color:var(--accent-sage-surface)] focus:text-[color:var(--accent-sage-text)] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
                                     disabled={boardBusy}
                                     onClick={() => openEditDialog(chore)}
                                     type="button"
@@ -1321,7 +1326,7 @@ export function ChoreBoard({
                                   </button>
                                   <button
                                     aria-label={t("deleteChoreAria", { name: chore.name })}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] focus:bg-[#f3e4e2] focus:text-[#b94e3f] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-rose-soft)] hover:text-[color:var(--accent-rose-text)] focus:bg-[color:var(--accent-rose-soft)] focus:text-[color:var(--accent-rose-text)] focus:outline-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-40"
                                     disabled={isCompleting || isDeleting}
                                     onClick={() => setConfirmDeleteId(chore.id)}
                                     type="button"
@@ -1333,8 +1338,8 @@ export function ChoreBoard({
                               <button
                                 className={`inline-flex h-9 items-center gap-1 rounded-md border px-3 text-xs font-semibold transition disabled:opacity-50 ${
                                   isCompletingChore
-                                    ? "border-[#9ab59d] bg-[#e5f1e5] text-[#2f5a36]"
-                                    : "border-[#cfd9cf] bg-[#f8fbf7] text-[#3c413e] hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+                                    ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                                    : "border-[color:var(--input-border)] bg-[color:var(--surface-secondary)] text-[color:var(--text-primary)] hover:border-[color:var(--accent-sage-border)] hover:bg-[color:var(--accent-sage-surface)]"
                                 }`}
                                 disabled={isCompleting || isDeleting}
                                 onClick={() => markComplete(chore.id)}

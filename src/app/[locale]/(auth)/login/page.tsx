@@ -51,9 +51,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const hasMagicLinkSent = stringParam(params.email) === "sent";
 
   return (
-    <main className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] px-4 py-8 text-[#202321] sm:px-6">
+    <main className="min-h-dvh border-t-4 border-[var(--surface-strong)] bg-[var(--page-background)] px-4 py-8 text-[var(--text-primary)] sm:px-6">
       <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[980px] items-center">
-        <section className="grid w-full gap-8 rounded-md border border-[#dedbd2] bg-[#fffdf8] p-6 shadow-[0_22px_55px_rgba(31,35,30,0.10)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
+        <section className="grid w-full gap-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-float)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
           <LoginLeft />
           <LoginRight
             hasAuthError={hasAuthError}
@@ -72,13 +72,13 @@ function LoginLeft() {
   return (
     <div className="flex flex-col justify-between gap-10">
       <div>
-        <h1 className="mt-3 font-serif text-5xl font-semibold tracking-normal text-[#171a18] sm:text-6xl">
+        <h1 className="mt-3 font-serif text-5xl font-semibold tracking-normal text-[var(--text-strong)] sm:text-6xl">
           Domek
         </h1>
-        <p className="mt-2 text-sm font-semibold leading-6 text-[#526c56]">
+        <p className="mt-2 text-sm font-semibold leading-6 text-[var(--accent-sage-text)]">
           {t("tagline")}
         </p>
-        <p className="mt-4 max-w-lg text-base leading-7 text-[#686e6a]">
+        <p className="mt-4 max-w-lg text-base leading-7 text-[var(--text-muted)]">
           {t("description")}
         </p>
       </div>
@@ -100,19 +100,19 @@ function LoginRight({
   const t = useTranslations("login");
   return (
     <div className="self-center">
-      <h2 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+      <h2 className="font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]">
         {t("title")}
       </h2>
-      <p className="mt-2 text-sm leading-6 text-[#686e6a]">
+      <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
         {t("subtitle")}
       </p>
       {hasAuthError ? (
-        <p className="mt-4 rounded-md border border-[#dfb4a8] bg-[#fff5f1] px-3 py-2 text-sm font-medium text-[#a6543c]">
+        <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
           {t("authError")}
         </p>
       ) : null}
       {hasMagicLinkSent ? (
-        <p className="mt-4 rounded-md border border-[#b8d1b7] bg-[#f3faf1] px-3 py-2 text-sm font-medium text-[#3d6f4a]">
+        <p className="mt-4 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 py-2 text-sm font-medium text-[var(--accent-sage-text)]">
           {t("magicLinkSent")}
         </p>
       ) : null}

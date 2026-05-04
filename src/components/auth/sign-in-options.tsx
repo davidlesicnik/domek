@@ -56,7 +56,7 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
     <div className="grid gap-4">
       <form
         action="/auth/email"
-        className="grid gap-2.5 rounded-md border border-[#ddd7cc] bg-[#fbfaf6] p-4"
+        className="grid gap-2.5 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
         method="post"
         onSubmit={(event) => {
           if (cooldown.isCoolingDown) {
@@ -84,14 +84,14 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
           tabIndex={-1}
           type="text"
         />
-        <label className="text-sm font-semibold text-[#3c413e]" htmlFor="login-email">
+        <label className="text-sm font-semibold text-[var(--text-strong)]" htmlFor="login-email">
           {t("emailLabel")}
         </label>
-        <div className="flex items-center gap-2 rounded-md border border-[#d6ddd6] bg-white px-3">
-          <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
+        <div className="flex items-center gap-2 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3">
+          <Mail aria-hidden className="h-4 w-4 text-[var(--text-subtle)]" />
           <input
             autoComplete="email"
-            className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[#202321] outline-none placeholder:text-[#9aa09b]"
+            className="h-11 min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--input-placeholder)]"
             id="login-email"
             maxLength={320}
             name="email"
@@ -100,12 +100,12 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
             type="email"
           />
         </div>
-        <p className="text-xs leading-5 text-[#7a817c]">{t("emailHelp")}</p>
+        <p className="text-xs leading-5 text-[var(--text-muted)]">{t("emailHelp")}</p>
         {clientError ? (
-          <p className="text-sm font-medium text-[#a6543c]">{clientError}</p>
+          <p className="text-sm font-medium text-[var(--accent-rose-text)]">{clientError}</p>
         ) : null}
         <button
-          className="inline-flex h-11 items-center justify-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3a3d39] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           type="submit"
         >
           {t("sendMagicLink")}
@@ -113,15 +113,15 @@ export function SignInOptions({ locale, nextPath }: SignInOptionsProps) {
       </form>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#e1ddd3]" />
-        <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#7a817c]">
+        <div className="h-px flex-1 bg-[var(--border-default)]" />
+        <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-subtle)]">
           {t("orContinueWithGoogle")}
         </p>
-        <div className="h-px flex-1 bg-[#e1ddd3]" />
+        <div className="h-px flex-1 bg-[var(--border-default)]" />
       </div>
 
       <a
-        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[#cfd9cf] bg-[#f8fbf7] px-4 text-sm font-medium text-[#4a4f4c] transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--focus-ring)] hover:bg-[var(--surface-secondary)]"
         href={authStartHref(nextPath)}
         onClick={() => trackAnalyticsEvent("login_started", { provider: "google" })}
       >

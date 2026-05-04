@@ -129,16 +129,16 @@ function DeleteConfirmActions({
 }>) {
   return (
     <div className="flex max-w-[9rem] shrink-0 flex-wrap items-center justify-end gap-1 sm:max-w-none">
-      <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+      <span className="text-xs text-[var(--text-muted)]">{t("deleteConfirm")}</span>
       <button
-        className="min-h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+        className="min-h-8 rounded bg-[var(--accent-rose-soft)] px-2 py-1 text-xs font-medium text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)]"
         onClick={onConfirm}
         type="button"
       >
         {t("confirmYes")}
       </button>
       <button
-        className="min-h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+        className="min-h-8 rounded bg-[var(--surface-secondary)] px-2 py-1 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)]"
         onClick={onCancel}
         type="button"
       >
@@ -191,13 +191,13 @@ function ListItemRow<TItem extends ListItemView>({
     <li className={rowClassName} key={item.id}>
       <input
         checked={item.done}
-        className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[#6e9274] sm:h-4 sm:w-4"
+        className="mt-[1px] h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent-sage-strong)] sm:h-4 sm:w-4"
         onChange={() => onToggle(listId, item.id, item.done)}
         type="checkbox"
       />
       <span className="min-w-0 flex-1">
         <span
-          className={`block break-words text-sm leading-snug text-[#2d3230] ${
+          className={`block break-words text-sm leading-snug text-[var(--text-primary)] ${
             item.done ? "line-through" : ""
           }`}
         >
@@ -214,7 +214,7 @@ function ListItemRow<TItem extends ListItemView>({
       ) : (
         <DeleteIconButton
           ariaLabel={t("deleteItemAriaLabel")}
-          className="shrink-0 rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:p-1.5"
+          className="shrink-0 rounded p-2 text-[var(--text-subtle)] transition hover:bg-[var(--accent-rose-soft)] hover:text-[var(--accent-rose-text)] sm:p-1.5"
           onClick={() => onRequestDelete(item.id)}
         />
       )}
@@ -475,23 +475,23 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
-      <h1 className="mb-5 font-serif text-2xl font-semibold text-[#171a18] sm:mb-6">{title}</h1>
+      <h1 className="mb-5 font-serif text-2xl font-semibold text-[var(--text-strong)] sm:mb-6">{title}</h1>
       <div className="grid items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)] xl:gap-5">
         {/* Left pane: list of lists */}
         <aside
-          className={`flex-col gap-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+          className={`flex-col gap-0 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] ${
             isMobileListOpen ? "hidden sm:flex" : "flex"
           }`}
         >
-          <div className="border-b border-[#e0dcd4] px-4 py-3">
-            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#6a5b52]">
+          <div className="border-b border-[var(--border-muted)] px-4 py-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
               {t("listsHeading")}
             </h2>
           </div>
 
           <ul className="flex-1 overflow-y-auto">
             {lists.length === 0 && (
-              <li className="px-4 py-6 text-center text-sm text-[#9a9e9b]">{t("noLists")}</li>
+              <li className="px-4 py-6 text-center text-sm text-[var(--text-subtle)]">{t("noLists")}</li>
             )}
             {lists.map((list) => {
               const doneCount = list.items.filter((i) => i.done).length;
@@ -500,16 +500,16 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
               return (
                 <li
-                  className={`group flex items-start border-b border-[#e0dcd4] last:border-b-0 transition sm:items-center ${
+                  className={`group flex items-start border-b border-[var(--border-muted)] last:border-b-0 transition sm:items-center ${
                     isSelected
-                      ? "border-l-2 border-l-[#6e9274] bg-[#edf3ee]"
-                      : "border-l-2 border-l-transparent hover:bg-[#f4f1ea]"
+                      ? "border-l-2 border-l-[var(--accent-sage-strong)] bg-[var(--accent-sage-surface)]"
+                      : "border-l-2 border-l-transparent hover:bg-[var(--surface-secondary)]"
                   }`}
                   key={list.id}
                 >
                   <button
                     className={`flex min-w-0 flex-1 items-start gap-2 px-3 py-3 text-left text-sm sm:items-center ${
-                      isSelected ? "font-medium text-[#426148]" : "text-[#4d5451]"
+                      isSelected ? "font-medium text-[var(--accent-sage-text)]" : "text-[var(--text-primary)]"
                     }`}
                     onClick={() => openList(list.id)}
                     type="button"
@@ -520,7 +520,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                         {totalCount > 0 ? (
                           <span
                             className={`shrink-0 text-[10px] font-semibold ${
-                              isSelected ? "text-[#426148]" : "text-[#6f675d]"
+                              isSelected ? "text-[var(--accent-sage-text)]" : "text-[var(--text-muted)]"
                             }`}
                           >
                             {doneCount}/{totalCount}
@@ -533,12 +533,12 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                         <span
                           aria-hidden
                           className={`block h-1.5 w-10 overflow-hidden rounded-full sm:w-14 ${
-                            isSelected ? "bg-[#c7d9ca]" : "bg-[#ddd6ca]"
+                            isSelected ? "bg-[var(--accent-sage-border)]" : "bg-[var(--border-default)]"
                           }`}
                         >
                           <span
                             className={`block h-full rounded-full transition-[width] duration-300 ${
-                              isSelected ? "bg-[#5f8566]" : "bg-[#8f877b]"
+                              isSelected ? "bg-[var(--accent-sage-strong)]" : "bg-[var(--text-subtle)]"
                             }`}
                             style={{ width: `${Math.max(8, Math.round((doneCount / totalCount) * 100))}%` }}
                           />
@@ -560,7 +560,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                   ) : (
                     <DeleteIconButton
                       ariaLabel={t("deleteListAriaLabel", { name: list.name })}
-                      className="mr-2 mt-1.5 shrink-0 self-start rounded p-2 text-[#b0aca5] transition hover:bg-[#f7ecea] hover:text-[#a6543c] sm:mt-0 sm:self-center"
+                      className="mr-2 mt-1.5 shrink-0 self-start rounded p-2 text-[var(--text-subtle)] transition hover:bg-[var(--accent-rose-soft)] hover:text-[var(--accent-rose-text)] sm:mt-0 sm:self-center"
                       onClick={() => setConfirmDeleteListId(list.id)}
                     />
                   )}
@@ -571,11 +571,11 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
           {/* New list form */}
           <form
-            className="grid gap-2 border-t border-[#e0dcd4] px-4 py-3 sm:flex"
+            className="grid gap-2 border-t border-[var(--border-muted)] px-4 py-3 sm:flex"
             onSubmit={handleCreateList}
           >
             <input
-              className="h-10 min-w-0 flex-1 rounded-md border border-[#d8d2c8] bg-white px-3 text-base text-[#171a18] placeholder:text-[#b0aca5] focus:border-[#9bb6a4] focus:outline-none sm:h-9 sm:text-sm"
+              className="h-10 min-w-0 flex-1 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--input-placeholder)] focus:border-[var(--focus-ring)] focus:outline-none sm:h-9 sm:text-sm"
               disabled={isSavingList}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder={t("newListPlaceholder")}
@@ -583,7 +583,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
               value={newListName}
             />
             <button
-              className="h-10 w-full shrink-0 rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9 sm:w-auto"
+              className="h-10 w-full shrink-0 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-sm font-medium text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-50 sm:h-9 sm:w-auto"
               disabled={isSavingList || !newListName.trim()}
               type="submit"
             >
@@ -594,29 +594,29 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
         {/* Right pane: items for selected list */}
         <div
-          className={`min-w-0 rounded-md border border-[#e0dcd4] bg-[#fffdf8] ${
+          className={`min-w-0 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] ${
             isMobileListOpen ? "block" : "hidden sm:block"
           }`}
         >
           {selectedList ? (
             <>
-              <div className="flex items-center gap-3 border-b border-[#e0dcd4] px-4 py-3 sm:px-5">
+              <div className="flex items-center gap-3 border-b border-[var(--border-muted)] px-4 py-3 sm:px-5">
                 <button
                   aria-label={t("backToLists")}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] sm:hidden"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] sm:hidden"
                   onClick={() => setIsMobileListOpen(false)}
                   type="button"
                 >
                   <ChevronLeftIcon aria-hidden className="h-5 w-5" />
                 </button>
-                <h2 className="min-w-0 break-words font-serif text-lg font-semibold text-[#171a18]">
+                <h2 className="min-w-0 break-words font-serif text-lg font-semibold text-[var(--text-strong)]">
                   {selectedList.name}
                 </h2>
               </div>
 
               <ul className="flex-1 overflow-y-auto">
                 {selectedList.items.length === 0 && (
-                  <li className="m-4 rounded-md border border-dashed border-[#d8d2c8] px-4 py-8 text-center text-sm text-[#9a9e9b] sm:m-5 sm:px-5">
+                  <li className="m-4 rounded-md border border-dashed border-[var(--border-strong)] px-4 py-8 text-center text-sm text-[var(--text-subtle)] sm:m-5 sm:px-5">
                     {t("emptyList")}
                   </li>
                 )}
@@ -631,9 +631,9 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                     onRequestDelete={setConfirmDeleteItemId}
                     onToggle={handleToggleItem}
                     renderItemMeta={renderItemMeta}
-                    rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 sm:px-5 ${
+                    rowClassName={`group flex items-start gap-3 border-b border-[var(--border-muted)] px-4 py-3 sm:px-5 ${
                       enteringItemIds.includes(item.id)
-                        ? "animate-[list-item-enter_520ms_cubic-bezier(0.16,1,0.3,1)] bg-[#f7fbf3]"
+                        ? "animate-[list-item-enter_520ms_cubic-bezier(0.16,1,0.3,1)] bg-[var(--accent-sage-surface)]"
                         : ""
                     }`}
                     t={t}
@@ -641,8 +641,8 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                 ))}
                 {completedItems.length > 0 ? (
                   <>
-                    <li className="border-b border-[#f0ede6] bg-[#fbfaf6] px-4 py-2 sm:px-5">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8b908c]">
+                    <li className="border-b border-[var(--border-muted)] bg-[var(--surface-muted)] px-4 py-2 sm:px-5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-subtle)]">
                         {t("completedHeading")}
                       </span>
                     </li>
@@ -657,7 +657,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                         onRequestDelete={setConfirmDeleteItemId}
                         onToggle={handleToggleItem}
                         renderItemMeta={renderItemMeta}
-                        rowClassName={`group flex items-start gap-3 border-b border-[#f0ede6] px-4 py-3 opacity-55 sm:px-5 ${
+                        rowClassName={`group flex items-start gap-3 border-b border-[var(--border-muted)] px-4 py-3 opacity-55 sm:px-5 ${
                           recentlyCompletedItemIds.includes(item.id)
                             ? "animate-[list-item-complete_420ms_cubic-bezier(0.22,1,0.36,1)]"
                             : ""
@@ -671,7 +671,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
               {/* Add item form */}
               <form
-                className="grid gap-2 border-t border-[#e0dcd4] p-4"
+                className="grid gap-2 border-t border-[var(--border-muted)] p-4"
                 data-list-board-composer="true"
                 onSubmit={handleCreateItem}
                 onBlur={(event) => {
@@ -689,10 +689,10 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                 onFocus={() => setIsComposerFocused(true)}
                 ref={composerFormRef}
               >
-                <div className="flex min-w-0 items-center rounded-md border border-[#d8d2c8] bg-white focus-within:border-[#9bb6a4]">
+                <div className="flex min-w-0 items-center rounded-md border border-[var(--input-border)] bg-[var(--input-background)] focus-within:border-[var(--focus-ring)]">
                   <input
                     ref={newItemInputRef}
-                    className="h-10 min-w-0 flex-1 bg-transparent px-3 text-base text-[#171a18] placeholder:text-[#b0aca5] focus:outline-none sm:h-9 sm:text-sm"
+                    className="h-10 min-w-0 flex-1 bg-transparent px-3 text-base text-[var(--text-primary)] placeholder:text-[var(--input-placeholder)] focus:outline-none sm:h-9 sm:text-sm"
                     disabled={isSavingItem}
                     onChange={(e) => setNewItemText(e.target.value)}
                     placeholder={t("addItemPlaceholder")}
@@ -709,7 +709,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
                 ) : (
                   <div className="flex justify-end">
                     <button
-                      className="h-10 w-full rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4] disabled:opacity-50 sm:h-9 sm:w-auto"
+                      className="h-10 w-full rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-sm font-medium text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-50 sm:h-9 sm:w-auto"
                       disabled={isSavingItem || !newItemText.trim()}
                       type="submit"
                     >
@@ -721,8 +721,8 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
-              <p className="font-serif text-lg text-[#5d635f]">{t("emptyStateHeading")}</p>
-              <p className="mt-1 text-sm text-[#9a9e9b]">{t("emptyStateHint")}</p>
+              <p className="font-serif text-lg text-[var(--text-muted)]">{t("emptyStateHeading")}</p>
+              <p className="mt-1 text-sm text-[var(--text-subtle)]">{t("emptyStateHint")}</p>
             </div>
           )}
         </div>

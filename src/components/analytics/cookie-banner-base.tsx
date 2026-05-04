@@ -55,21 +55,21 @@ export function CookieBannerBase({
       aria-label="Cookie notice"
       className="fixed inset-x-0 bottom-0 z-50 bg-transparent px-4 pb-4 sm:px-6 sm:pb-6"
     >
-      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-4 rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-4 shadow-[0_12px_34px_rgba(31,35,30,0.14)] sm:flex-row sm:items-center sm:justify-between">
-        <div className="max-w-2xl text-sm leading-6 text-[#4f5752]">
-          <p className="font-semibold text-[#202321]">{title}</p>
+      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-4 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-float)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+          <p className="font-semibold text-[var(--text-primary)]">{title}</p>
           <p className="mt-1">{description}</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
-            className="h-10 rounded-md border border-[#cfc8bd] bg-[#fffdf8] px-4 text-sm font-semibold text-[#3c413e] shadow-sm transition hover:bg-[#f4f1ea]"
+            className="h-10 rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-4 text-sm font-semibold text-[var(--text-strong)] shadow-sm transition hover:bg-[var(--surface-secondary)]"
             onClick={() => chooseConsent("rejected")}
             type="button"
           >
             {rejectLabel}
           </button>
           <button
-            className="h-10 rounded-md border border-[#3c413e] bg-[#3c413e] px-4 text-sm font-semibold text-[#fffdf8] shadow-sm transition hover:bg-[#202321]"
+            className="h-10 rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] shadow-sm transition hover:bg-[var(--button-primary-hover)]"
             onClick={() => chooseConsent("accepted")}
             type="button"
           >

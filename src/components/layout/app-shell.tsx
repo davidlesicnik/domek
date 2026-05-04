@@ -15,11 +15,11 @@ type AppShellProps = Readonly<{
 
 export function AppShell({ banner, memberColor, memberEmoji, userName, userId, children }: AppShellProps) {
   return (
-    <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
-      <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
+    <div className="min-h-dvh border-t-4 border-[var(--surface-strong)] bg-[var(--page-background)] text-[var(--text-primary)]">
+      <header className="border-b border-[var(--border-default)] bg-[var(--shell-background)]">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
           <div className="min-w-0 flex-1 sm:flex-none">
-            <h1 className="truncate font-serif text-[1.55rem] font-semibold tracking-normal text-[#171a18] sm:text-3xl">
+            <h1 className="truncate font-serif text-[1.55rem] font-semibold tracking-normal text-[var(--text-strong)] sm:text-3xl">
               Domek
             </h1>
           </div>
