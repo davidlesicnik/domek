@@ -1,3 +1,4 @@
+import { ThemePreference } from "@prisma/client";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 import { prisma } from "@/lib/db";
@@ -8,6 +9,7 @@ export type AppUser = Readonly<{
   name: string | null;
   email: string | null;
   image: string | null;
+  themePreference: ThemePreference;
 }>;
 
 const userSelect = {
@@ -16,6 +18,7 @@ const userSelect = {
   id: true,
   image: true,
   name: true,
+  themePreference: true,
 } as const;
 
 function stringMetadata(user: SupabaseAuthUser, key: string): string | null {

@@ -84,11 +84,11 @@ function cx(...classes: Array<string | false | null | undefined>) {
 }
 
 const plannerInputClassName =
-  "h-10 rounded-md border border-[#d8d2c8] bg-white px-3 text-base font-medium text-[#202321] outline-none transition focus:border-[#9bb6a4] sm:text-sm";
+  "h-10 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-base font-medium text-[var(--text-primary)] outline-none transition focus:border-[var(--focus-ring)] sm:text-sm";
 const plannerPrimaryButtonClassName =
-  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 text-sm font-semibold text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
 const plannerSecondaryButtonClassName =
-  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-4 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-4 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] disabled:cursor-not-allowed disabled:opacity-60 sm:h-10 sm:w-auto";
 const hexColorPattern = /^#[0-9A-Fa-f]{6}$/;
 
 function parseDateKey(dateKey: string) {
@@ -418,7 +418,7 @@ function colorGroupLabel(name: string) {
 
 function PlannerField({ children, label }: Readonly<{ children: ReactNode; label: ReactNode }>) {
   return (
-    <label className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+    <label className="grid gap-2 text-sm font-semibold text-[var(--text-primary)]">
       {label}
       {children}
     </label>
@@ -529,17 +529,17 @@ function PlannerEditorHeader({
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
-        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
           {eyebrow}
         </p>
-        <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]" id={titleId}>
+        <h3 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[var(--text-strong)]" id={titleId}>
           {title}
         </h3>
-        {description ? <p className="mt-1 text-xs text-[#6c726e]">{description}</p> : null}
+        {description ? <p className="mt-1 text-xs text-[var(--text-muted)]">{description}</p> : null}
       </div>
       <button
         aria-label={closeLabel}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--input-border)] bg-[var(--input-background)] text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
         disabled={disabled}
         onClick={onClose}
         type="button"
@@ -569,7 +569,7 @@ function PlannerFormActions({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-      {error ? <p className="w-full text-sm font-semibold text-[#a6543c]">{error}</p> : null}
+      {error ? <p className="w-full text-sm font-semibold text-[var(--accent-rose-text)]">{error}</p> : null}
       <button
         className={cx(plannerPrimaryButtonClassName, primaryButtonClassName)}
         disabled={disabled}
@@ -601,10 +601,10 @@ function PlannerDialog({
     <div
       aria-labelledby={labelledBy}
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
       role="dialog"
     >
-      <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
+      <div className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-float)] sm:max-h-[calc(100dvh-2rem)] sm:p-5">
         {children}
       </div>
     </div>
@@ -627,7 +627,7 @@ function PlannerIconButton({
   return (
     <button
       className={cx(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec] disabled:opacity-50",
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--input-border)] bg-[var(--input-background)] text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-50",
         className,
       )}
       disabled={disabled}
@@ -653,7 +653,7 @@ function PlannerDeleteButton({
 }>) {
   return (
     <button
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e8cec8] bg-[#fdf2f0] text-[#904035] transition hover:bg-[#f9e0db] disabled:opacity-50"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)] disabled:opacity-50"
       disabled={disabled}
       onClick={onClick}
       title={title}
@@ -686,7 +686,7 @@ function PlannerItemBadge({
       >
         {label}
       </span>
-      {meta ? <span className={uppercase ? "text-[11px] font-medium text-[#8a918d]" : "text-[11px] font-medium text-[#7a817d]"}>{meta}</span> : null}
+      {meta ? <span className={uppercase ? "text-[11px] font-medium text-[var(--text-subtle)]" : "text-[11px] font-medium text-[var(--text-subtle)]"}>{meta}</span> : null}
     </div>
   );
 }
@@ -725,13 +725,13 @@ function PlannerQuickActionLink({
 }>) {
   return (
     <Link
-      className="flex items-center rounded-md border border-[#e0dcd4] bg-[#fbfaf6] px-4 py-3 transition hover:bg-[#f4f1ea]"
+      className="flex items-center rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3 transition hover:bg-[var(--surface-secondary)]"
       href={href}
       onClick={onClick}
     >
       <span>
-        <span className="block text-sm font-semibold text-[#202321]">{label}</span>
-        <span className="mt-1 block text-xs text-[#6a716d]">{description}</span>
+        <span className="block text-sm font-semibold text-[var(--text-primary)]">{label}</span>
+        <span className="mt-1 block text-xs text-[var(--text-muted)]">{description}</span>
       </span>
     </Link>
   );
@@ -804,7 +804,7 @@ function PlannerSelect({
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-[#d8d2c8] bg-white px-3 text-left text-base font-medium text-[#202321] outline-none transition hover:border-[#cdbfb0] focus:border-[#9bb6a4] sm:text-sm"
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-left text-base font-medium text-[var(--text-primary)] outline-none transition hover:border-[var(--border-strong)] focus:border-[var(--focus-ring)] sm:text-sm"
         id={id}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -824,19 +824,19 @@ function PlannerSelect({
               style={{ backgroundColor: selectedOption.color }}
             />
           ) : null}
-          <span className={selectedOption ? "truncate" : "truncate text-[#6d746f]"}>
+          <span className={selectedOption ? "truncate" : "truncate text-[var(--input-placeholder)]"}>
             {selectedOption?.label ?? placeholder}
           </span>
         </span>
         <ChevronRight
           aria-hidden
-          className={`h-4 w-4 shrink-0 text-[#6d746f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
+          className={`h-4 w-4 shrink-0 text-[var(--text-subtle)] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
         />
       </button>
       {isOpen && menuStyle
         ? createPortal(
             <div
-              className="fixed z-[90] max-h-60 overflow-y-auto rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+              className="fixed z-[90] max-h-60 overflow-y-auto rounded-md border border-[var(--input-border)] bg-[var(--surface-primary)] p-1 shadow-[var(--shadow-float)]"
               id={listboxId}
               ref={menuRef}
               role="listbox"
@@ -854,10 +854,10 @@ function PlannerSelect({
                     aria-selected={isSelected}
                     className={`flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-sm transition ${
                       option.disabled
-                        ? "cursor-not-allowed text-[#a1a7a3]"
+                        ? "cursor-not-allowed text-[var(--text-subtle)]"
                         : isSelected
-                          ? "bg-[#eef6ef] text-[#2f4e35]"
-                          : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                          ? "bg-[var(--accent-sage-surface)] text-[var(--accent-sage-text)]"
+                          : "text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]"
                     }`}
                     disabled={option.disabled}
                     key={`${id}-${option.value}`}
@@ -1725,7 +1725,7 @@ export function DashboardPlanner({
                 value={newGroupName}
               />
               <button
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
                 onClick={() => {
                   setEventGroupId(groups[0]?.id ?? "");
                   setNewGroupName("");
@@ -1750,10 +1750,10 @@ export function DashboardPlanner({
         </PlannerField>
 
         <div className="grid gap-3">
-          <label className="flex items-center gap-2 text-sm font-semibold text-[#3f4642]">
+          <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
             <input
               checked={isAllDay}
-              className="h-4 w-4 accent-[#6e9274]"
+              className="h-4 w-4 accent-[var(--focus-ring)]"
               onChange={(changeEvent) => setIsAllDay(changeEvent.target.checked)}
               type="checkbox"
             />
@@ -1773,7 +1773,7 @@ export function DashboardPlanner({
           ) : null}
         </div>
 
-        <div className="grid gap-2 text-sm font-semibold text-[#3f4642]">
+        <div className="grid gap-2 text-sm font-semibold text-[var(--text-primary)]">
           {t("whoInvolved")}
           <PlannerSelect
             id="dashboard-event-members"
@@ -1811,7 +1811,7 @@ export function DashboardPlanner({
           ) : null}
 
           {calendarMembers.length === 0 ? (
-            <span className="text-xs font-medium text-[#777f7a]">
+            <span className="text-xs font-medium text-[var(--text-subtle)]">
               {t("addMembersFirst")}
             </span>
           ) : null}
@@ -1843,7 +1843,7 @@ export function DashboardPlanner({
               titleId="dashboard-group-dialog-title"
             />
 
-            {groupError ? <p className="text-sm font-semibold text-[#a6543c]">{groupError}</p> : null}
+            {groupError ? <p className="text-sm font-semibold text-[var(--accent-rose-text)]">{groupError}</p> : null}
 
             <PlannerField label={t("groupLabel")}>
               <PlannerSelect
@@ -1873,7 +1873,7 @@ export function DashboardPlanner({
             </PlannerField>
 
             <PlannerField label={t("groupColorLabel")}>
-              <div className="grid gap-3 rounded-md border border-[#d8d2c8] bg-white p-3">
+              <div className="grid gap-3 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   {EXPENSE_CATEGORY_COLOR_GROUPS.map((group) => (
                     <button
@@ -1881,8 +1881,8 @@ export function DashboardPlanner({
                       className={cx(
                         "h-8 w-8 rounded-md border transition",
                         selectedColorGroupName === group.name
-                          ? "border-[#171a18] ring-2 ring-[#171a18]/15"
-                          : "border-[#d8d2c8] hover:border-[#a9a398]",
+                          ? "border-[var(--text-strong)] ring-2 ring-black/10 dark:ring-white/10"
+                          : "border-[var(--input-border)] hover:border-[var(--border-strong)]",
                       )}
                       key={group.name}
                       onClick={() => {
@@ -1895,7 +1895,7 @@ export function DashboardPlanner({
                   ))}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-[#ece8df] pt-3">
+                <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-muted)] pt-3">
                   {(EXPENSE_CATEGORY_COLOR_GROUPS.find((group) => group.name === selectedColorGroupName) ??
                     findColorGroup(groupForm.color)
                   ).shades.map((color) => (
@@ -1904,8 +1904,8 @@ export function DashboardPlanner({
                       className={cx(
                         "h-8 w-8 rounded-md border transition",
                         groupForm.color.toLowerCase() === color.toLowerCase()
-                          ? "border-[#171a18] ring-2 ring-[#171a18]/15"
-                          : "border-[#d8d2c8] hover:border-[#a9a398]",
+                          ? "border-[var(--text-strong)] ring-2 ring-black/10 dark:ring-white/10"
+                          : "border-[var(--input-border)] hover:border-[var(--border-strong)]",
                       )}
                       key={color}
                       onClick={() => setGroupForm((currentGroup) => ({ ...currentGroup, color }))}
@@ -1915,10 +1915,10 @@ export function DashboardPlanner({
                   ))}
                 </div>
 
-                <label className="flex items-center gap-2 border-t border-[#ece8df] pt-3 text-xs text-[#686e6a]">
+                <label className="flex items-center gap-2 border-t border-[var(--border-muted)] pt-3 text-xs text-[var(--text-muted)]">
                   <span>{t("customColor")}</span>
                   <input
-                    className="h-8 w-12 rounded-md border border-[#d8d2c8] bg-white p-1 focus:border-[#9bb6a4] focus:outline-none"
+                    className="h-8 w-12 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] p-1 focus:border-[var(--focus-ring)] focus:outline-none"
                     onChange={(changeEvent) => {
                       const nextColor = changeEvent.target.value;
 
@@ -1945,14 +1945,14 @@ export function DashboardPlanner({
       ) : null}
 
       <div className="order-2 lg:order-1" id="home-calendar" ref={calendarSectionRef}>
-        <div className="overflow-hidden rounded-md border border-[#dedbd2] bg-[#fffdf8] shadow-[0_12px_28px_rgba(31,35,30,0.07)]">
-          <div className="flex flex-col gap-3 border-b border-[#e6e0d7] bg-[#f7f4ec] px-4 py-4">
+        <div className="overflow-hidden rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-soft)]">
+          <div className="flex flex-col gap-3 border-b border-[var(--border-muted)] bg-[var(--surface-secondary)] px-4 py-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     aria-label={t("previousMonth")}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-muted)] sm:h-9 sm:w-9"
                     onClick={() => goToMonth(-1)}
                     type="button"
                   >
@@ -1960,7 +1960,7 @@ export function DashboardPlanner({
                   </button>
                   <button
                     aria-label={t("nextMonth")}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] text-[#45614c] transition hover:bg-[#e2f0e4] sm:h-9 sm:w-9"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-muted)] sm:h-9 sm:w-9"
                     onClick={() => goToMonth(1)}
                     type="button"
                   >
@@ -1968,15 +1968,15 @@ export function DashboardPlanner({
                   </button>
                 </div>
                 <div className="min-w-0">
-                  <p className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                  <p className="font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]">
                     {monthFormatter.format(createDate(visibleMonth.year, visibleMonth.monthIndex, 1))}
                   </p>
-                  <p className="mt-1 text-xs text-[#717874]">{t("calendarAtGlance")}</p>
+                  <p className="mt-1 text-xs text-[var(--text-subtle)]">{t("calendarAtGlance")}</p>
                 </div>
               </div>
               <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                 <button
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-semibold text-[#5d635f] transition hover:bg-[#f7f4ec] sm:h-9 sm:w-auto sm:shrink-0"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] sm:h-9 sm:w-auto sm:shrink-0"
                   onClick={openGroupDialog}
                   type="button"
                 >
@@ -1985,7 +1985,7 @@ export function DashboardPlanner({
                 </button>
                 {!selectedDateIsToday ? (
                   <button
-                    className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[#ded3a1] bg-[#fbf4cf] px-3 text-sm font-semibold text-[#64571f] transition hover:bg-[#f6eab5] sm:h-9 sm:w-auto sm:shrink-0"
+                    className="inline-flex h-10 w-full items-center justify-center rounded-md border border-[var(--accent-sun-border)] bg-[var(--accent-sun-surface)] px-3 text-sm font-semibold text-[var(--accent-sun-text)] transition hover:brightness-105 sm:h-9 sm:w-auto sm:shrink-0"
                     onClick={goToToday}
                     type="button"
                   >
@@ -1996,10 +1996,10 @@ export function DashboardPlanner({
             </div>
           </div>
 
-          <div className="grid grid-cols-7 border-b border-[#e6e0d7] bg-[#fbfaf6]">
+          <div className="grid grid-cols-7 border-b border-[var(--border-muted)] bg-[var(--surface-muted)]">
             {Array.from({ length: 7 }, (_, index) => addDays(createDate(2024, 0, 1), index)).map((weekday) => (
               <div
-                className="px-1 py-2.5 text-center text-[10px] font-bold uppercase tracking-normal text-[#626a65] sm:px-2 sm:py-3 sm:text-[11px]"
+                className="px-1 py-2.5 text-center text-[10px] font-bold uppercase tracking-normal text-[var(--text-muted)] sm:px-2 sm:py-3 sm:text-[11px]"
                 key={weekday.toISOString()}
               >
                 {shortWeekdayFormatter.format(weekday)}
@@ -2018,14 +2018,14 @@ export function DashboardPlanner({
               return (
                 <div
                   className={cx(
-                    "relative min-h-[68px] border-b border-r border-[#e7e1d9] p-1.5 sm:min-h-[100px] sm:p-2 xl:min-h-[130px]",
+                    "relative min-h-[68px] border-b border-r border-[var(--border-muted)] p-1.5 sm:min-h-[100px] sm:p-2 xl:min-h-[130px]",
                     index % 7 === 6 && "border-r-0",
                     index >= monthDays.length - 7 && "border-b-0",
                     isSelectedDate
-                      ? "bg-[#e8efe9] shadow-[inset_0_0_0_1px_#6e9274]"
+                      ? "bg-[var(--accent-sage-surface)] shadow-[inset_0_0_0_1px_var(--accent-sage-strong)]"
                       : isCurrentMonth
-                        ? "bg-[#fffdf8]"
-                        : "bg-[#f8f6f1] text-[#9aa19c]",
+                        ? "bg-[var(--surface-primary)]"
+                        : "bg-[var(--page-background)] text-[var(--text-subtle)]",
                   )}
                   key={dateKey}
                 >
@@ -2044,10 +2044,10 @@ export function DashboardPlanner({
                         className={cx(
                           "pointer-events-auto inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold sm:h-7 sm:w-7 sm:text-sm",
                           isToday
-                            ? "bg-[#202321] text-white"
+                            ? "bg-[var(--surface-strong)] text-[var(--text-on-strong)]"
                             : isCurrentMonth
-                              ? "text-[#202321]"
-                              : "text-[#929995]",
+                              ? "text-[var(--text-primary)]"
+                              : "text-[var(--text-subtle)]",
                         )}
                         onClick={() => selectDate(dateKey)}
                         type="button"
@@ -2056,7 +2056,7 @@ export function DashboardPlanner({
                       </button>
                       <div className="flex items-center gap-1">
                         {index % 7 === 0 ? (
-                          <span className="hidden pt-1 text-[10px] font-semibold uppercase tracking-normal text-[#a0a7a2] xl:block">
+                          <span className="hidden pt-1 text-[10px] font-semibold uppercase tracking-normal text-[var(--text-subtle)] xl:block">
                             {t("weekNumber", { week: getIsoWeek(date) })}
                           </span>
                         ) : null}
@@ -2090,7 +2090,7 @@ export function DashboardPlanner({
                         </div>
                         {counts.calendar > 0 ? (
                           <div className="mt-2">
-                            <span className="rounded-full border border-[#d8d2c8] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#5d635f]">
+                            <span className="rounded-full border border-[var(--border-strong)] bg-[var(--surface-primary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
                               {counts.calendar}
                             </span>
                           </div>
@@ -2105,17 +2105,17 @@ export function DashboardPlanner({
         </div>
       </div>
 
-      <div className="order-1 rounded-md border border-[#d8d2c8] bg-[#fffdf8] p-5 shadow-[0_18px_34px_rgba(31,35,30,0.09)] lg:order-2">
+      <div className="order-1 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)] lg:order-2">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
               {selectedDateIsToday ? t("whatsComingUp") : weekdayFormatter.format(selectedDate)}
             </p>
-            <h2 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[#171a18]">
+            <h2 className="mt-1 font-serif text-xl font-semibold tracking-normal text-[var(--text-strong)]">
               {selectedDateIsToday ? t("nextSevenDays") : fullDateFormatter.format(selectedDate)}
             </h2>
             {!selectedDateIsToday ? (
-              <p className="mt-2 text-sm font-medium text-[#858c87]">
+              <p className="mt-2 text-sm font-medium text-[var(--text-subtle)]">
                 {selectedDayItems.length === 0
                   ? t("nothingScheduledYet")
                   : t("thingsOnDay", { count: selectedDayItems.length })}
@@ -2124,7 +2124,7 @@ export function DashboardPlanner({
           </div>
           {!isComposerOpen ? (
             <button
-              className="inline-flex h-10 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 text-sm font-semibold text-[#45614c] transition hover:bg-[#e2f0e4]"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 text-sm font-semibold text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)]"
               onClick={() => setShowCreateMenu(true)}
               type="button"
             >
@@ -2139,19 +2139,19 @@ export function DashboardPlanner({
               {agendaDays.map((day) => (
                 <section
                   className={cx(
-                    "rounded-md border bg-[#fbfaf6] transition",
+                    "rounded-md border bg-[var(--surface-muted)] transition",
                     day.dateKey === effectiveSelectedAgendaDateKey
-                      ? "border-[#c7d7ca] shadow-[0_8px_22px_rgba(31,35,30,0.08)]"
-                      : "border-[#e3ded6]",
+                      ? "border-[var(--accent-sage-border)] shadow-[var(--shadow-soft)]"
+                      : "border-[var(--border-muted)]",
                   )}
                   key={day.dateKey}
                   ref={(node) => {
                     agendaSectionRefs.current[day.dateKey] = node;
                   }}
                 >
-                  <div className="border-b border-[#e3ded6] px-4 py-3">
+                  <div className="border-b border-[var(--border-muted)] px-4 py-3">
                     <button
-                      className="font-serif text-left text-lg font-semibold tracking-normal text-[#202321]"
+                      className="font-serif text-left text-lg font-semibold tracking-normal text-[var(--text-primary)]"
                       onClick={() => selectDate(day.dateKey)}
                       type="button"
                     >
@@ -2170,7 +2170,7 @@ export function DashboardPlanner({
                         <>
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
+                              <h3 className="text-[15px] font-semibold leading-6 text-[var(--text-primary)]">
                                 {item.title}
                               </h3>
                               <div className="mt-2">
@@ -2205,7 +2205,7 @@ export function DashboardPlanner({
                       if (item.source === "calendar") {
                         return (
                           <div
-                            className="group flex items-start gap-3 px-4 py-4 transition hover:bg-[#f4f1ea]"
+                            className="group flex items-start gap-3 px-4 py-4 transition hover:bg-[var(--surface-secondary)]"
                             key={`${item.source}-${item.id}`}
                           >
                             <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
@@ -2215,7 +2215,7 @@ export function DashboardPlanner({
                                 type="button"
                               >
                                 <div className="min-w-0">
-                                  <h3 className="text-[15px] font-semibold leading-6 text-[#1e201f]">
+                                  <h3 className="text-[15px] font-semibold leading-6 text-[var(--text-primary)]">
                                     {item.title}
                                   </h3>
                                   <div className="mt-2">
@@ -2251,7 +2251,7 @@ export function DashboardPlanner({
 
                       return (
                         <Link
-                          className="group block cursor-pointer px-4 py-4 transition hover:bg-[#f4f1ea]"
+                          className="group block cursor-pointer px-4 py-4 transition hover:bg-[var(--surface-secondary)]"
                           href={item.href}
                           key={`${item.source}-${item.id}`}
                         >
@@ -2264,26 +2264,26 @@ export function DashboardPlanner({
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-md border border-dashed border-[#d8d2c8] bg-[#fbfaf6] p-5">
-              <p className="font-serif text-xl font-semibold tracking-normal text-[#202321]">
+            <div className="mt-5 rounded-md border border-dashed border-[var(--border-strong)] bg-[var(--surface-muted)] p-5">
+              <p className="font-serif text-xl font-semibold tracking-normal text-[var(--text-primary)]">
                 {t("noUpcomingItems")}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-3 text-sm font-medium text-[#45614c] transition hover:bg-[#e2f0e4]"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-sm font-medium text-[var(--accent-sage-text)] transition hover:bg-[var(--surface-secondary)]"
                   onClick={() => focusCalendarDate(todayKey)}
                   type="button"
                 >
                   {t("calendarLabel")}
                 </button>
                 <Link
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-3 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
                   href="/app/chores"
                 >
                   {t("chores")}
                 </Link>
                 <Link
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-primary)] px-3 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
                   href="/app/todos"
                 >
                   {t("tasks")}
@@ -2364,11 +2364,11 @@ export function DashboardPlanner({
                 );
               })
             ) : (
-              <div className="rounded-md border border-dashed border-[#d8d2c8] bg-[#fbfaf6] p-5">
-                <p className="font-serif text-xl font-semibold tracking-normal text-[#202321]">
+              <div className="rounded-md border border-dashed border-[var(--input-border)] bg-[var(--surface-muted)] p-5">
+                <p className="font-serif text-xl font-semibold tracking-normal text-[var(--text-strong)]">
                   {t("nothingOnTable")}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#68706b]">
+                <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                   {t("openDaySummary")}
                 </p>
               </div>
@@ -2390,11 +2390,11 @@ export function DashboardPlanner({
         <PlannerDialog labelledBy="dashboard-create-entry-title">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+              <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
                 {t("addSomething")}
               </p>
               <h2
-                className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
+                className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]"
                 id="dashboard-create-entry-title"
               >
                 {t("pickWhatToAdd")}
@@ -2402,7 +2402,7 @@ export function DashboardPlanner({
             </div>
             <button
               aria-label={t("closeAddMenu")}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--input-border)] bg-[var(--input-background)] text-xl font-semibold leading-none text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
               onClick={() => setShowCreateMenu(false)}
               type="button"
             >
@@ -2412,7 +2412,7 @@ export function DashboardPlanner({
 
           <div className="mt-5 grid gap-2">
             <button
-              className="flex items-center rounded-md border border-[#c9d7cc] bg-[#eef6ef] px-4 py-3 text-left transition hover:bg-[#e2f0e4]"
+              className="flex items-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 py-3 text-left transition hover:bg-[var(--surface-secondary)]"
               onClick={() => {
                 setShowCreateMenu(false);
                 openComposer(selectedDateKey);
@@ -2420,8 +2420,8 @@ export function DashboardPlanner({
               type="button"
             >
               <span>
-                <span className="block text-sm font-semibold text-[#2f4e35]">{t("eventLabel")}</span>
-                <span className="mt-1 block text-xs text-[#5d6d61]">{t("eventDescription")}</span>
+                <span className="block text-sm font-semibold text-[var(--accent-sage-text)]">{t("eventLabel")}</span>
+                <span className="mt-1 block text-xs text-[var(--text-muted)]">{t("eventDescription")}</span>
               </span>
             </button>
 

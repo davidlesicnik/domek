@@ -158,7 +158,7 @@ export function AddHouseholdMemberDialog({
         <>
           <div
             aria-hidden
-            className="fixed inset-0 z-40 bg-[#202321]/28 backdrop-blur-[1px]"
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
             onClick={closeDialog}
           />
           <div
@@ -166,22 +166,22 @@ export function AddHouseholdMemberDialog({
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             role="dialog"
           >
-            <div className="w-full max-w-[520px] rounded-md border border-[#ddd7cc] bg-[#fffdf8] p-5 shadow-[0_24px_60px_rgba(31,35,30,0.18)] sm:p-6">
+            <div className="w-full max-w-[520px] rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-float)] sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+                  <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
                     {t("label")}
                   </p>
-                  <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]">
+                  <h2 className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]">
                     {t("title")}
                   </h2>
                   {mode === null ? (
-                    <p className="mt-2 text-sm leading-6 text-[#686e6a]">
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                       {t("subtitle")}
                     </p>
                   ) : (
                     <button
-                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#5f6661] transition hover:text-[#202321]"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text-strong)]"
                       onClick={() => setMode(null)}
                       type="button"
                     >
@@ -192,7 +192,7 @@ export function AddHouseholdMemberDialog({
                 </div>
                 <button
                   aria-label={t("closeAriaLabel")}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#ddd7cc] text-[#5d635f] transition hover:bg-[#f6f2ea]"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--input-border)] text-[var(--text-muted)] transition hover:bg-[var(--surface-secondary)]"
                   onClick={closeDialog}
                   type="button"
                 >
@@ -203,22 +203,22 @@ export function AddHouseholdMemberDialog({
               {mode === null ? (
                 <div className="mt-5 grid gap-3">
                   <button
-                    className="grid gap-1 rounded-md border border-[#d9ded7] bg-[#f8fbf7] px-4 py-4 text-left transition hover:border-[#9ab59d] hover:bg-[#eef7ef]"
+                    className="grid gap-1 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-4 py-4 text-left transition hover:bg-[var(--surface-secondary)]"
                     onClick={() => setMode("invite")}
                     type="button"
                   >
-                    <span className="text-sm font-semibold text-[#202321]">{t("inviteTitle")}</span>
-                    <span className="text-sm leading-6 text-[#68706a]">
+                    <span className="text-sm font-semibold text-[var(--text-strong)]">{t("inviteTitle")}</span>
+                    <span className="text-sm leading-6 text-[var(--text-muted)]">
                       {t("inviteDescription")}
                     </span>
                   </button>
                   <button
-                    className="grid gap-1 rounded-md border border-[#ddd7cc] bg-[#fbfaf6] px-4 py-4 text-left transition hover:border-[#cfc7b9] hover:bg-[#f6f2ea]"
+                    className="grid gap-1 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-4 text-left transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)]"
                     onClick={() => setMode("member")}
                     type="button"
                   >
-                    <span className="text-sm font-semibold text-[#202321]">{t("memberTitle")}</span>
-                    <span className="text-sm leading-6 text-[#68706a]">
+                    <span className="text-sm font-semibold text-[var(--text-strong)]">{t("memberTitle")}</span>
+                    <span className="text-sm leading-6 text-[var(--text-muted)]">
                       {t("memberDescription")}
                     </span>
                   </button>
@@ -228,14 +228,14 @@ export function AddHouseholdMemberDialog({
               {mode === "invite" ? (
                 <form action={handleInviteSubmit} className="mt-5 grid gap-2.5" key={inviteFormKey}>
                   <div className="grid gap-2">
-                    <label className="text-sm font-semibold text-[#3c413e]" htmlFor="member-invite-email">
+                    <label className="text-sm font-semibold text-[var(--text-primary)]" htmlFor="member-invite-email">
                       {t("emailLabel")}
                     </label>
-                    <div className="flex items-center gap-2 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3">
-                      <Mail aria-hidden className="h-4 w-4 text-[#7b827d]" />
+                    <div className="flex items-center gap-2 rounded-md border border-[var(--input-border)] bg-[var(--surface-secondary)] px-3">
+                      <Mail aria-hidden className="h-4 w-4 text-[var(--text-subtle)]" />
                       <input
                         autoComplete="email"
-                      className="h-11 min-w-0 flex-1 bg-transparent text-base text-[#202321] outline-none sm:text-sm"
+                      className="h-11 min-w-0 flex-1 bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--input-placeholder)] sm:text-sm"
                         id="member-invite-email"
                         maxLength={320}
                         name="email"
@@ -245,15 +245,15 @@ export function AddHouseholdMemberDialog({
                       />
                     </div>
                   </div>
-                  <p className="text-xs leading-5 text-[#7a817c]">
+                  <p className="text-xs leading-5 text-[var(--text-subtle)]">
                     {t("inviteHelpText")}
                   </p>
                   {inviteState.error ? (
-                    <p className="text-sm font-medium text-[#a6543c]">{inviteState.error}</p>
+                    <p className="text-sm font-medium text-[var(--accent-rose-text)]">{inviteState.error}</p>
                   ) : null}
                   <div className="pt-1 flex justify-end">
                     <button
-                      className="inline-flex h-10 items-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
+                      className="inline-flex h-10 items-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)] disabled:opacity-50"
                       disabled={invitePending}
                       type="submit"
                     >
@@ -265,11 +265,11 @@ export function AddHouseholdMemberDialog({
                 mode === "member" ? (
                 <form action={handleMemberSubmit} className="mt-5 grid gap-4" key={memberFormKey}>
                   <div className="grid gap-2">
-                    <label className="text-sm font-semibold text-[#3c413e]" htmlFor="member-name">
+                    <label className="text-sm font-semibold text-[var(--text-primary)]" htmlFor="member-name">
                       {t("nameLabel")}
                     </label>
                     <input
-                      className="h-11 rounded-md border border-[#d6ddd6] bg-[#f8fbf7] px-3 text-base text-[#202321] outline-none transition focus:border-[#6e9274] focus:bg-white sm:text-sm"
+                      className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--surface-secondary)] px-3 text-base text-[var(--text-primary)] outline-none transition focus:border-[var(--focus-ring)] focus:bg-[var(--input-background)] sm:text-sm"
                       id="member-name"
                       maxLength={120}
                       name="name"
@@ -279,15 +279,15 @@ export function AddHouseholdMemberDialog({
                     />
                   </div>
 
-                  <div className="grid gap-3 rounded-md border border-[#e6e1d7] bg-[#fbfaf6] p-4">
+                  <div className="grid gap-3 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] p-4">
                     <div className="grid gap-1">
-                      <p className="text-sm font-semibold text-[#3c413e]">{t("avatarTitle")}</p>
-                      <p className="text-xs leading-5 text-[#7a817c]">
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{t("avatarTitle")}</p>
+                      <p className="text-xs leading-5 text-[var(--text-subtle)]">
                         {t("avatarSubtitle")}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2.5 rounded-md border border-[#e6e1d7] bg-white px-3 py-2.5">
+                    <div className="flex items-center gap-2.5 rounded-md border border-[var(--border-muted)] bg-[var(--input-background)] px-3 py-2.5">
                       <MemberAvatar
                         className="flex h-9 w-9 items-center justify-center rounded-md border text-xs font-semibold"
                         color={selectedColor}
@@ -295,7 +295,7 @@ export function AddHouseholdMemberDialog({
                         name={memberName.trim() || t("avatarPlaceholder")}
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-[#202321]">
+                        <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
                           {memberName.trim() || t("avatarPlaceholder")}
                         </p>
                       </div>
@@ -303,7 +303,7 @@ export function AddHouseholdMemberDialog({
 
                     <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
                       <div className="grid gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">{t("colorLabel")}</p>
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[var(--text-muted)]">{t("colorLabel")}</p>
                         <input name="color" type="hidden" value={selectedColor} />
                         <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
                           {MEMBER_COLOR_KEYS.map((key) => {
@@ -330,7 +330,7 @@ export function AddHouseholdMemberDialog({
                       </div>
 
                       <div className="grid gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-normal text-[#5f6661]">{t("emojiLabel")}</p>
+                        <p className="text-xs font-semibold uppercase tracking-normal text-[var(--text-muted)]">{t("emojiLabel")}</p>
                         <input name="emoji" type="hidden" value={selectedEmoji} />
                         <div className="grid w-fit grid-cols-[repeat(4,2.75rem)] gap-1.5">
                           {["", ...MEMBER_EMOJI_OPTIONS].map((emoji) => {
@@ -341,15 +341,15 @@ export function AddHouseholdMemberDialog({
                               <button
                                 className={`inline-flex h-11 w-11 items-center justify-center rounded-md border text-lg transition ${
                                   isSelected
-                                    ? "border-[#202321] bg-[#f4f1ea]"
-                                    : "border-[#d8d2c8] bg-white hover:bg-[#faf8f2]"
+                                    ? "border-[var(--text-strong)] bg-[var(--surface-secondary)]"
+                                    : "border-[var(--input-border)] bg-[var(--input-background)] hover:bg-[var(--surface-secondary)]"
                                 }`}
                                 key={label}
                                 onClick={() => setSelectedEmoji(emoji)}
                                 type="button"
                               >
                                 <span
-                                  className={emoji ? "" : "text-[11px] font-semibold uppercase text-[#5f6661]"}
+                                  className={emoji ? "" : "text-[11px] font-semibold uppercase text-[var(--text-muted)]"}
                                 >
                                   {emoji || memberInitial}
                                 </span>
@@ -362,11 +362,11 @@ export function AddHouseholdMemberDialog({
                   </div>
 
                   {memberState.error ? (
-                    <p className="text-sm font-medium text-[#a6543c]">{memberState.error}</p>
+                    <p className="text-sm font-medium text-[var(--accent-rose-text)]">{memberState.error}</p>
                   ) : null}
                   <div className="flex justify-end">
                     <button
-                      className="inline-flex h-10 items-center rounded-md bg-[#232323] px-4 text-sm font-semibold text-white transition hover:bg-[#3c413e] disabled:opacity-50"
+                      className="inline-flex h-10 items-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)] disabled:opacity-50"
                       disabled={memberPending}
                       type="submit"
                     >
@@ -378,24 +378,24 @@ export function AddHouseholdMemberDialog({
               )}
 
               {pendingInvites.length > 0 ? (
-                <div className="mt-6 border-t border-[#ece8df] pt-5">
-                  <p className="text-xs font-semibold uppercase tracking-normal text-[#5e655f]">
+                <div className="mt-6 border-t border-[var(--border-muted)] pt-5">
+                  <p className="text-xs font-semibold uppercase tracking-normal text-[var(--text-muted)]">
                     {t("pendingInvitesTitle")}
                   </p>
                   <ul className="mt-3 grid gap-2">
                     {pendingInvites.map((invite) => (
                       <li
-                        className="flex items-center justify-between gap-3 rounded-md border border-[#ece8df] bg-[#fbfaf6] px-3 py-2"
+                        className="flex items-center justify-between gap-3 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-3 py-2"
                         key={invite.id}
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-[#202321]">{invite.email}</p>
-                          <p className="text-xs text-[#8a908c]">{formatExpiry(invite.expiresAt)}</p>
+                          <p className="truncate text-sm font-medium text-[var(--text-primary)]">{invite.email}</p>
+                          <p className="text-xs text-[var(--text-subtle)]">{formatExpiry(invite.expiresAt)}</p>
                         </div>
                         <form action={handleRevoke}>
                           <input name="inviteId" type="hidden" value={invite.id} />
                           <button
-                            className="h-8 rounded-md border border-[#dfb4a8] px-3 text-xs font-semibold text-[#a6543c] transition hover:bg-[#fff5f1]"
+                            className="h-8 rounded-md border border-[var(--accent-rose-border)] px-3 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-soft)]"
                             type="submit"
                           >
                             {t("revokeButton")}

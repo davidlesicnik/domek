@@ -165,7 +165,7 @@ export function MemberColorPicker({
           fallbackLabel={t("unknownMember")}
           name={memberName}
         />
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-[#202321]/0 text-white opacity-0 transition-[background-color,opacity] group-hover:bg-[#202321]/18 group-hover:opacity-100">
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-black/0 text-[var(--text-on-strong)] opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
           <Pencil aria-hidden className="h-3.5 w-3.5" />
         </span>
       </button>
@@ -179,11 +179,11 @@ export function MemberColorPicker({
       {isOpen ? (
         <div
           aria-label={t("avatarOptionsAria", { name: memberLabel })}
-          className="absolute left-0 top-full z-20 mt-2 w-[228px] rounded-md border border-[#dcd6ca] bg-[#fffdf8] p-3 shadow-[0_18px_45px_rgba(31,35,30,0.16)]"
+          className="absolute left-0 top-full z-20 mt-2 w-[228px] rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 shadow-[var(--shadow-float)]"
           role="dialog"
         >
           <div className="mb-3">
-            <p className="text-center text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            <p className="text-center text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
               {t("avatarTitle")}
             </p>
           </div>
@@ -195,8 +195,8 @@ export function MemberColorPicker({
                 aria-pressed={selectedEmoji === null}
                 className={`flex h-11 items-center justify-center rounded-md border text-[11px] font-semibold transition ${
                   selectedEmoji === null
-                    ? "border-[#202321] bg-[#f4f1ea] text-[#202321]"
-                    : "border-[#d8d2c8] bg-white text-[#676d69] hover:border-[#aeb8af] hover:bg-[#faf8f2]"
+                    ? "border-[var(--text-strong)] bg-[var(--surface-secondary)] text-[var(--text-strong)]"
+                    : "border-[var(--input-border)] bg-[var(--input-background)] text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)]"
                 }`}
                 onBlur={() => setPreviewEmoji(undefined)}
                 onClick={() => updateAvatar(currentColor, null)}
@@ -213,8 +213,8 @@ export function MemberColorPicker({
                   aria-pressed={selectedEmoji === emoji}
                   className={`relative flex h-11 items-center justify-center rounded-md border text-xl transition ${
                     selectedEmoji === emoji
-                      ? "border-[#202321] bg-[#f1ede4] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]"
-                      : "border-[#d8d2c8] bg-white hover:border-[#aeb8af] hover:bg-[#faf8f2]"
+                      ? "border-[var(--text-strong)] bg-[var(--surface-secondary)] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+                      : "border-[var(--input-border)] bg-[var(--input-background)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)]"
                   }`}
                   key={emoji}
                   onBlur={() => setPreviewEmoji(undefined)}
@@ -226,7 +226,7 @@ export function MemberColorPicker({
                 >
                   <span aria-hidden>{emoji}</span>
                   {selectedEmoji === emoji ? (
-                    <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#202321] text-[9px] font-bold text-white">
+                    <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[9px] font-bold text-[var(--text-on-strong)]">
                       ✓
                     </span>
                   ) : null}
@@ -234,7 +234,7 @@ export function MemberColorPicker({
               ))}
             </div>
 
-            <div className="border-t border-[#ece8df]" />
+            <div className="border-t border-[var(--border-muted)]" />
 
             <div className="grid grid-cols-4 gap-1.5">
               {MEMBER_COLOR_KEYS.map((key) => {
@@ -248,7 +248,7 @@ export function MemberColorPicker({
                     aria-pressed={isSelected}
                     className={`relative flex h-11 w-11 items-center justify-center rounded-md border transition hover:scale-[1.03] ${
                       isSelected
-                        ? "border-[#202321] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)]"
+                        ? "border-[var(--text-strong)] shadow-[inset_0_0_0_1px_rgba(32,35,33,0.16)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
                         : ""
                     }`}
                     key={key}
@@ -259,13 +259,13 @@ export function MemberColorPicker({
                     onMouseLeave={() => setPreviewColor(null)}
                     style={{
                       backgroundColor: color.hex,
-                      borderColor: isSelected ? "#202321" : color.border,
+                      borderColor: isSelected ? "var(--text-strong)" : color.border,
                     }}
                     title={colorName}
                     type="button"
                   >
                     {isSelected ? (
-                      <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#202321] text-[9px] font-bold text-white">
+                      <span className="absolute right-1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[9px] font-bold text-[var(--text-on-strong)]">
                         ✓
                       </span>
                     ) : null}
@@ -276,7 +276,7 @@ export function MemberColorPicker({
             </div>
           </div>
 
-          {error ? <p className="mt-3 text-[11px] font-medium text-[#a6543c]">{error}</p> : null}
+          {error ? <p className="mt-3 text-[11px] font-medium text-[var(--accent-rose-text)]">{error}</p> : null}
         </div>
       ) : null}
     </div>

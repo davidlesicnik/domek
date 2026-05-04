@@ -21,14 +21,14 @@ export function LocaleSwitcher() {
     <nav aria-label={t("langLabel")} className="flex items-center gap-2">
       {routing.locales.map((loc, i) => (
         <span key={loc} className="flex items-center gap-2">
-          {i > 0 && <span aria-hidden className="text-xs text-[#d0cdc6]">/</span>}
+          {i > 0 && <span aria-hidden className="text-xs text-[var(--border-strong)]">/</span>}
           <Link
             href={pathname}
             locale={loc}
             className={`text-xs transition ${
               loc === locale
-                ? "font-semibold text-[#3c413e]"
-                : "text-[#9ea49f] hover:text-[#686e6a]"
+                ? "font-semibold text-[var(--text-strong)]"
+                : "text-[var(--text-subtle)] hover:text-[var(--text-muted)]"
             }`}
           >
             {localeNames[loc]}

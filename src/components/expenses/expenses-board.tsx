@@ -517,14 +517,14 @@ function CustomSelect({
 
   return (
     <div
-      className={`relative [--select-bg:#fffdf8] [--select-border:#dfddd6] [--select-hover-border:#c8c4bb] [--select-panel:#fffdf8] [--select-text:#4d5451] ${className}`}
+      className={`relative [--select-bg:var(--surface-primary)] [--select-border:var(--input-border)] [--select-hover-border:var(--border-strong)] [--select-panel:var(--surface-primary)] [--select-text:var(--text-primary)] ${className}`}
       ref={rootRef}
     >
       <button
         aria-controls={listboxId}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className={`flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[#c85b45] focus:outline-none sm:text-sm ${buttonClassName}`}
+        className={`flex w-full items-center justify-between gap-2 rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-left text-base text-[var(--select-text)] transition hover:border-[var(--select-hover-border)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm ${buttonClassName}`}
         id={id}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={(event) => {
@@ -544,18 +544,18 @@ function CustomSelect({
               style={{ backgroundColor: selectedOption.color }}
             />
           ) : null}
-          <span className={selectedOption ? "truncate" : "truncate text-[#9da39f]"}>
+          <span className={selectedOption ? "truncate" : "truncate text-[color:var(--input-placeholder)]"}>
             {selectedOption?.label ?? placeholder}
           </span>
         </span>
         <ChevronRight
           aria-hidden
-          className={`h-4 w-4 shrink-0 text-[#8e948f] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
+          className={`h-4 w-4 shrink-0 text-[color:var(--text-subtle)] transition-transform ${isOpen ? "-rotate-90" : "rotate-90"}`}
         />
       </button>
       {isOpen ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[70] max-h-60 overflow-y-auto rounded-md border border-[var(--select-border)] bg-[var(--select-panel)] p-1 shadow-[0_16px_34px_rgba(31,35,30,0.18)]"
+          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-[70] max-h-60 overflow-y-auto rounded-md border border-[var(--select-border)] bg-[var(--select-panel)] p-1 shadow-[var(--shadow-float)]"
           id={listboxId}
           role="listbox"
         >
@@ -566,7 +566,9 @@ function CustomSelect({
               <button
                 aria-selected={isSelected}
                 className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm transition ${
-                  isSelected ? "bg-[#e8efe9] text-[#2d4f34]" : "text-[#4d5451] hover:bg-[#f4f1ea]"
+                  isSelected
+                    ? "bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                    : "text-[color:var(--text-primary)] hover:bg-[color:var(--surface-secondary)]"
                 }`}
                 key={option.value}
                 onClick={() => {
@@ -1050,11 +1052,11 @@ export function ExpensesBoard({
       {/* Month picker */}
       <div className="mb-6 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="min-w-0 font-serif text-2xl font-semibold text-[#171a18] sm:text-3xl">
+          <h1 className="min-w-0 font-serif text-2xl font-semibold text-[color:var(--text-strong)] sm:text-3xl">
             {monthLabel}
           </h1>
           <button
-            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md border border-[#dfddd6] bg-[#fffdf8] px-3 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] disabled:opacity-50 sm:h-8 sm:px-2.5"
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-primary)] px-3 text-sm font-medium text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)] disabled:opacity-50 sm:h-8 sm:px-2.5"
             disabled={categories.length === 0}
             onClick={openCategoryDialog}
             type="button"
@@ -1066,7 +1068,7 @@ export function ExpensesBoard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             aria-label={t("previousMonth")}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-8 sm:w-8"
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)] sm:h-8 sm:w-8"
             onClick={prevMonth}
             type="button"
           >
@@ -1088,14 +1090,14 @@ export function ExpensesBoard({
             />
             <span
               aria-hidden
-              className="pointer-events-none flex h-full w-full items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451]"
+              className="pointer-events-none flex h-full w-full items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-primary)] text-[color:var(--text-primary)]"
             >
               <CalendarDays className="h-4 w-4" />
             </span>
           </div>
           <button
             aria-label={t("nextMonth")}
-            className="flex h-11 w-11 items-center justify-center rounded-md border border-[#dfddd6] bg-[#fffdf8] text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-8 sm:w-8"
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-primary)] text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)] sm:h-8 sm:w-8"
             onClick={nextMonth}
             type="button"
           >
@@ -1103,7 +1105,7 @@ export function ExpensesBoard({
           </button>
           {!isCurrentMonth ? (
             <button
-              className="inline-flex h-11 items-center rounded-md border border-[#dfddd6] bg-[#fffdf8] px-3 py-1.5 text-sm font-medium text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-auto"
+              className="inline-flex h-11 items-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-primary)] px-3 py-1.5 text-sm font-medium text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)] sm:h-auto"
               onClick={jumpToCurrentMonth}
               type="button"
             >
@@ -1117,20 +1119,20 @@ export function ExpensesBoard({
         <div
           aria-labelledby="expense-category-dialog-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
           role="dialog"
         >
           <form
-            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[#dedbd2] bg-[#fffdf8] p-4 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)] sm:p-5"
+            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-md overflow-y-auto rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-4 shadow-[var(--shadow-float)] sm:max-h-[calc(100dvh-2rem)] sm:p-5"
             onSubmit={(event) => void handleCategorySave(event)}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+                <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)]">
                   {t("label")}
                 </p>
                 <h2
-                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[#171a18]"
+                  className="mt-1 font-serif text-2xl font-semibold tracking-normal text-[color:var(--text-strong)]"
                   id="expense-category-dialog-title"
                 >
                   {t("editCategory")}
@@ -1138,7 +1140,7 @@ export function ExpensesBoard({
               </div>
               <button
                 aria-label={t("closeCategoryDialog")}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-xl font-semibold leading-none text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] text-xl font-semibold leading-none text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)]"
                 disabled={isSavingCategory}
                 onClick={closeCategoryDialog}
                 type="button"
@@ -1148,18 +1150,18 @@ export function ExpensesBoard({
             </div>
 
             {categoryError ? (
-              <p className="mb-4 rounded-md bg-[#f3e4e2] px-3 py-2 text-sm text-[#8d3028]">
+              <p className="mb-4 rounded-md border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-3 py-2 text-sm text-[color:var(--accent-rose-text)]">
                 {categoryError}
               </p>
             ) : null}
 
             <div className="grid gap-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#545b57]" htmlFor="category-edit-select">
+                <label className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]" htmlFor="category-edit-select">
                   {t("categoryLabel")}
                 </label>
                 <CustomSelect
-                  buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
+                  buttonClassName="[--select-bg:var(--input-background)] [--select-panel:var(--surface-primary)]"
                   id="category-edit-select"
                   onChange={selectCategoryForEdit}
                   options={categoryOptions}
@@ -1168,11 +1170,11 @@ export function ExpensesBoard({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#545b57]" htmlFor="category-edit-name">
+                <label className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]" htmlFor="category-edit-name">
                   {t("nameLabel")}
                 </label>
                 <input
-                  className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-sm text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none"
+                  className="w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:outline-none"
                   id="category-edit-name"
                   maxLength={60}
                   onChange={(event) => setCategoryForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -1183,12 +1185,12 @@ export function ExpensesBoard({
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-medium text-[#545b57]">
+                <p className="mb-2 text-xs font-medium text-[color:var(--text-primary)]">
                   {t("colorLabel")}
                 </p>
-                <div className="grid gap-3 rounded-md border border-[#dfddd6] bg-white p-3">
+                <div className="grid gap-3 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] p-3">
                   <div>
-                    <p className="mb-2 text-xs text-[#686e6a]">
+                    <p className="mb-2 text-xs text-[color:var(--text-muted)]">
                       {t("colorFamily")}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1197,8 +1199,8 @@ export function ExpensesBoard({
                         aria-label={t("showColorShades", { color: colorGroupLabel(group.name, t) })}
                         className={`h-8 w-8 rounded-md border transition ${
                           selectedColorGroup.name === group.name
-                            ? "border-[#171a18] ring-2 ring-[#171a18]/15"
-                            : "border-[#d8d2c8] hover:border-[#a9a398]"
+                            ? "border-[color:var(--text-strong)] ring-2 ring-[color:var(--text-strong)]/15"
+                            : "border-[color:var(--input-border)] hover:border-[color:var(--border-strong)]"
                         }`}
                         key={group.name}
                         onClick={() => {
@@ -1212,8 +1214,8 @@ export function ExpensesBoard({
                     ))}
                     </div>
                   </div>
-                  <div className="border-t border-[#ece8df] pt-3">
-                    <p className="mb-2 text-xs text-[#686e6a]">
+                  <div className="border-t border-[color:var(--border-muted)] pt-3">
+                    <p className="mb-2 text-xs text-[color:var(--text-muted)]">
                       {t("colorShades", { color: colorGroupLabel(selectedColorGroup.name, t) })}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1222,8 +1224,8 @@ export function ExpensesBoard({
                           aria-label={t("useColorShade", { color: colorGroupLabel(selectedColorGroup.name, t), value: color })}
                           className={`h-8 w-8 rounded-md border transition ${
                             categoryForm.color.toLowerCase() === color.toLowerCase()
-                              ? "border-[#171a18] ring-2 ring-[#171a18]/15"
-                              : "border-[#d8d2c8] hover:border-[#a9a398]"
+                              ? "border-[color:var(--text-strong)] ring-2 ring-[color:var(--text-strong)]/15"
+                              : "border-[color:var(--input-border)] hover:border-[color:var(--border-strong)]"
                           }`}
                           key={color}
                           onClick={() => setCategoryForm((prev) => ({ ...prev, color }))}
@@ -1234,12 +1236,12 @@ export function ExpensesBoard({
                     </div>
                   </div>
                   <label
-                    className="flex items-center gap-2 border-t border-[#ece8df] pt-3 text-xs text-[#686e6a]"
+                    className="flex items-center gap-2 border-t border-[color:var(--border-muted)] pt-3 text-xs text-[color:var(--text-muted)]"
                     htmlFor="category-edit-color"
                   >
                     <span>{t("customColor")}</span>
                     <input
-                      className="h-8 w-12 rounded-md border border-[#dfddd6] bg-white p-1 focus:border-[#c85b45] focus:outline-none"
+                      className="h-8 w-12 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] p-1 focus:border-[color:var(--focus-ring)] focus:outline-none"
                       id="category-edit-color"
                       onChange={(event) => {
                         setCategoryForm((prev) => ({ ...prev, color: event.target.value }));
@@ -1256,7 +1258,7 @@ export function ExpensesBoard({
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-md border border-[#dfddd6] px-4 py-2 text-sm text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea]"
+                className="rounded-md border border-[color:var(--input-border)] px-4 py-2 text-sm text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)]"
                 disabled={isSavingCategory}
                 onClick={closeCategoryDialog}
                 type="button"
@@ -1264,7 +1266,7 @@ export function ExpensesBoard({
                 {t("cancel")}
               </button>
               <button
-                className="rounded-md bg-[#c85b45] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b94e3f] disabled:opacity-50"
+                className="rounded-md border border-[color:var(--button-primary-border)] bg-[color:var(--button-primary-bg)] px-4 py-2 text-sm font-medium text-[color:var(--button-primary-text)] transition hover:bg-[color:var(--button-primary-hover)] disabled:opacity-50"
                 disabled={isSavingCategory || !categoryForm.id}
                 type="submit"
               >
@@ -1279,31 +1281,31 @@ export function ExpensesBoard({
       <div
         className={`mb-6 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3 transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#6e9274]">{t("income")}</p>
-          <p className="mt-1 break-words font-serif text-xl font-semibold text-[#2d4f34] sm:text-2xl">
+        <div className="rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-3 shadow-[var(--shadow-soft)] sm:p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-normal text-[color:var(--accent-sage-text)] sm:text-xs">{t("income")}</p>
+          <p className="mt-1 break-words font-serif text-xl font-semibold text-[color:var(--accent-sage-text)] sm:text-2xl">
             {formatAmount(stats.income, locale)}
           </p>
         </div>
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#b94e3f]">
+        <div className="rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-3 shadow-[var(--shadow-soft)] sm:p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)] sm:text-xs">
             {t("expenses")}
           </p>
-          <p className="mt-1 break-words font-serif text-xl font-semibold text-[#8d3028] sm:text-2xl">
+          <p className="mt-1 break-words font-serif text-xl font-semibold text-[color:var(--accent-rose-text)] sm:text-2xl">
             {formatAmount(stats.expenses, locale)}
           </p>
         </div>
-        <div className="rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-3 sm:p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+        <div className="rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-3 shadow-[var(--shadow-soft)] sm:p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-normal text-[color:var(--text-muted)] sm:text-xs">
             {t("net")}
           </p>
           <p
-            className={`mt-1 break-words font-serif text-xl font-semibold sm:text-2xl ${stats.net >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}
+            className={`mt-1 break-words font-serif text-xl font-semibold sm:text-2xl ${stats.net >= 0 ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"}`}
           >
             {netSign}
             {formatAmount(stats.net, locale)}
           </p>
-          <p className="mt-1 text-[10px] leading-4 text-[#686e6a] sm:text-xs">
+          <p className="mt-1 text-[10px] leading-4 text-[color:var(--text-muted)] sm:text-xs">
             {t("carriedIn", { amount: `${stats.carryover >= 0 ? "+" : ""}${formatAmount(stats.carryover, locale)}` })}
           </p>
         </div>
@@ -1313,9 +1315,9 @@ export function ExpensesBoard({
         aria-label={t("statisticsFor", { month: monthLabel })}
         className={`mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.85fr)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
-        <div className="hidden sm:flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+        <div className="hidden sm:flex flex-col rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-4 shadow-[var(--shadow-soft)]">
           <div className="mb-4">
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)]">
               {t("netBalance")}
             </p>
           </div>
@@ -1329,11 +1331,11 @@ export function ExpensesBoard({
               role="img"
               viewBox="0 0 360 170"
             >
-              <line stroke="#ece8df" strokeWidth="1" x1="20" x2="340" y1="10" y2="10" />
-              <line stroke="#ece8df" strokeWidth="1" x1="20" x2="340" y1="75" y2="75" />
-              <line stroke="#ece8df" strokeWidth="1" x1="20" x2="340" y1="140" y2="140" />
+              <line stroke="var(--border-muted)" strokeWidth="1" x1="20" x2="340" y1="10" y2="10" />
+              <line stroke="var(--border-muted)" strokeWidth="1" x1="20" x2="340" y1="75" y2="75" />
+              <line stroke="var(--border-muted)" strokeWidth="1" x1="20" x2="340" y1="140" y2="140" />
               <line
-                stroke="#c8c4bb"
+                stroke="var(--border-strong)"
                 strokeDasharray="4 4"
                 strokeWidth="1"
                 x1="20"
@@ -1344,7 +1346,7 @@ export function ExpensesBoard({
               <path
                 d={netChart.path}
                 fill="none"
-                stroke={stats.net >= 0 ? "#6e9274" : "#c85b45"}
+                stroke={stats.net >= 0 ? "var(--accent-sage-strong)" : "var(--accent-rose-strong)"}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth="3"
@@ -1353,7 +1355,7 @@ export function ExpensesBoard({
               {hoveredNetPoint ? (
                 <>
                   <line
-                    stroke="#c8c4bb"
+                    stroke="var(--border-strong)"
                     strokeDasharray="3 3"
                     strokeWidth="1"
                     vectorEffect="non-scaling-stroke"
@@ -1365,9 +1367,9 @@ export function ExpensesBoard({
                   <circle
                     cx={hoveredNetPoint.x}
                     cy={hoveredNetPoint.y}
-                    fill="#fffdf8"
+                    fill="var(--surface-primary)"
                     r="4"
-                    stroke={stats.net >= 0 ? "#6e9274" : "#c85b45"}
+                    stroke={stats.net >= 0 ? "var(--accent-sage-strong)" : "var(--accent-rose-strong)"}
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
                   />
@@ -1379,10 +1381,10 @@ export function ExpensesBoard({
                   <circle
                     cx={point.x}
                     cy={point.y}
-                    fill="#fffdf8"
+                    fill="var(--surface-primary)"
                     key={point.day}
                     r="3"
-                    stroke={stats.net >= 0 ? "#6e9274" : "#c85b45"}
+                    stroke={stats.net >= 0 ? "var(--accent-sage-strong)" : "var(--accent-rose-strong)"}
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
                   />
@@ -1390,7 +1392,7 @@ export function ExpensesBoard({
             </svg>
             {hoveredNetPoint ? (
               <div
-                className="pointer-events-none absolute z-20 w-56 rounded-lg border border-[#d8d2c8] bg-[#fffdf8] p-3 text-xs text-[#4d5451] shadow-[0_14px_30px_rgba(31,35,30,0.18)]"
+                className="pointer-events-none absolute z-20 w-56 rounded-lg border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-3 text-xs text-[color:var(--text-primary)] shadow-[var(--shadow-float)]"
                 style={{
                   left: `${(hoveredNetPoint.x / 360) * 100}%`,
                   top: `${Math.min(84, Math.max(16, (hoveredNetPoint.y / 170) * 100))}%`,
@@ -1400,10 +1402,10 @@ export function ExpensesBoard({
                 }}
               >
                 <div className="mb-2 flex items-baseline justify-between gap-2">
-                  <p className="font-medium text-[#171a18]">
+                  <p className="font-medium text-[color:var(--text-strong)]">
                     {formatShortMonthDay(year, month, hoveredNetPoint.day, locale)}
                   </p>
-                  <p className={`font-semibold tabular-nums ${hoveredNetPoint.value >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
+                  <p className={`font-semibold tabular-nums ${hoveredNetPoint.value >= 0 ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"}`}>
                     {hoveredNetPoint.value >= 0 ? "+" : ""}
                     {formatAmount(hoveredNetPoint.value, locale)}
                   </p>
@@ -1413,7 +1415,7 @@ export function ExpensesBoard({
                     {hoveredNetPoint.entries.slice(0, 3).map((entry) => {
                       return (
                         <div
-                          className="flex items-center gap-2 rounded-md border border-[#e8e4dc] bg-[#f5f2ec] px-2 py-1.5"
+                          className="flex items-center gap-2 rounded-md border border-[color:var(--border-muted)] bg-[color:var(--surface-secondary)] px-2 py-1.5"
                           key={entry.id}
                         >
                           {entry.memberColor && entry.memberName ? (
@@ -1426,13 +1428,13 @@ export function ExpensesBoard({
                               title={entry.memberName}
                             />
                           ) : (
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-[#ece8e0] text-[10px] text-[#9da39f]">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-muted)] text-[10px] text-[color:var(--text-subtle)]">
                               ?
                             </span>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-[#2a2e2b]">{entry.name}</p>
-                            <p className={`tabular-nums ${entry.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"}`}>
+                            <p className="truncate font-medium text-[color:var(--text-primary)]">{entry.name}</p>
+                            <p className={`tabular-nums ${entry.type === "INCOME" ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"}`}>
                               {entry.type === "INCOME" ? "+" : "−"}
                               {formatAmount(entry.amount, locale)}
                             </p>
@@ -1441,29 +1443,29 @@ export function ExpensesBoard({
                       );
                     })}
                     {hoveredNetPoint.entries.length > 3 ? (
-                      <p className="pl-1 text-[#9da39f]">{t("moreEntries", { count: hoveredNetPoint.entries.length - 3 })}</p>
+                      <p className="pl-1 text-[color:var(--text-subtle)]">{t("moreEntries", { count: hoveredNetPoint.entries.length - 3 })}</p>
                     ) : null}
                   </div>
                 ) : (
-                  <p className="text-[#9da39f]">{t("noChangeRecorded")}</p>
+                  <p className="text-[color:var(--text-subtle)]">{t("noChangeRecorded")}</p>
                 )}
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="flex flex-col rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
+        <div className="flex flex-col rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-4 shadow-[var(--shadow-soft)]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)]">
               {t("expenseMix")}
             </p>
-            <div className="inline-flex rounded-md border border-[#dfddd6] bg-[#f7f5f0] p-0.5" role="group">
+            <div className="inline-flex rounded-md border border-[color:var(--input-border)] bg-[color:var(--surface-secondary)] p-0.5" role="group">
               {(["category", "payee"] as const).map((view) => (
                 <button
                   className={`rounded px-2 py-1 text-xs font-medium transition ${
                     expenseMixView === view
-                      ? "bg-white text-[#2a2e2b] shadow-sm"
-                      : "text-[#686e6a] hover:text-[#2a2e2b]"
+                      ? "bg-[color:var(--input-background)] text-[color:var(--text-strong)] shadow-sm"
+                      : "text-[color:var(--text-muted)] hover:text-[color:var(--text-strong)]"
                   }`}
                   key={view}
                   onClick={() => {
@@ -1479,7 +1481,7 @@ export function ExpensesBoard({
             </div>
           </div>
           {expenseMixSlices.length === 0 ? (
-            <div className="flex grow min-h-48 items-center justify-center rounded-md border border-dashed border-[#dfddd6] px-4 text-center text-sm text-[#9da39f]">
+            <div className="flex grow min-h-48 items-center justify-center rounded-md border border-dashed border-[color:var(--input-border)] px-4 text-center text-sm text-[color:var(--text-subtle)]">
               {expenseMixView === "category"
                 ? t("noExpenseBreakdown", { month: monthLabel })
                 : t("noPayeeBreakdown", { month: monthLabel })}
@@ -1506,7 +1508,7 @@ export function ExpensesBoard({
                     x="0"
                     y="0"
                   />
-                  <circle cx="60" cy="60" fill="none" r="42" stroke="#ece8df" strokeWidth="18" />
+                  <circle cx="60" cy="60" fill="none" r="42" stroke="var(--border-muted)" strokeWidth="18" />
                   {expenseMixSlices.map((slice) => (
                     <circle
                       cx="60"
@@ -1527,7 +1529,7 @@ export function ExpensesBoard({
                     />
                   ))}
                   <text
-                    fill="#171a18"
+                    fill="var(--text-strong)"
                     fontFamily="serif"
                     fontSize="15"
                     fontWeight="600"
@@ -1537,7 +1539,7 @@ export function ExpensesBoard({
                   >
                     {formatAmount(stats.expenses, locale)}
                   </text>
-                  <text fill="#686e6a" fontSize="9" textAnchor="middle" x="60" y="72">
+                  <text fill="var(--text-muted)" fontSize="9" textAnchor="middle" x="60" y="72">
                     {t("total")}
                   </text>
                 </svg>
@@ -1545,18 +1547,18 @@ export function ExpensesBoard({
                   const activeSlice = activeCategoryKey ? expenseMixSlices.find((s) => s.key === activeCategoryKey) : null;
                   if (!activeSlice) return null;
                   return (
-                    <div className="absolute top-full left-1/2 mt-2 -translate-x-1/2 z-20 w-44 rounded-md border border-[#d8d2c8] bg-[#fffdf8] px-3 py-2 shadow-[0_8px_24px_rgba(31,35,30,0.15)]">
+                    <div className="absolute left-1/2 top-full z-20 mt-2 w-44 -translate-x-1/2 rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] px-3 py-2 shadow-[var(--shadow-soft)]">
                       <div className="flex items-center gap-2">
                         <span
                           aria-hidden
                           className="h-2.5 w-2.5 shrink-0 rounded-sm"
                           style={{ backgroundColor: activeSlice.color }}
                         />
-                        <span className="min-w-0 truncate text-sm font-medium text-[#4d5451]">
+                        <span className="min-w-0 truncate text-sm font-medium text-[color:var(--text-primary)]">
                           {activeSlice.label}
                         </span>
                       </div>
-                      <p className="mt-1 tabular-nums text-xs text-[#686e6a]">
+                      <p className="mt-1 tabular-nums text-xs text-[color:var(--text-muted)]">
                         {activeSlice.percent.toFixed(0)}% · {formatAmount(activeSlice.amount, locale)}
                       </p>
                     </div>
@@ -1570,25 +1572,25 @@ export function ExpensesBoard({
 
       <section
         aria-label={t("settleUp")}
-        className={`mb-6 rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-4 shadow-[0_4px_12px_rgba(31,35,30,0.06)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
+        className={`mb-6 rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] transition-opacity ${isLoading ? "opacity-50" : ""}`}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[#a6543c]">
+            <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[color:var(--accent-rose-text)]">
               {t("settleUp")}
             </p>
-            <p className="mt-1 text-xs text-[#686e6a]">{t("settleUpFor", { month: monthLabel })}</p>
+            <p className="mt-1 text-xs text-[color:var(--text-muted)]">{t("settleUpFor", { month: monthLabel })}</p>
           </div>
         </div>
         {settleUpTransfers.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[#dfddd6] px-4 py-3 text-sm text-[#9da39f]">
+          <div className="rounded-md border border-dashed border-[color:var(--input-border)] px-4 py-3 text-sm text-[color:var(--text-subtle)]">
             {t("nothingToSettle", { month: monthLabel })}
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
             {settleUpTransfers.map((transfer) => (
               <div
-                className="flex items-center justify-between gap-3 rounded-md border border-[#e8e4dc] bg-[#fbfaf6] px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-md border border-[color:var(--border-muted)] bg-[color:var(--surface-muted)] px-3 py-2"
                 key={`${transfer.from.id}-${transfer.to.id}-${transfer.amount}`}
               >
                 <div className="min-w-0 flex items-center gap-2">
@@ -1600,7 +1602,7 @@ export function ExpensesBoard({
                     name={transfer.from.name}
                     title={transfer.from.name}
                   />
-                  <span className="min-w-0 truncate text-sm text-[#4d5451]">
+                  <span className="min-w-0 truncate text-sm text-[color:var(--text-primary)]">
                     {t("pays")}
                   </span>
                   <MemberAvatar
@@ -1612,7 +1614,7 @@ export function ExpensesBoard({
                     title={transfer.to.name}
                   />
                 </div>
-                <span className="shrink-0 text-sm font-semibold tabular-nums text-[#8d3028]">
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-[color:var(--accent-rose-text)]">
                   {formatAmount(transfer.amount, locale)}
                 </span>
               </div>
@@ -1633,7 +1635,7 @@ export function ExpensesBoard({
         />
 
         <button
-          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-[#c85b45] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#b94e3f] sm:ml-auto sm:h-auto sm:w-auto"
+          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--button-primary-border)] bg-[color:var(--button-primary-bg)] px-3 py-1.5 text-sm font-medium text-[color:var(--button-primary-text)] transition hover:bg-[color:var(--button-primary-hover)] sm:ml-auto sm:h-auto sm:w-auto"
           onClick={openCreateForm}
           type="button"
         >
@@ -1646,20 +1648,20 @@ export function ExpensesBoard({
         <div
           aria-labelledby="expense-entry-dialog-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#202321]/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 pb-[calc(0.75rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
           role="dialog"
         >
           <form
-            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-md border border-[#e0dcd4] bg-[#fffdf8] p-5 shadow-[0_22px_55px_rgba(31,35,30,0.22)] sm:max-h-[calc(100dvh-2rem)]"
+            className="max-h-[calc(100dvh_-_1.5rem_-_env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] p-5 shadow-[var(--shadow-float)] sm:max-h-[calc(100dvh-2rem)]"
             onSubmit={(e) => void handleSubmit(e)}
           >
             <div className="mb-4 flex items-start justify-between gap-4">
-              <h2 className="font-serif text-lg font-semibold text-[#171a18]" id="expense-entry-dialog-title">
+              <h2 className="font-serif text-lg font-semibold text-[color:var(--text-strong)]" id="expense-entry-dialog-title">
                 {editingId ? t("editEntry") : t("newEntry")}
               </h2>
               <button
                 aria-label={t("cancel")}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#5d635f] transition hover:bg-[#f7f4ec]"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)]"
                 disabled={isSubmitting}
                 onClick={resetForm}
                 type="button"
@@ -1669,7 +1671,7 @@ export function ExpensesBoard({
             </div>
 
             {formError && (
-              <p className="mb-4 rounded-md bg-[#f3e4e2] px-3 py-2 text-sm text-[#8d3028]">
+              <p className="mb-4 rounded-md border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-3 py-2 text-sm text-[color:var(--accent-rose-text)]">
                 {formError}
               </p>
             )}
@@ -1678,14 +1680,14 @@ export function ExpensesBoard({
             {/* Name */}
             <div className="sm:col-span-2">
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-name"
               >
                 {t("nameLabel")}
               </label>
               <input
                 autoFocus
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
+                className="w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-base text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
                 id="exp-name"
                 onChange={(e) => updateForm({ name: e.target.value })}
                 placeholder={t("namePlaceholder")}
@@ -1698,13 +1700,13 @@ export function ExpensesBoard({
             {/* Amount */}
             <div>
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-amount"
               >
                 {t("amountLabel")}
               </label>
               <input
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
+                className="w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-base text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
                 id="exp-amount"
                 min="0.01"
                 onChange={(e) => updateForm({ amount: e.target.value })}
@@ -1718,16 +1720,16 @@ export function ExpensesBoard({
 
             {/* Type */}
             <div>
-              <p className="mb-1 text-xs font-medium text-[#545b57]">{t("typeLabel")}</p>
+              <p className="mb-1 text-xs font-medium text-[color:var(--text-primary)]">{t("typeLabel")}</p>
               <div className="flex gap-2">
                 {(["EXPENSE", "INCOME"] as const).map((entryType) => (
                   <button
                     className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition ${
                       form.type === entryType
                         ? entryType === "INCOME"
-                          ? "border-[#6e9274] bg-[#e8efe9] text-[#2d4f34]"
-                          : "border-[#c85b45] bg-[#f7ecea] text-[#8d3028]"
-                        : "border-[#dfddd6] bg-white text-[#4d5451] hover:border-[#c8c4bb]"
+                          ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                          : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
+                        : "border-[color:var(--input-border)] bg-[color:var(--input-background)] text-[color:var(--text-primary)] hover:border-[color:var(--border-strong)]"
                     }`}
                     key={entryType}
                     onClick={() => selectExpenseType(entryType)}
@@ -1742,13 +1744,13 @@ export function ExpensesBoard({
             {/* Date */}
             <div>
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-date"
               >
                 {t("dateLabel")}
               </label>
               <input
-                className="w-full rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] focus:border-[#c85b45] focus:outline-none sm:text-sm"
+                className="w-full rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-base text-[color:var(--text-primary)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
                 id="exp-date"
                 onChange={(e) => updateForm({ date: e.target.value })}
                 required
@@ -1760,7 +1762,7 @@ export function ExpensesBoard({
             {/* Category */}
             <div>
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-category"
               >
                 {t("categoryLabel")}
@@ -1769,7 +1771,7 @@ export function ExpensesBoard({
                 <div className="flex gap-2">
                   <input
                     autoFocus
-                    className="min-w-0 flex-1 rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
+                    className="min-w-0 flex-1 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-base text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
                     id="exp-category"
                     onChange={(e) => updateForm({ newCategoryName: e.target.value })}
                     placeholder={t("newCategoryPlaceholder")}
@@ -1779,7 +1781,7 @@ export function ExpensesBoard({
                   />
                   <button
                     aria-label={t("cancelNewCategory")}
-                    className="shrink-0 rounded-md border border-[#dfddd6] bg-white px-3 text-sm font-medium text-[#5d635f] transition hover:bg-[#f4f1ea]"
+                    className="shrink-0 rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 text-sm font-medium text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-secondary)]"
                     onClick={() => updateForm({ categoryId: "", newCategoryName: "" })}
                     type="button"
                   >
@@ -1788,7 +1790,7 @@ export function ExpensesBoard({
                 </div>
               ) : (
                 <CustomSelect
-                  buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
+                  buttonClassName="[--select-bg:var(--input-background)] [--select-panel:var(--surface-primary)]"
                   id="exp-category"
                   onChange={(value) => updateForm({ categoryId: value, newCategoryName: "" })}
                   options={expenseCategoryOptions}
@@ -1800,13 +1802,13 @@ export function ExpensesBoard({
             {/* Household member */}
             <div>
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-member"
               >
                 {t("householdMemberLabel")}
               </label>
               <CustomSelect
-                buttonClassName="[--select-bg:#ffffff] [--select-panel:#ffffff]"
+                buttonClassName="[--select-bg:var(--input-background)] [--select-panel:var(--surface-primary)]"
                 id="exp-member"
                 onChange={selectHouseholdMember}
                 options={memberOptions}
@@ -1815,7 +1817,7 @@ export function ExpensesBoard({
             </div>
 
             {form.type === "EXPENSE" ? (
-              <div className="sm:col-span-2 rounded-md border border-[#e8e4dc] bg-[#fbfaf6]">
+              <div className="sm:col-span-2 rounded-md border border-[color:var(--border-muted)] bg-[color:var(--surface-muted)]">
                 <button
                   aria-expanded={form.splitEnabled}
                   className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
@@ -1823,19 +1825,19 @@ export function ExpensesBoard({
                   type="button"
                 >
                   <span>
-                    <span className="block text-sm font-medium text-[#2a2e2b]">{t("splitThisExpense")}</span>
-                    <span className="block text-xs text-[#686e6a]">{t("splitThisExpenseHint")}</span>
+                    <span className="block text-sm font-medium text-[color:var(--text-primary)]">{t("splitThisExpense")}</span>
+                    <span className="block text-xs text-[color:var(--text-muted)]">{t("splitThisExpenseHint")}</span>
                   </span>
                   <ChevronRight
                     aria-hidden
-                    className={`h-4 w-4 shrink-0 text-[#8e948f] transition-transform ${form.splitEnabled ? "rotate-90" : ""}`}
+                    className={`h-4 w-4 shrink-0 text-[color:var(--text-subtle)] transition-transform ${form.splitEnabled ? "rotate-90" : ""}`}
                   />
                 </button>
                 {form.splitEnabled ? (
-                  <div className="border-t border-[#e8e4dc] p-3">
-                    <p className="mb-2 text-xs font-medium text-[#545b57]">{t("splitWith")}</p>
+                  <div className="border-t border-[color:var(--border-muted)] p-3">
+                    <p className="mb-2 text-xs font-medium text-[color:var(--text-primary)]">{t("splitWith")}</p>
                     {members.length === 0 ? (
-                      <p className="text-sm text-[#9da39f]">{t("noSplitMembers")}</p>
+                      <p className="text-sm text-[color:var(--text-subtle)]">{t("noSplitMembers")}</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {members.map((member) => {
@@ -1846,8 +1848,8 @@ export function ExpensesBoard({
                             <label
                               className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
                                 checked
-                                  ? "border-[#6e9274] bg-[#e8efe9] text-[#2d4f34]"
-                                  : "border-[#dfddd6] bg-white text-[#4d5451] hover:border-[#c8c4bb]"
+                                  ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-surface)] text-[color:var(--accent-sage-text)]"
+                                  : "border-[color:var(--input-border)] bg-[color:var(--input-background)] text-[color:var(--text-primary)] hover:border-[color:var(--border-strong)]"
                               }`}
                               key={member.id}
                             >
@@ -1880,14 +1882,14 @@ export function ExpensesBoard({
             {/* Notes */}
             <div className="sm:col-span-2">
               <label
-                className="mb-1 block text-xs font-medium text-[#545b57]"
+                className="mb-1 block text-xs font-medium text-[color:var(--text-primary)]"
                 htmlFor="exp-notes"
               >
                 {t("notesLabel")}{" "}
-                <span className="font-normal text-[#9da39f]">{t("optionalLabel")}</span>
+                <span className="font-normal text-[color:var(--text-subtle)]">{t("optionalLabel")}</span>
               </label>
               <textarea
-                className="w-full resize-none rounded-md border border-[#dfddd6] bg-white px-3 py-2 text-base text-[#171a18] placeholder:text-[#9da39f] focus:border-[#c85b45] focus:outline-none sm:text-sm"
+                className="w-full resize-none rounded-md border border-[color:var(--input-border)] bg-[color:var(--input-background)] px-3 py-2 text-base text-[color:var(--text-primary)] placeholder:text-[color:var(--input-placeholder)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm"
                 id="exp-notes"
                 onChange={(e) => updateForm({ notes: e.target.value })}
                 placeholder={t("notesPlaceholder")}
@@ -1899,14 +1901,14 @@ export function ExpensesBoard({
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
-              className="h-11 rounded-md bg-[#c85b45] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b94e3f] disabled:opacity-50 sm:h-auto"
+              className="h-11 rounded-md border border-[color:var(--button-primary-border)] bg-[color:var(--button-primary-bg)] px-4 py-2 text-sm font-medium text-[color:var(--button-primary-text)] transition hover:bg-[color:var(--button-primary-hover)] disabled:opacity-50 sm:h-auto"
               disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? t("saving") : editingId ? t("saveChanges") : t("save")}
             </button>
             <button
-              className="h-11 rounded-md border border-[#dfddd6] px-4 py-2 text-sm text-[#4d5451] transition hover:border-[#c8c4bb] hover:bg-[#f4f1ea] sm:h-auto"
+              className="h-11 rounded-md border border-[color:var(--input-border)] px-4 py-2 text-sm text-[color:var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-secondary)] sm:h-auto"
               onClick={resetForm}
               type="button"
             >
@@ -1920,36 +1922,36 @@ export function ExpensesBoard({
       {/* Expense list */}
       <div className={`transition-opacity ${isLoading ? "opacity-50" : ""}`}>
         {!hasExpenseRows ? (
-          <div className="rounded-md border border-dashed border-[#dfddd6] p-8 text-center text-sm text-[#9da39f]">
+          <div className="rounded-md border border-dashed border-[color:var(--input-border)] p-8 text-center text-sm text-[color:var(--text-subtle)]">
             {filterCategoryId
               ? t("noEntriesForCategory", { month: monthName })
               : t("nothingRecorded", { month: monthLabel })}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border border-[#e0dcd4] bg-[#fffdf8] shadow-[0_4px_12px_rgba(31,35,30,0.06)]">
-            <div className="divide-y divide-[#e0dcd4] sm:hidden">
+          <div className="overflow-hidden rounded-md border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] shadow-[var(--shadow-soft)]">
+            <div className="divide-y divide-[color:var(--border-default)] sm:hidden">
               {displayedExpenses.map((expense) => (
                 <div className="grid gap-2 px-4 py-3" key={expense.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-[#171a18]">{expense.name}</p>
-                      <p className="mt-1 text-xs text-[#686e6a]">
+                      <p className="font-medium text-[color:var(--text-strong)]">{expense.name}</p>
+                      <p className="mt-1 text-xs text-[color:var(--text-muted)]">
                         {formatExpenseDate(expense.date, locale)}
                       </p>
                     </div>
                     <span
                       className={`shrink-0 text-sm font-medium tabular-nums ${
-                        expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
+                        expense.type === "INCOME" ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
                       }`}
                     >
                       {expense.type === "INCOME" ? "+" : "−"}
                       {formatAmount(expense.amount, locale)}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#686e6a]">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
                     {expense.categoryName ? (
                       <span
-                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs text-[#545b57]"
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs text-[color:var(--text-primary)]"
                         style={{
                           backgroundColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}1f`,
                           borderColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}66`,
@@ -1989,14 +1991,14 @@ export function ExpensesBoard({
                     ) : null}
                   </div>
                   {expense.notes ? (
-                    <p className="text-xs leading-5 text-[#8b918c]">{expense.notes}</p>
+                    <p className="text-xs leading-5 text-[color:var(--text-subtle)]">{expense.notes}</p>
                   ) : null}
                   <div className="flex items-center justify-end gap-1">
                     {confirmDeleteId === expense.id ? (
                       <div className="flex flex-wrap items-center justify-end gap-1">
-                        <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+                        <span className="text-xs text-[color:var(--text-muted)]">{t("deleteConfirm")}</span>
                         <button
-                          className="h-8 rounded bg-[#f7ecea] px-2 py-1 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                          className="h-8 rounded border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-2 py-1 text-xs font-medium text-[color:var(--accent-rose-text)] transition hover:bg-[color:var(--accent-rose-surface)]"
                           disabled={deletingId === expense.id}
                           onClick={() => void handleDelete(expense.id)}
                           type="button"
@@ -2004,7 +2006,7 @@ export function ExpensesBoard({
                           {t("confirmDelete")}
                         </button>
                         <button
-                          className="h-8 rounded bg-[#ebe8de] px-2 py-1 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                          className="h-8 rounded border border-[color:var(--border-default)] bg-[color:var(--surface-secondary)] px-2 py-1 text-xs font-medium text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-muted)]"
                           disabled={deletingId === expense.id}
                           onClick={() => setConfirmDeleteId(null)}
                           type="button"
@@ -2016,7 +2018,7 @@ export function ExpensesBoard({
                       <>
                         <button
                           aria-label={t("editEntryAria", { name: expense.name })}
-                          className="flex h-9 w-9 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] disabled:opacity-40"
+                          className="flex h-9 w-9 items-center justify-center rounded text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-sage-surface)] hover:text-[color:var(--accent-sage-text)] disabled:opacity-40"
                           disabled={deletingId === expense.id || isSubmitting}
                           onClick={() => openEditForm(expense)}
                           type="button"
@@ -2025,7 +2027,7 @@ export function ExpensesBoard({
                         </button>
                         <button
                           aria-label={t("deleteEntryAria", { name: expense.name })}
-                          className="flex h-9 w-9 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] disabled:opacity-40"
+                          className="flex h-9 w-9 items-center justify-center rounded text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-rose-soft)] hover:text-[color:var(--accent-rose-text)] disabled:opacity-40"
                           disabled={deletingId === expense.id}
                           onClick={() => setConfirmDeleteId(expense.id)}
                           type="button"
@@ -2038,14 +2040,14 @@ export function ExpensesBoard({
                 </div>
               ))}
               {showCarryoverRow ? (
-                <div className="grid gap-1 bg-[#fbfaf6] px-4 py-3">
-                  <p className="font-medium text-[#171a18]">{t("startingBalance")}</p>
-                  <p className="text-xs text-[#686e6a]">
+                <div className="grid gap-1 bg-[color:var(--surface-muted)] px-4 py-3">
+                  <p className="font-medium text-[color:var(--text-strong)]">{t("startingBalance")}</p>
+                  <p className="text-xs text-[color:var(--text-muted)]">
                     {t("carriedInFrom", { month: previousMonthLabel })}
                   </p>
                   <span
                     className={`text-sm font-medium tabular-nums ${
-                      stats.carryover >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"
+                      stats.carryover >= 0 ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
                     }`}
                   >
                     {stats.carryover >= 0 ? "+" : "−"}
@@ -2057,39 +2059,39 @@ export function ExpensesBoard({
             <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#e0dcd4] bg-[#f7f5f0]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+                  <tr className="border-b border-[color:var(--border-default)] bg-[color:var(--surface-secondary)]">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)]">
                       {t("dateLabel")}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)]">
                       {t("nameLabel")}
                     </th>
-                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] sm:table-cell">
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)] sm:table-cell">
                       {t("categoryLabel")}
                     </th>
-                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] md:table-cell">
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)] md:table-cell">
                       {t("paidBy")}
                     </th>
-                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[#545b57] lg:table-cell">
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)] lg:table-cell">
                       {t("splitWith")}
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-[#545b57]">
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-[color:var(--text-muted)]">
                       {t("amountLabel")}
                     </th>
                     <th className="w-32 px-2 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#e0dcd4]">
+                <tbody className="divide-y divide-[color:var(--border-default)]">
                   {displayedExpenses.map((expense) => (
-                    <tr key={expense.id} className="transition-colors hover:bg-[#f7f5f0]">
-                      <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
+                    <tr key={expense.id} className="transition-colors hover:bg-[color:var(--surface-secondary)]">
+                      <td className="whitespace-nowrap px-4 py-3 text-[color:var(--text-muted)]">
                         {formatExpenseDate(expense.date, locale)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-[#171a18]">{expense.name}</span>
+                        <span className="font-medium text-[color:var(--text-strong)]">{expense.name}</span>
                         {expense.notes && (
                           <span
-                            className="ml-1.5 hidden text-xs text-[#9da39f] sm:inline"
+                            className="ml-1.5 hidden text-xs text-[color:var(--text-subtle)] sm:inline"
                             title={expense.notes}
                           >
                             · {expense.notes.length > 40 ? expense.notes.slice(0, 40) + "…" : expense.notes}
@@ -2099,7 +2101,7 @@ export function ExpensesBoard({
                       <td className="hidden px-4 py-3 sm:table-cell">
                         {expense.categoryName ? (
                           <span
-                            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs text-[#545b57]"
+                            className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs text-[color:var(--text-primary)]"
                             style={{
                               backgroundColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}1f`,
                               borderColor: `${expense.categoryColor ?? UNCATEGORIZED_COLOR}66`,
@@ -2113,7 +2115,7 @@ export function ExpensesBoard({
                             {expense.categoryName}
                           </span>
                         ) : (
-                          <span className="text-[#c8c4bb]">—</span>
+                          <span className="text-[color:var(--text-subtle)]">—</span>
                         )}
                       </td>
                       <td className="hidden px-4 py-3 md:table-cell">
@@ -2132,7 +2134,7 @@ export function ExpensesBoard({
                             title={expense.householdMemberName}
                           />
                         ) : (
-                          <span className="text-[#c8c4bb]">—</span>
+                          <span className="text-[color:var(--text-subtle)]">—</span>
                         )}
                       </td>
                       <td className="hidden px-4 py-3 lg:table-cell">
@@ -2141,7 +2143,7 @@ export function ExpensesBoard({
                             {expense.splits.map((split) =>
                               split.householdMemberName ? (
                                 <MemberAvatar
-                                  className="flex h-7 w-7 cursor-default items-center justify-center rounded-md border-2 border-[#fffdf8] font-serif text-xs font-semibold"
+                                  className="flex h-7 w-7 cursor-default items-center justify-center rounded-md border-2 border-[color:var(--surface-primary)] font-serif text-xs font-semibold"
                                   color={split.householdMemberColor}
                                   emoji={split.householdMemberEmoji}
                                   fallbackLabel={split.householdMemberName}
@@ -2158,13 +2160,13 @@ export function ExpensesBoard({
                             )}
                           </div>
                         ) : (
-                          <span className="text-[#c8c4bb]">—</span>
+                          <span className="text-[color:var(--text-subtle)]">—</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
                         <span
                           className={`font-medium tabular-nums ${
-                            expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
+                            expense.type === "INCOME" ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
                           }`}
                         >
                           {expense.type === "INCOME" ? "+" : "−"}
@@ -2175,9 +2177,9 @@ export function ExpensesBoard({
                         <div className="flex justify-end gap-1">
                           {confirmDeleteId === expense.id ? (
                             <div className="flex shrink-0 items-center justify-end gap-1">
-                              <span className="text-xs text-[#5d635f]">{t("deleteConfirm")}</span>
+                              <span className="text-xs text-[color:var(--text-muted)]">{t("deleteConfirm")}</span>
                               <button
-                                className="h-7 rounded bg-[#f7ecea] px-1.5 text-xs font-medium text-[#a6543c] transition hover:bg-[#f0d4cf]"
+                                className="h-7 rounded border border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] px-1.5 text-xs font-medium text-[color:var(--accent-rose-text)] transition hover:bg-[color:var(--accent-rose-surface)]"
                                 disabled={deletingId === expense.id}
                                 onClick={() => void handleDelete(expense.id)}
                                 type="button"
@@ -2185,7 +2187,7 @@ export function ExpensesBoard({
                                 {t("confirmDelete")}
                               </button>
                               <button
-                                className="h-7 rounded bg-[#ebe8de] px-1.5 text-xs font-medium text-[#5d635f] transition hover:bg-[#dedad0]"
+                                className="h-7 rounded border border-[color:var(--border-default)] bg-[color:var(--surface-secondary)] px-1.5 text-xs font-medium text-[color:var(--text-muted)] transition hover:bg-[color:var(--surface-muted)]"
                                 disabled={deletingId === expense.id}
                                 onClick={() => setConfirmDeleteId(null)}
                                 type="button"
@@ -2197,7 +2199,7 @@ export function ExpensesBoard({
                             <>
                               <button
                                 aria-label={t("editEntryAria", { name: expense.name })}
-                                className="flex h-7 w-7 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#e8efe9] hover:text-[#526c56] disabled:opacity-40"
+                                className="flex h-7 w-7 items-center justify-center rounded text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-sage-surface)] hover:text-[color:var(--accent-sage-text)] disabled:opacity-40"
                                 disabled={deletingId === expense.id || isSubmitting}
                                 onClick={() => openEditForm(expense)}
                                 type="button"
@@ -2206,7 +2208,7 @@ export function ExpensesBoard({
                               </button>
                               <button
                                 aria-label={t("deleteEntryAria", { name: expense.name })}
-                                className="flex h-7 w-7 items-center justify-center rounded text-[#9da39f] transition hover:bg-[#f3e4e2] hover:text-[#b94e3f] disabled:opacity-40"
+                                className="flex h-7 w-7 items-center justify-center rounded text-[color:var(--text-subtle)] transition hover:bg-[color:var(--accent-rose-soft)] hover:text-[color:var(--accent-rose-text)] disabled:opacity-40"
                                 disabled={deletingId === expense.id}
                                 onClick={() => setConfirmDeleteId(expense.id)}
                                 type="button"
@@ -2220,27 +2222,27 @@ export function ExpensesBoard({
                     </tr>
                   ))}
                   {showCarryoverRow ? (
-                    <tr className="bg-[#fbfaf6]">
-                      <td className="whitespace-nowrap px-4 py-3 text-[#686e6a]">
+                    <tr className="bg-[color:var(--surface-muted)]">
+                      <td className="whitespace-nowrap px-4 py-3 text-[color:var(--text-muted)]">
                         {formatExpenseDate(`${year}-${String(month).padStart(2, "0")}-01`, locale)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-[#171a18]">{t("startingBalance")}</span>
-                        <span className="ml-1.5 hidden text-xs text-[#9da39f] sm:inline">
+                        <span className="font-medium text-[color:var(--text-strong)]">{t("startingBalance")}</span>
+                        <span className="ml-1.5 hidden text-xs text-[color:var(--text-subtle)] sm:inline">
                           {t("carriedInFrom", { month: previousMonthLabel })}
                         </span>
                       </td>
                       <td className="hidden px-4 py-3 sm:table-cell">
-                        <span className="inline-flex items-center rounded-full border border-[#d8d2c8] bg-[#f4f1ea] px-2.5 py-0.5 text-xs text-[#545b57]">
+                        <span className="inline-flex items-center rounded-full border border-[color:var(--border-default)] bg-[color:var(--surface-secondary)] px-2.5 py-0.5 text-xs text-[color:var(--text-primary)]">
                           {t("carryover")}
                         </span>
                       </td>
-                      <td className="hidden px-4 py-3 text-[#c8c4bb] md:table-cell">—</td>
-                      <td className="hidden px-4 py-3 text-[#c8c4bb] lg:table-cell">—</td>
+                      <td className="hidden px-4 py-3 text-[color:var(--text-subtle)] md:table-cell">—</td>
+                      <td className="hidden px-4 py-3 text-[color:var(--text-subtle)] lg:table-cell">—</td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
                         <span
                           className={`font-medium tabular-nums ${
-                            stats.carryover >= 0 ? "text-[#2d4f34]" : "text-[#8d3028]"
+                            stats.carryover >= 0 ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
                           }`}
                         >
                           {stats.carryover >= 0 ? "+" : "−"}
@@ -2248,7 +2250,7 @@ export function ExpensesBoard({
                         </span>
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
-                        <span className="text-xs text-[#9da39f]">{t("automatic")}</span>
+                        <span className="text-xs text-[color:var(--text-subtle)]">{t("automatic")}</span>
                       </td>
                     </tr>
                   ) : null}
@@ -2260,7 +2262,7 @@ export function ExpensesBoard({
       </div>
       {memberTooltip ? (
         <div
-          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[#d8d2c8] bg-[#fffdf8] px-2 py-1 text-xs text-[#2a2e2b] shadow-sm"
+          className="pointer-events-none fixed z-50 -translate-x-1/2 whitespace-nowrap rounded border border-[color:var(--border-default)] bg-[color:var(--surface-primary)] px-2 py-1 text-xs text-[color:var(--text-primary)] shadow-[var(--shadow-soft)]"
           style={{ left: memberTooltip.x, top: memberTooltip.y + 6 }}
         >
           {memberTooltip.name}

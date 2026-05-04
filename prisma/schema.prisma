@@ -21,6 +21,12 @@ enum BillingSubscriptionStatus {
   CANCELED
 }
 
+enum ThemePreference {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
 enum InviteStatus {
   PENDING
   ACCEPTED
@@ -56,6 +62,7 @@ model User {
   name                       String?
   email                      String?           @unique
   image                      String?
+  themePreference            ThemePreference   @default(SYSTEM)
   deletedAt                  DateTime?
   developmentAccessGrantedAt DateTime?
   billingSubscription        BillingSubscription?
@@ -206,7 +213,7 @@ model CalendarEvent {
   id                 String                @id @default(cuid())
   dateKey            String                @db.VarChar(10)
   name               String                @db.VarChar(200)
-  groupId            String?
+  groupId            String
   allDay             Boolean               @default(true)
   time               String?               @db.VarChar(5)
   householdMemberIds String[]              @default([])
@@ -214,7 +221,7 @@ model CalendarEvent {
   createdByUserId    String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
-  group              CalendarGroup?        @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  group              CalendarGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict)
   household          Household?            @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdBy          User?                 @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 

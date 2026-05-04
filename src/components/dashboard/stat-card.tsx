@@ -8,9 +8,9 @@ type StatCardProps = Readonly<{
 }>;
 
 const statStyles: Record<string, string> = {
-  rose: "border-[#d7aaa5] bg-[#f7ecea]",
-  sage: "border-[#b7c8ba] bg-[#edf3ee]",
-  sun: "border-[#d9c77b] bg-[#faf3d9]",
+  rose: "border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)]",
+  sage: "border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)]",
+  sun: "border-[var(--accent-sun-border)] bg-[var(--accent-sun-surface)]",
 };
 
 export function StatCard({
@@ -24,26 +24,26 @@ export function StatCard({
   const style = statStyles[accent] ?? statStyles.sage;
   const emphasisClass =
     emphasis === "strong"
-      ? "shadow-[0_12px_24px_rgba(31,35,30,0.08)] ring-1 ring-inset ring-white/60"
+      ? "shadow-[var(--shadow-soft)] ring-1 ring-inset ring-white/10"
       : "";
   const displayValue = value ?? count;
 
   return (
     <div className={`rounded-md border p-3 sm:p-5 ${style} ${emphasisClass}`}>
-      <p className="text-[10px] font-bold uppercase tracking-normal text-[#6a5b52] sm:text-[11px]">
+      <p className="text-[10px] font-bold uppercase tracking-normal text-[var(--text-muted)] sm:text-[11px]">
         {label}
       </p>
       {displayValue ? (
         <p className="mt-2 flex items-baseline gap-1">
-          <span className="font-serif text-3xl font-semibold leading-none text-[#171a18] sm:text-4xl">
+          <span className="font-serif text-3xl font-semibold leading-none text-[var(--text-strong)] sm:text-4xl">
             {displayValue}
           </span>
-          <span className="text-[10px] font-medium leading-none text-[#5f6662] sm:text-[11px]">
+          <span className="text-[10px] font-medium leading-none text-[var(--text-muted)] sm:text-[11px]">
             {detail}
           </span>
         </p>
       ) : (
-        <p className="mt-3 text-xs text-[#5f6662] sm:text-sm">{detail}</p>
+        <p className="mt-3 text-xs text-[var(--text-muted)] sm:text-sm">{detail}</p>
       )}
     </div>
   );
