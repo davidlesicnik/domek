@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 import { CookieBanner } from "@/components/analytics/cookie-banner";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { routing } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
@@ -68,6 +69,7 @@ export default async function LocaleLayout({
             <Suspense fallback={null}>
               <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
             </Suspense>
+            <UmamiAnalytics />
           </NextIntlClientProvider>
         </AppThemeProvider>
       </body>

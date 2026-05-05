@@ -5,6 +5,8 @@ const analyticsScriptOrigin = "https://www.googletagmanager.com";
 const analyticsConnectOrigin = "https://www.google-analytics.com";
 const analyticsRegionConnectOrigin = "https://region1.google-analytics.com";
 const paddleScriptOrigin = "https://cdn.paddle.com";
+const umamiOrigin = "https://cloud.umami.is";
+const umamiApiOrigin = "https://api-gateway.umami.dev";
 const paddleOriginPattern = "https://*.paddle.com";
 const isProduction = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,6 +19,8 @@ const connectSrc = [
   analyticsConnectOrigin,
   analyticsRegionConnectOrigin,
   paddleOriginPattern,
+  umamiOrigin,
+  umamiApiOrigin,
   ...(supabaseOrigin ? [supabaseOrigin] : []),
 ].join(" ");
 
@@ -27,7 +31,7 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
   `frame-src 'self' ${paddleOriginPattern}`,
   "img-src 'self' data: blob: https:",
-  `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "} ${analyticsScriptOrigin} ${paddleScriptOrigin}`.replace(
+  `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "} ${analyticsScriptOrigin} ${paddleScriptOrigin} ${umamiOrigin}`.replace(
     /\s+/g,
     " ",
   ).trim(),
