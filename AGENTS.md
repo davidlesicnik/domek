@@ -84,6 +84,8 @@ All requests pass through `src/proxy.ts` before reaching any page. It checks the
 
 **Any new public page (marketing, legal, etc.) must be added to `PUBLIC_PATHS` in `src/proxy.ts` or it will redirect unauthenticated visitors to login.**
 
+**Treat this as part of creating the route itself: if a route should be reachable without auth, update `PUBLIC_PATHS` in the same change. Do not ship a public route without that proxy update.**
+
 Current public paths are listed at the top of `src/proxy.ts`. When debugging unexpected redirects to `/login`, check `PUBLIC_PATHS` first.
 
 Standalone public routes that should bypass locale prefixing, such as `/blog`, `/blog/rss.xml`, `/robots.txt`, and `/sitemap.xml`, must also be considered in `NON_LOCALIZED_PATHS`. If a route exists outside `src/app/[locale]/` and unexpectedly redirects or 404s under `/<locale>/...`, check `NON_LOCALIZED_PATHS` first.
@@ -108,6 +110,7 @@ Rules that apply to every new feature or page:
 - The content loader and frontmatter schema live in `src/lib/blog.tsx`. Keep frontmatter typed and validated server-side.
 - Use optional per-article CTA fields (`ctaTitle`, `ctaBody`, `ctaLabel`, `ctaHref`) when the article needs a contextual bottom CTA. Keep article CTAs to one block at the end unless the user explicitly asks for a different pattern.
 - `src/app/sitemap.ts` and `src/app/robots.ts` are part of the blog/SEO surface. If you add new public SEO pages, include them in sitemap/robots considerations.
+- Any new public blog/SEO route must also be added to `PUBLIC_PATHS` in `src/proxy.ts`, and if it lives outside `src/app/[locale]/`, also to `NON_LOCALIZED_PATHS`.
 - `src/lib/site.ts` defines the canonical origin used by metadata routes. Do not revert it to localhost fallbacks for sitemap or robots output.
 
 ## Security Notes

@@ -6,11 +6,16 @@ import { useTranslations } from "next-intl";
 
 const DISMISS_STORAGE_KEY = "domek-install-prompt-dismissed-at";
 const DISMISS_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
+const FALLBACK_PROMPT_DELAY_MS = 3500;
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
+
+function isAndroidChromiumMobile(userAgent: string) {
+  return /Android/.test(userAgent) && /Chrome|Chromium|EdgA|SamsungBrowser|OPR/.test(userAgent);
+}
 
 function isDismissedRecently(now: number) {
   if (typeof window === "undefined") {
@@ -34,6 +39,7 @@ export function InstallAppPrompt() {
   const t = useTranslations("installPrompt");
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIosSafari, setIsIosSafari] = useState(false);
+  const [showManualFallback, setShowManualFallback] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
@@ -51,6 +57,8 @@ export function InstallAppPrompt() {
     const userAgent = window.navigator.userAgent;
     const isIos = /iPad|iPhone|iPod/.test(userAgent);
     const isSafari = /Safari/.test(userAgent) && !/CriOS|FxiOS|EdgiOS/.test(userAgent);
+    const shouldOfferAndroidFallback = isAndroidChromiumMobile(userAgent);
+    let fallbackTimerId: number | null = null;
 
     if (isIos && isSafari) {
       setIsIosSafari(true);
@@ -60,11 +68,25 @@ export function InstallAppPrompt() {
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallEvent(event as BeforeInstallPromptEvent);
+      setShowManualFallback(false);
       setIsVisible(true);
     }
 
+    if (shouldOfferAndroidFallback) {
+      fallbackTimerId = window.setTimeout(() => {
+        setShowManualFallback(true);
+        setIsVisible(true);
+      }, FALLBACK_PROMPT_DELAY_MS);
+    }
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => {
+      if (fallbackTimerId !== null) {
+        window.clearTimeout(fallbackTimerId);
+      }
+
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
   }, []);
 
   function dismissPrompt() {
@@ -99,6 +121,12 @@ export function InstallAppPrompt() {
     return null;
   }
 
+  const body = isIosSafari
+    ? t("iosBody")
+    : showManualFallback && !installEvent
+      ? t("androidFallbackBody")
+      : t("body");
+
   return (
     <section className="border-b border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] sm:hidden">
       <div className="mx-auto flex w-full max-w-[1280px] items-start gap-3 px-4 py-3">
@@ -107,9 +135,7 @@ export function InstallAppPrompt() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-[var(--text-strong)]">{t("title")}</p>
-          <p className="mt-1 text-sm leading-5 text-[var(--accent-sage-text)]">
-            {isIosSafari ? t("iosBody") : t("body")}
-          </p>
+          <p className="mt-1 text-sm leading-5 text-[var(--accent-sage-text)]">{body}</p>
           {installEvent ? (
             <button
               className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-60"

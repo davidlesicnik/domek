@@ -45,6 +45,7 @@
     "title": "Install Domek",
     "body": "Keep Domek on your home screen for faster access and a more app-like feel.",
     "iosBody": "Add Domek to your home screen from Safari: tap Share, then choose Add to Home Screen.",
+    "androidFallbackBody": "If the install prompt does not appear, open your browser menu and choose Install app or Add to Home screen.",
     "cta": "Install app",
     "installing": "Opening prompt…",
     "dismiss": "Dismiss install prompt"

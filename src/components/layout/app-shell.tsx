@@ -4,6 +4,7 @@ import { AppShellFrame } from "@/components/layout/app-shell-frame";
 import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
 import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
+import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 type AppShellProps = Readonly<{
   banner?: ReactNode;
@@ -17,6 +18,7 @@ type AppShellProps = Readonly<{
 export function AppShell({ banner, memberColor, memberEmoji, userName, userId, children }: AppShellProps) {
   return (
     <div className="min-h-dvh border-t-4 border-[var(--surface-strong)] bg-[var(--page-background)] text-[var(--text-primary)]">
+      <ServiceWorkerRegistration />
       <header className="border-b border-[var(--border-default)] bg-[var(--shell-background)]">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
           <div className="min-w-0 flex-1 sm:flex-none">

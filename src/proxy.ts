@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/refund-policy",
   "/sitemap.xml",
+  "/sw.js",
   "/manifest.webmanifest",
   "/terms",
   "/api/paddle/webhook",
@@ -36,6 +37,7 @@ const PUBLIC_PATHS = [
 const NON_LOCALIZED_PATHS = [
   "/blog",
   "/sitemap.xml",
+  "/sw.js",
   "/manifest.webmanifest",
 ];
 
@@ -273,6 +275,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
