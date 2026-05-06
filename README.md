@@ -109,7 +109,7 @@ POSTGRES_PASSWORD="domek"
 POSTGRES_PORT="5432"
 SUPABASE_URL=""
 SUPABASE_ANON_KEY=""
-NEXT_PUBLIC_GA_MEASUREMENT_ID=""
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=""
 RESEND_API_KEY=""
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
 ENABLE_DEVELOPMENT_ACCESS_BYPASS="false"
@@ -120,7 +120,7 @@ DEVELOPMENT_ACCESS_CODE=""
 
 `ENABLE_DEVELOPMENT_ACCESS_BYPASS` and `DEVELOPMENT_ACCESS_CODE` are local-development-only escape hatches for onboarding. The bypass is disabled by default and the app rejects it when `NODE_ENV=production`.
 
-`NEXT_PUBLIC_GA_MEASUREMENT_ID` is optional. When set, Domek loads Google Analytics in the browser for aggregate page views and product events. Do not send household names, member details, invite tokens, note text, list item text, expense amounts, or other user-entered household content to analytics.
+`NEXT_PUBLIC_UMAMI_WEBSITE_ID` is optional. When set, Domek loads Umami analytics in the browser.
 
 Validate deployment configuration with:
 
@@ -169,7 +169,7 @@ SUPABASE_URL="https://PROJECT_REF.supabase.co"
 SUPABASE_ANON_KEY="sb_publishable_or_anon_key"
 RESEND_API_KEY="re_your_server_secret"
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
-NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 APP_URL="https://your-service.up.railway.app"
 ```
 

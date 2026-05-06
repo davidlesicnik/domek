@@ -1,12 +1,9 @@
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 
-import { CookieBanner } from "@/components/analytics/cookie-banner";
-import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { routing } from "@/i18n/routing";
@@ -65,10 +62,6 @@ export default async function LocaleLayout({
         <AppThemeProvider forcedTheme={forcedTheme}>
           <NextIntlClientProvider messages={messages}>
             {children}
-            <CookieBanner enabled={Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID)} />
-            <Suspense fallback={null}>
-              <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-            </Suspense>
             <UmamiAnalytics />
           </NextIntlClientProvider>
         </AppThemeProvider>

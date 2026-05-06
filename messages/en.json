@@ -354,14 +354,6 @@
     "seeHowItWorks": "See how it works",
     "logOut": "Log out"
   },
-  "cookieBanner": {
-    "title": "Cookies on Domek",
-    "descriptionStart": "We use essential cookies to keep things working, and optional ones to understand how Domek is used. Read the ",
-    "cookiePolicy": "cookie policy",
-    "descriptionEnd": ".",
-    "rejectCookies": "Reject cookies",
-    "acceptCookies": "Accept cookies"
-  },
   "accountPage": {
     "settingsLabel": "Settings",
     "title": "Account",
