@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { MemberAvatar } from "@/components/ui/member-avatar";
+import { useCoarsePointer } from "@/components/ui/use-coarse-pointer";
 import { EXPENSE_CATEGORY_COLOR_GROUPS } from "@/lib/expense-colors";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { getMemberColor } from "@/lib/member-colors";
@@ -492,6 +493,7 @@ function CustomSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const isCoarsePointer = useCoarsePointer();
   const selectedOption = options.find((option) => option.value === value);
   const listboxId = `${id}-listbox`;
 
@@ -514,6 +516,29 @@ function CustomSelect({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
+
+  if (isCoarsePointer) {
+    return (
+      <label className={className}>
+        <span className="sr-only">{placeholder}</span>
+        <select
+          className={`w-full rounded-md border border-[var(--select-border)] bg-[var(--select-bg)] px-3 py-2 text-base text-[var(--select-text)] focus:border-[color:var(--focus-ring)] focus:outline-none sm:text-sm ${buttonClassName}`}
+          id={id}
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        >
+          {!options.some((option) => option.value === "") ? (
+            <option value="">{placeholder}</option>
+          ) : null}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
 
   return (
     <div

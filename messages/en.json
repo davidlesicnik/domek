@@ -12,11 +12,17 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "dashboardMobile": "Board",
     "todos": "To-do",
+    "todosMobile": "To-do",
     "shopping": "Shopping",
+    "shoppingMobile": "Shop",
     "chores": "Chores",
+    "choresMobile": "Chores",
     "expenses": "Expenses",
+    "expensesMobile": "Money",
     "notes": "Notes",
+    "notesMobile": "Notes",
     "householdSettings": "Household settings"
   },
   "footer": {
@@ -34,6 +40,14 @@
     "householdMember": "Household member",
     "accountSettings": "Account settings",
     "signOut": "Sign out"
+  },
+  "installPrompt": {
+    "title": "Install Domek",
+    "body": "Keep Domek on your home screen for faster access and a more app-like feel.",
+    "iosBody": "Add Domek to your home screen from Safari: tap Share, then choose Add to Home Screen.",
+    "cta": "Install app",
+    "installing": "Opening prompt…",
+    "dismiss": "Dismiss install prompt"
   },
   "landing": {
     "seePricing": "See pricing",

@@ -3,6 +3,7 @@ import { AccountDropdown } from "@/components/layout/account-dropdown";
 import { AppShellFrame } from "@/components/layout/app-shell-frame";
 import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
+import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
 
 type AppShellProps = Readonly<{
   banner?: ReactNode;
@@ -31,6 +32,7 @@ export function AppShell({ banner, memberColor, memberEmoji, userName, userId, c
           </div>
         </div>
       </header>
+      <InstallAppPrompt />
       {banner}
       <main className="mx-auto w-full max-w-[1520px] px-4 pb-[calc(6.75rem_+_env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-10">
         <AppShellFrame memberColor={memberColor} memberEmoji={memberEmoji} userName={userName}>
