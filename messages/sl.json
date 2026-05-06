@@ -12,11 +12,17 @@
   },
   "nav": {
     "dashboard": "Domača tabla",
+    "dashboardMobile": "Tabla",
     "todos": "Opravila",
+    "todosMobile": "Naloge",
     "shopping": "Nakupi",
+    "shoppingMobile": "Nakupi",
     "chores": "Hišna opravila",
+    "choresMobile": "Opravila",
     "expenses": "Stroški",
+    "expensesMobile": "Denar",
     "notes": "Beležke",
+    "notesMobile": "Beležke",
     "householdSettings": "Nastavitve gospodinjstva"
   },
   "footer": {
@@ -34,6 +40,15 @@
     "householdMember": "Član gospodinjstva",
     "accountSettings": "Nastavitve računa",
     "signOut": "Odjava"
+  },
+  "installPrompt": {
+    "title": "Namesti Domek",
+    "body": "Dodajte Domek na začetni zaslon za hitrejši dostop in bolj aplikacijski občutek.",
+    "iosBody": "Dodajte Domek na začetni zaslon v Safariju: tapnite Deli in izberite Add to Home Screen.",
+    "androidFallbackBody": "Če se poziv za namestitev ne prikaže, odprite meni brskalnika in izberite Install app ali Add to Home screen.",
+    "cta": "Namesti aplikacijo",
+    "installing": "Odpiram poziv…",
+    "dismiss": "Zapri poziv za namestitev"
   },
   "landing": {
     "seePricing": "Poglej cene",

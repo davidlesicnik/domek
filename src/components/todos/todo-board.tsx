@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ListBoard } from "@/components/list-board/list-board";
 import { MemberAvatar } from "@/components/ui/member-avatar";
+import { useCoarsePointer } from "@/components/ui/use-coarse-pointer";
 import type { TodoItemView, TodoListView, TodoMemberView } from "@/lib/todo-lists";
 
 type TodoBoardProps = Readonly<{
@@ -66,6 +67,7 @@ function TodoQuickAddControls({
   const [activePopover, setActivePopover] = useState<"member" | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const dueDateInputRef = useRef<HTMLInputElement | null>(null);
+  const isCoarsePointer = useCoarsePointer();
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? null;
   const memberFallback = t("memberFallback");
   const currentMemberLabel = selectedMember ? memberDisplayLabel(selectedMember, memberFallback) : null;
@@ -100,108 +102,131 @@ function TodoQuickAddControls({
     <div className="relative" ref={rootRef}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <button
-              aria-expanded={activePopover === "member"}
-              aria-label={
-                currentMemberLabel
-                  ? t("assignedTo", { member: currentMemberLabel })
-                  : t("assignSomeone")
-              }
-              className={`flex min-h-9 max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
-                selectedMember
-                  ? "border-[#bfd0c1] bg-[#eef6ef] pr-8 text-[#45614c] hover:bg-[#e2f0e4]"
-                  : "border-[#e0dcd4] bg-[#fbfaf6] text-[#5d635f] hover:bg-[#f7f4ec]"
-              }`}
-              disabled={disabled || members.length === 0}
-              onClick={() => setActivePopover((current) => (current === "member" ? null : "member"))}
-              type="button"
-            >
-              {selectedMember ? (
-                <MemberAvatar
-                  className="flex h-6 w-6 items-center justify-center rounded-md border text-[10px] font-semibold"
-                  color={selectedMember.color}
-                  email={selectedMember.email}
-                  emoji={selectedMember.emoji}
-                  name={selectedMember.name}
-                />
-              ) : (
-                <span className="flex h-6 w-6 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#8a908c]">
-                  <UserRound aria-hidden className="h-4 w-4" />
-                </span>
-              )}
-              <span className="min-w-0 truncate">{currentMemberLabel ?? t("unassigned")}</span>
-            </button>
-            {selectedMember ? (
+          {isCoarsePointer ? (
+            <label className="min-w-0">
+              <span className="sr-only">{t("assignSomeone")}</span>
+              <select
+                className={`min-h-9 max-w-full rounded-md border px-2.5 py-1.5 text-sm transition ${
+                  selectedMember
+                    ? "border-[#bfd0c1] bg-[#eef6ef] text-[#45614c]"
+                    : "border-[#e0dcd4] bg-[#fbfaf6] text-[#5d635f]"
+                }`}
+                disabled={disabled || members.length === 0}
+                onChange={(event) => onMemberChange(event.target.value || null)}
+                value={selectedMemberId ?? ""}
+              >
+                <option value="">{t("noAssignee")}</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {memberDisplayLabel(member, memberFallback)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div className="relative">
               <button
-                aria-label={t("clearAssignee")}
-                className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[#dbe9dd] text-[#45614c] transition hover:bg-[#cfe2d2]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onMemberChange(null);
-                }}
+                aria-expanded={activePopover === "member"}
+                aria-label={
+                  currentMemberLabel
+                    ? t("assignedTo", { member: currentMemberLabel })
+                    : t("assignSomeone")
+                }
+                className={`flex min-h-9 max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition ${
+                  selectedMember
+                    ? "border-[#bfd0c1] bg-[#eef6ef] pr-8 text-[#45614c] hover:bg-[#e2f0e4]"
+                    : "border-[#e0dcd4] bg-[#fbfaf6] text-[#5d635f] hover:bg-[#f7f4ec]"
+                }`}
+                disabled={disabled || members.length === 0}
+                onClick={() => setActivePopover((current) => (current === "member" ? null : "member"))}
                 type="button"
               >
-                <X aria-hidden className="h-3 w-3" />
+                {selectedMember ? (
+                  <MemberAvatar
+                    className="flex h-6 w-6 items-center justify-center rounded-md border text-[10px] font-semibold"
+                    color={selectedMember.color}
+                    email={selectedMember.email}
+                    emoji={selectedMember.emoji}
+                    name={selectedMember.name}
+                  />
+                ) : (
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#8a908c]">
+                    <UserRound aria-hidden className="h-4 w-4" />
+                  </span>
+                )}
+                <span className="min-w-0 truncate">{currentMemberLabel ?? t("unassigned")}</span>
               </button>
-            ) : null}
-            {activePopover === "member" ? (
-              <div className="absolute bottom-full left-0 z-20 mb-2 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-[#dedbd2] bg-[#fffdf8] p-2 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+              {selectedMember ? (
                 <button
-                  className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition ${
-                    selectedMemberId === null
-                      ? "bg-[#f4f1ea] text-[#202321]"
-                      : "text-[#5d635f] hover:bg-[#f7f4ec]"
-                  }`}
-                  onClick={() => {
+                  aria-label={t("clearAssignee")}
+                  className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-[#dbe9dd] text-[#45614c] transition hover:bg-[#cfe2d2]"
+                  onClick={(event) => {
+                    event.stopPropagation();
                     onMemberChange(null);
-                    setActivePopover(null);
                   }}
                   type="button"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#8a908c]">
-                    <UserRound aria-hidden className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{t("noAssignee")}</span>
-                  {selectedMemberId === null ? (
-                    <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
-                  ) : null}
+                  <X aria-hidden className="h-3 w-3" />
                 </button>
-                <div className="my-2 border-t border-[#eee9df]" />
-                <div className="grid gap-1">
-                  {members.map((member) => (
-                    <button
-                      className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition ${
-                        selectedMemberId === member.id
-                          ? "bg-[#eef6ef] text-[#202321]"
-                          : "text-[#5d635f] hover:bg-[#f7f4ec]"
-                      }`}
-                      key={member.id}
-                      onClick={() => {
-                        onMemberChange(member.id);
-                        setActivePopover(null);
-                      }}
-                      type="button"
-                    >
-                      <MemberAvatar
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold"
-                        color={member.color}
-                        email={member.email}
-                        emoji={member.emoji}
-                        name={member.name}
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {memberDisplayLabel(member, memberFallback)}
-                      </span>
-                      {selectedMemberId === member.id ? (
-                        <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
-                      ) : null}
-                    </button>
-                  ))}
+              ) : null}
+              {activePopover === "member" ? (
+                <div className="absolute bottom-full left-0 z-20 mb-2 w-[min(16rem,calc(100vw-2rem))] rounded-md border border-[#dedbd2] bg-[#fffdf8] p-2 shadow-[0_18px_45px_rgba(31,35,30,0.16)]">
+                  <button
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition ${
+                      selectedMemberId === null
+                        ? "bg-[#f4f1ea] text-[#202321]"
+                        : "text-[#5d635f] hover:bg-[#f7f4ec]"
+                    }`}
+                    onClick={() => {
+                      onMemberChange(null);
+                      setActivePopover(null);
+                    }}
+                    type="button"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[#d8d2c8] bg-white text-[#8a908c]">
+                      <UserRound aria-hidden className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{t("noAssignee")}</span>
+                    {selectedMemberId === null ? (
+                      <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
+                    ) : null}
+                  </button>
+                  <div className="my-2 border-t border-[#eee9df]" />
+                  <div className="grid gap-1">
+                    {members.map((member) => (
+                      <button
+                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition ${
+                          selectedMemberId === member.id
+                            ? "bg-[#eef6ef] text-[#202321]"
+                            : "text-[#5d635f] hover:bg-[#f7f4ec]"
+                        }`}
+                        key={member.id}
+                        onClick={() => {
+                          onMemberChange(member.id);
+                          setActivePopover(null);
+                        }}
+                        type="button"
+                      >
+                        <MemberAvatar
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs font-semibold"
+                          color={member.color}
+                          email={member.email}
+                          emoji={member.emoji}
+                          name={member.name}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {memberDisplayLabel(member, memberFallback)}
+                        </span>
+                        {selectedMemberId === member.id ? (
+                          <span className="text-xs font-semibold text-[#45614c]">{t("selected")}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          )}
 
           <div className="relative">
             <button
@@ -219,6 +244,16 @@ function TodoQuickAddControls({
               onClick={() => {
                 const input = dueDateInputRef.current;
                 if (!input) return;
+
+                if (isCoarsePointer) {
+                  if (typeof input.showPicker === "function") {
+                    input.showPicker();
+                  } else {
+                    input.click();
+                  }
+                  return;
+                }
+
                 input.focus();
                 if (typeof input.showPicker === "function") {
                   input.showPicker();
@@ -249,7 +284,7 @@ function TodoQuickAddControls({
               </button>
             ) : null}
             <input
-              className="pointer-events-none absolute left-0 top-0 h-0 w-0 opacity-0"
+              className={isCoarsePointer ? "pointer-events-none absolute inset-0 opacity-0" : "pointer-events-none absolute left-0 top-0 h-0 w-0 opacity-0"}
               min={todayDateKey()}
               onChange={(event) => onDueDateChange(event.target.value || null)}
               ref={dueDateInputRef}

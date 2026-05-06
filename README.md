@@ -83,6 +83,8 @@ Draft posts are excluded from the blog index, sitemap, RSS, and public routes.
 
 The blog is intentionally **not** locale-prefixed. It bypasses `next-intl` and must stay in the standalone route space rather than `src/app/[locale]/`.
 
+Any route that should be reachable without authentication must be added to `PUBLIC_PATHS` in `src/proxy.ts` as part of the same change. If you skip that update, unauthenticated users and crawlers will be redirected to `/login`.
+
 If you add more standalone public SEO routes, update `src/proxy.ts` in both places:
 
 - `PUBLIC_PATHS` so unauthenticated visitors and crawlers are not redirected to `/login`

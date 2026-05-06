@@ -77,12 +77,12 @@ export function AppNavigation({
   } | null>(null);
 
   const navigation = [
-    { href: "/app", icon: Home, label: t("dashboard") },
-    { href: "/app/todos", icon: ListTodo, label: t("todos") },
-    { href: "/app/shopping", icon: ShoppingCart, label: t("shopping") },
-    { href: "/app/chores", icon: ClipboardCheck, label: t("chores") },
-    { href: "/app/expenses", icon: Banknote, label: t("expenses") },
-    { href: "/app/notes", icon: NotebookPen, label: t("notes") },
+    { href: "/app", icon: Home, label: t("dashboard"), mobileLabel: t("dashboardMobile") },
+    { href: "/app/todos", icon: ListTodo, label: t("todos"), mobileLabel: t("todosMobile") },
+    { href: "/app/shopping", icon: ShoppingCart, label: t("shopping"), mobileLabel: t("shoppingMobile") },
+    { href: "/app/chores", icon: ClipboardCheck, label: t("chores"), mobileLabel: t("choresMobile") },
+    { href: "/app/expenses", icon: Banknote, label: t("expenses"), mobileLabel: t("expensesMobile") },
+    { href: "/app/notes", icon: NotebookPen, label: t("notes"), mobileLabel: t("notesMobile") },
   ] as const;
 
   const appPrefetchHrefs = [
@@ -203,24 +203,31 @@ export function AppNavigation({
               pendingNavigation?.href === item.href &&
               pendingNavigation.fromPathname === pathname;
             const isVisuallyActive = isActive || isPending;
-            const className = `inline-flex h-11 min-w-0 items-center justify-center rounded-md border transition ${
+            const className = `inline-flex min-h-[3.5rem] min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 pb-1.5 pt-1 text-center transition ${
               isVisuallyActive
-                ? "border-[var(--accent-rose-strong)] bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)]"
-                : "border-transparent text-[var(--text-muted)] hover:border-[var(--accent-sage-border)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+                ? "bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
             }`;
 
             return (
               <Link
                 aria-current={isActive ? "page" : undefined}
-                aria-label={item.label}
                 className={className}
                 href={item.href}
                 key={item.label}
                 onClick={(event) => handleNavigationClick(item.href, event)}
                 prefetch={true}
               >
-                <Icon aria-hidden className="h-5 w-5" />
-                <span className="sr-only">{item.label}</span>
+                <span
+                  aria-hidden
+                  className={`block h-0.5 w-6 rounded-full transition ${
+                    isVisuallyActive ? "bg-[var(--accent-rose-strong)]" : "bg-transparent"
+                  }`}
+                />
+                <Icon aria-hidden className="h-[1.1rem] w-[1.1rem]" />
+                <span className="max-w-full truncate text-[10px] font-medium leading-none">
+                  {item.mobileLabel}
+                </span>
               </Link>
             );
           })}
