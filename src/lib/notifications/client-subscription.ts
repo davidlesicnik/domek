@@ -6,6 +6,10 @@ type SubscriptionPayload = {
   };
 };
 
+type VapidPublicKeyResponse = {
+  publicKey?: string;
+};
+
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -32,6 +36,16 @@ function toSubscriptionPayload(sub: PushSubscription): SubscriptionPayload {
 
 export function isPushSupported() {
   return typeof window !== "undefined" && "PushManager" in window && "serviceWorker" in navigator;
+}
+
+export async function fetchVapidPublicKey() {
+  const response = await fetch("/api/push/public-key", { method: "GET" });
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as VapidPublicKeyResponse;
+  return typeof payload.publicKey === "string" && payload.publicKey.length > 0 ? payload.publicKey : null;
 }
 
 export async function subscribeToPush(vapidKey: string) {

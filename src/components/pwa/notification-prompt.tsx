@@ -5,6 +5,7 @@ import { Bell, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import {
+  fetchVapidPublicKey,
   getCurrentSubscription,
   isPushSupported,
   subscribeToPush,
@@ -49,8 +50,9 @@ export function NotificationPrompt() {
   }
 
   async function handleEnable() {
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (isSubscribing) return;
+
+    const vapidKey = await fetchVapidPublicKey();
     if (!vapidKey) {
       setError(t("enableFailed"));
       return;
