@@ -47,7 +47,7 @@ export function NotificationToggle() {
 
       setState("subscribed");
     } catch {
-      setState("unsubscribed");
+      setState(Notification.permission === "denied" ? "denied" : "unsubscribed");
     }
   }
 

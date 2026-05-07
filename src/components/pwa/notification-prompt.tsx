@@ -30,6 +30,7 @@ export function NotificationPrompt() {
   const t = useTranslations("notifications");
   const [isVisible, setIsVisible] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isDenied, setIsDenied] = useState(false);
 
   useEffect(() => {
     if (!isPushSupported()) return;
@@ -58,11 +59,16 @@ export function NotificationPrompt() {
       if (!ok) {
         await sub.unsubscribe();
       }
+
+      setIsVisible(false);
     } catch {
-      // permission denied or error — just dismiss
+      if (Notification.permission === "denied") {
+        setIsDenied(true);
+      } else {
+        setIsVisible(false);
+      }
     } finally {
       setIsSubscribing(false);
-      setIsVisible(false);
     }
   }
 
@@ -77,14 +83,18 @@ export function NotificationPrompt() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-[var(--text-strong)]">{t("promptTitle")}</p>
           <p className="mt-1 text-sm leading-5 text-[var(--accent-sun-text)]">{t("promptBody")}</p>
-          <button
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sun-border)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-60"
-            disabled={isSubscribing}
-            onClick={() => void handleEnable()}
-            type="button"
-          >
-            {t("promptCta")}
-          </button>
+          {isDenied ? (
+            <p className="mt-2 text-xs text-[var(--text-muted)]">{t("permissionDenied")}</p>
+          ) : (
+            <button
+              className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sun-border)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-60"
+              disabled={isSubscribing}
+              onClick={() => void handleEnable()}
+              type="button"
+            >
+              {t("promptCta")}
+            </button>
+          )}
         </div>
         <button
           aria-label={t("promptDismiss")}
