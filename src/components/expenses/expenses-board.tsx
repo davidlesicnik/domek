@@ -1964,13 +1964,20 @@ export function ExpensesBoard({
                         {formatExpenseDate(expense.date, locale)}
                       </p>
                     </div>
-                    <span
-                      className={`shrink-0 text-sm font-medium tabular-nums ${
-                        expense.type === "INCOME" ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
-                      }`}
-                    >
-                      {expense.type === "INCOME" ? "+" : "−"}
-                      {formatAmount(expense.amount, locale)}
+                    <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium tabular-nums text-[color:var(--text-strong)]">
+                      <span
+                        className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
+                          expense.type === "INCOME"
+                            ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
+                            : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? t("income") : t("expense")}
+                      </span>
+                      <span>
+                        {expense.type === "INCOME" ? "+" : "−"}
+                        {formatAmount(expense.amount, locale)}
+                      </span>
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
@@ -2189,13 +2196,20 @@ export function ExpensesBoard({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
-                        <span
-                          className={`font-medium tabular-nums ${
-                            expense.type === "INCOME" ? "text-[color:var(--accent-sage-text)]" : "text-[color:var(--accent-rose-text)]"
-                          }`}
-                        >
-                          {expense.type === "INCOME" ? "+" : "−"}
-                          {formatAmount(expense.amount, locale)}
+                        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-[color:var(--text-strong)]">
+                          <span
+                            className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
+                              expense.type === "INCOME"
+                                ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
+                                : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
+                            }`}
+                          >
+                            {expense.type === "INCOME" ? t("income") : t("expense")}
+                          </span>
+                          <span>
+                            {expense.type === "INCOME" ? "+" : "−"}
+                            {formatAmount(expense.amount, locale)}
+                          </span>
                         </span>
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
