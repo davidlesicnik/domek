@@ -44,9 +44,13 @@ function getChoreNextDueDate(chore: {
   completions: { completedAt: Date }[];
 }): Date {
   const lastCompletion = chore.completions[0]?.completedAt ?? null;
-  const base = lastCompletion
-    ? startOfDay(lastCompletion)
-    : startOfDay(chore.startsAt);
+
+  // No completions yet — chore is due on its start date, not start + interval
+  if (!lastCompletion) {
+    return startOfDay(chore.startsAt);
+  }
+
+  const base = startOfDay(lastCompletion);
 
   switch (chore.recurrenceType) {
     case "DAILY":
