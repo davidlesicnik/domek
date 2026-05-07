@@ -156,7 +156,7 @@ Authorization: Bearer <NOTIFY_SECRET>
 
 ## Git Workflow
 
-Every Coder agent MUST follow this workflow for every assigned task:
+Every agent (Coder, CMO, or any other role) MUST follow this workflow for every assigned task:
 
 ### Starting work
 
