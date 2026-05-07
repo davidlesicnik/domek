@@ -27,7 +27,8 @@ export async function PATCH(
       return Response.json({ error: "Invalid note." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[PATCH /api/notes/[noteId]]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

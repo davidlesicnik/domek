@@ -30,7 +30,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return Response.json({ error: "Invalid calendar event." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[PATCH /api/calendar/events/[id]]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

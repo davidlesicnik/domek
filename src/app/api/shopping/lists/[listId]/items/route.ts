@@ -31,6 +31,7 @@ export async function POST(
       return Response.json({ error: "Invalid shopping item." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[POST /api/shopping/lists/[listId]/items]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

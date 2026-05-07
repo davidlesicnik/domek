@@ -33,7 +33,8 @@ export async function PATCH(
       return Response.json({ error: "Invalid chore." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[PATCH /api/chores/[choreId]]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -60,6 +61,7 @@ export async function DELETE(
       return Response.json({ error: "Invalid chore id." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[DELETE /api/chores/[choreId]]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

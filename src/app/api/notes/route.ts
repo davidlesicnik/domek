@@ -19,6 +19,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid note." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[POST /api/notes]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
