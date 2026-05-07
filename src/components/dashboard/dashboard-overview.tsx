@@ -241,14 +241,21 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                         ) : null}
                       </div>
                     </div>
-                    <p
-                      className={`text-sm font-semibold tabular-nums sm:shrink-0 sm:text-right ${
-                        expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
-                      }`}
-                    >
-                      {expense.type === "INCOME" ? "+" : "−"}
-                      {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
-                    </p>
+                    <div className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-[var(--text-strong)] sm:shrink-0 sm:justify-end">
+                      <span
+                        className={`inline-flex min-w-12 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
+                          expense.type === "INCOME"
+                            ? "border-[var(--accent-sage-border)] bg-[var(--accent-sage-soft)] text-[var(--accent-sage-text)]"
+                            : "border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? t("incomeLabel") : t("spendingLabel")}
+                      </span>
+                      <p>
+                        {expense.type === "INCOME" ? "+" : "−"}
+                        {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
