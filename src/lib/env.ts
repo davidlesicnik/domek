@@ -196,6 +196,42 @@ export function getDevelopmentAccessBypassConfig(): DevelopmentAccessBypassConfi
   };
 }
 
+const vapidSchema = z.object({
+  publicKey: z.string().min(1),
+  privateKey: z.string().min(1),
+  mailto: z.string().min(1),
+});
+
+const notifySchema = z.object({
+  secret: z.string().min(1),
+});
+
+export function getVapidConfig() {
+  return vapidSchema.parse({
+    publicKey: readOptionalEnv("VAPID_PUBLIC_KEY"),
+    privateKey: readOptionalEnv("VAPID_PRIVATE_KEY"),
+    mailto: readOptionalEnv("VAPID_MAILTO"),
+  });
+}
+
+export function getOptionalVapidConfig() {
+  const publicKey = readOptionalEnv("VAPID_PUBLIC_KEY");
+  const privateKey = readOptionalEnv("VAPID_PRIVATE_KEY");
+  const mailto = readOptionalEnv("VAPID_MAILTO");
+
+  if (!publicKey || !privateKey || !mailto) {
+    return null;
+  }
+
+  return vapidSchema.parse({ publicKey, privateKey, mailto });
+}
+
+export function getNotifyConfig() {
+  return notifySchema.parse({
+    secret: readOptionalEnv("NOTIFY_SECRET"),
+  });
+}
+
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
@@ -207,5 +243,6 @@ export function assertRuntimeEnv() {
     paddle: getOptionalPaddleRuntimeConfig(),
     paddleServer: getOptionalPaddleServerConfig(),
     developmentAccessBypass: getDevelopmentAccessBypassConfig(),
+    vapid: getOptionalVapidConfig(),
   };
 }

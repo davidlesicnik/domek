@@ -12,6 +12,7 @@ Domek is a container-first household planner for shared household coordination.
 - **Shopping lists** — shared shopping lists with item check-off
 - **Notes** — shared freeform notes
 - **Expenses** — basic expense tracker with categories
+- **Push notifications** — opt-in daily reminders for upcoming calendar events, due todos, and chores via VAPID Web Push
 - **Authentication** — Supabase Auth with Google and email magic links
 - **Email invites** — invite links sent via Resend
 
@@ -116,9 +117,63 @@ RESEND_API_KEY=""
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
 ENABLE_DEVELOPMENT_ACCESS_BYPASS="false"
 DEVELOPMENT_ACCESS_CODE=""
+VAPID_PUBLIC_KEY=""
+VAPID_PRIVATE_KEY=""
+VAPID_MAILTO="mailto:admin@domekapp.com"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
+NOTIFY_SECRET=""
 ```
 
 `APP_URL` is optional locally. When it is unset, auth and invite flows still rely on request origin in development, while blog metadata, `robots.txt`, and `sitemap.xml` fall back to `https://domekapp.com`. Set `APP_URL` in production so invite links and metadata resolve to the canonical origin.
+
+`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_MAILTO`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, and `NOTIFY_SECRET` are required for push notifications. Generate a VAPID key pair with:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Set `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same value (the public key). The public key is safe to expose to the browser; the private key is a server secret.
+
+## Push Notifications
+
+Domek supports opt-in Web Push notifications that fire daily and remind household members about:
+
+- Calendar events scheduled for tomorrow (or today with a specific time)
+- Todo items due today or overdue
+- Chores due within the next 24 hours
+
+Users subscribe from the account settings page. The toggle is only rendered when the browser supports `PushManager`.
+
+### Setup
+
+Generate a VAPID key pair:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Set these environment variables:
+
+```bash
+VAPID_PUBLIC_KEY="..."          # from generate-vapid-keys
+VAPID_PRIVATE_KEY="..."         # from generate-vapid-keys — server secret
+VAPID_MAILTO="mailto:admin@domekapp.com"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."  # same value as VAPID_PUBLIC_KEY
+NOTIFY_SECRET="..."             # any strong random string
+```
+
+### Sending notifications
+
+Schedule a daily HTTP call to the cron endpoint. Example with `curl`:
+
+```bash
+curl -X POST https://your-domain/api/notify/send \
+  -H "Authorization: Bearer $NOTIFY_SECRET"
+```
+
+The endpoint returns `{ "sent": N, "errors": N }`. Dead push subscriptions (push service returns 404 or 410) are pruned automatically.
+
+`/api/notify/send` is excluded from session auth and uses its own `NOTIFY_SECRET` bearer token.
 
 `ENABLE_DEVELOPMENT_ACCESS_BYPASS` and `DEVELOPMENT_ACCESS_CODE` are local-development-only escape hatches for onboarding. The bypass is disabled by default and the app rejects it when `NODE_ENV=production`.
 
@@ -173,6 +228,11 @@ RESEND_API_KEY="re_your_server_secret"
 FROM_EMAIL="Domek <noreply@yourdomain.com>"
 NEXT_PUBLIC_UMAMI_WEBSITE_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 APP_URL="https://your-service.up.railway.app"
+VAPID_PUBLIC_KEY="..."
+VAPID_PRIVATE_KEY="..."
+VAPID_MAILTO="mailto:admin@domekapp.com"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."
+NOTIFY_SECRET="..."
 ```
 
 `connection_limit=1` is very conservative and can bottleneck traffic. Start around `5` per app instance, then tune based on replica count and Supabase connection budget.
@@ -445,7 +505,7 @@ Create and apply a development migration after the database is reachable:
 npm run db:migrate
 ```
 
-The schema includes users, households, household membership, and feature-specific tables for calendar events, to-do lists, notes, shopping lists, and expenses. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
+The schema includes users, households, household membership, and feature-specific tables for calendar events, to-do lists, notes, shopping lists, expenses, and push subscriptions. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
 
 ### Database Backups
 

@@ -3,6 +3,7 @@ import { BillingSubscriptionStatus } from "@prisma/client";
 import { getTranslations, getLocale } from "next-intl/server";
 
 import { ThemeSettings, type ThemePreferenceActionState } from "@/components/account/theme-settings";
+import { NotificationToggle } from "@/components/pwa/notification-toggle";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
@@ -208,9 +209,10 @@ const statusKeys: Record<BillingSubscriptionStatus, string> = {
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const [session, t, locale] = await Promise.all([
+  const [session, t, tNotif, locale] = await Promise.all([
     requireAppSession(),
     getTranslations("accountPage"),
+    getTranslations("notifications"),
     getLocale(),
   ]);
   const dateFormatter = new Intl.DateTimeFormat(locale, {
@@ -282,6 +284,14 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         action={updateThemePreferenceAction}
         currentThemePreference={session.user.themePreference}
       />
+
+      <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+        <h2 className="text-sm font-semibold text-[var(--text-strong)]">{tNotif("sectionTitle")}</h2>
+        <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{tNotif("sectionDescription")}</p>
+        <div className="mt-3">
+          <NotificationToggle />
+        </div>
+      </section>
 
       <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
         <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("signedInAs")}</h2>

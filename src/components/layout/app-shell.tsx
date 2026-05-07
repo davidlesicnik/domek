@@ -4,6 +4,7 @@ import { AppShellFrame } from "@/components/layout/app-shell-frame";
 import { Footer } from "@/components/layout/footer";
 import { HouseholdModalServer } from "@/components/household/household-modal-server";
 import { InstallAppPrompt } from "@/components/pwa/install-app-prompt";
+import { NotificationPrompt } from "@/components/pwa/notification-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 type AppShellProps = Readonly<{
@@ -35,6 +36,7 @@ export function AppShell({ banner, memberColor, memberEmoji, userName, userId, c
         </div>
       </header>
       <InstallAppPrompt />
+      <NotificationPrompt />
       {banner}
       <main className="mx-auto w-full max-w-[1520px] px-4 pb-[calc(6.75rem_+_env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:py-10">
         <AppShellFrame memberColor={memberColor} memberEmoji={memberEmoji} userName={userName}>
