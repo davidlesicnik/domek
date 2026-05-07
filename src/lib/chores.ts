@@ -6,6 +6,8 @@ import type {
 } from "@prisma/client";
 import { z } from "zod";
 
+import { MS_PER_DAY } from "@/lib/time-constants";
+
 import { getCurrentAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getHouseholdMemberName } from "@/lib/household-members";
@@ -186,7 +188,7 @@ function normalizeDate(date: Date): Date {
 }
 
 function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  return new Date(date.getTime() + days * MS_PER_DAY);
 }
 
 function addMonths(date: Date, months: number): Date {

@@ -4,6 +4,8 @@ import { ArrowLeft, Mail, UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 
+import { MS_PER_DAY, MS_PER_MINUTE } from "@/lib/time-constants";
+
 import { useRouter } from "@/i18n/navigation";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { HouseholdActionState } from "@/lib/actions/household-members";
@@ -74,7 +76,7 @@ export function AddHouseholdMemberDialog({
 
     const intervalId = globalThis.setInterval(() => {
       setCurrentTime(Date.now());
-    }, 60 * 1000);
+    }, MS_PER_MINUTE);
 
     return () => {
       globalThis.clearInterval(intervalId);
@@ -89,7 +91,7 @@ export function AddHouseholdMemberDialog({
 
   function formatExpiry(date: Date): string {
     const diff = date.getTime() - currentTime;
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(diff / MS_PER_DAY);
 
     if (days <= 0) return t("expiryExpired");
     if (days === 1) return t("expiryTomorrow");

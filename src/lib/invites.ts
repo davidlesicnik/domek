@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 
 import { prisma } from "@/lib/db";
+import { MS_PER_DAY } from "@/lib/time-constants";
 
 const INVITE_EXPIRY_DAYS = 7;
 
@@ -38,7 +39,7 @@ export async function createInvite({
     });
   }
 
-  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * MS_PER_DAY);
   const token = generateToken();
   const tokenHash = hashInviteToken(token);
 
