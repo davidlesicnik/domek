@@ -927,5 +927,13 @@
     "title": "Nakupovalni seznami",
     "metaTitle": "Nakupovalni seznami | Domek",
     "metaDescription": "Skupni nakupovalni seznami za vaš dom."
+  },
+  "notifications": {
+    "enableButton": "Vklopi obvestila",
+    "disableButton": "Izklopi obvestila",
+    "permissionDenied": "Obvestila so blokirana. Dovolite jih v nastavitvah brskalnika.",
+    "unsupported": "Potisna obvestila niso podprta v tem brskalniku.",
+    "sectionTitle": "Potisna obvestila",
+    "sectionDescription": "Prejemajte dnevne opomnike za prihajajoče dogodke, opravila in hišna dela."
   }
 }

@@ -113,6 +113,47 @@ Rules that apply to every new feature or page:
 - Any new public blog/SEO route must also be added to `PUBLIC_PATHS` in `src/proxy.ts`, and if it lives outside `src/app/[locale]/`, also to `NON_LOCALIZED_PATHS`.
 - `src/lib/site.ts` defines the canonical origin used by metadata routes. Do not revert it to localhost fallbacks for sitemap or robots output.
 
+## Web Push Notifications
+
+The app uses VAPID-based Web Push (via `web-push` npm package) for opt-in daily reminders.
+
+### Key files
+
+| File | Role |
+|------|------|
+| `public/sw.js` | Service worker — handles `push` and `notificationclick` events |
+| `src/app/api/push/subscribe/route.ts` | Auth-gated `POST`/`DELETE` to manage `PushSubscription` records |
+| `src/app/api/notify/send/route.ts` | Cron endpoint — validates `NOTIFY_SECRET`, calls `sendDailyNotifications()` |
+| `src/lib/notifications/sender.ts` | `sendDailyNotifications()` — fetches subs, queries calendar/todos/chores, sends push |
+| `src/components/pwa/notification-toggle.tsx` | Client toggle — subscribe/unsubscribe UI, mounted on account page |
+
+### Required env vars
+
+```
+VAPID_PUBLIC_KEY=        # generate with: npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=
+VAPID_MAILTO=            # e.g. mailto:admin@domekapp.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=  # same value as VAPID_PUBLIC_KEY, exposed to browser
+NOTIFY_SECRET=           # arbitrary secret; sent as Bearer token by cron caller
+```
+
+### Cron setup
+
+Schedule a daily HTTP call:
+```
+POST /api/notify/send
+Authorization: Bearer <NOTIFY_SECRET>
+```
+
+### Auth boundaries
+
+- `/api/push/subscribe` is **auth-gated** — do NOT add to `PUBLIC_PATHS`.
+- `/api/notify/send` is in `PUBLIC_PATHS` — it uses its own `NOTIFY_SECRET` bearer auth.
+
+### Dead subscription pruning
+
+`sendDailyNotifications()` auto-deletes `PushSubscription` rows when the push service returns 404 or 410.
+
 ## Security Notes
 
 - Protected app areas should use server-side session checks.

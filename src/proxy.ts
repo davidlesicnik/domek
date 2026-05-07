@@ -27,6 +27,7 @@ const PUBLIC_PATHS = [
   "/sw.js",
   "/manifest.webmanifest",
   "/terms",
+  "/api/notify/send",
   "/api/paddle/webhook",
   "/auth/callback",
   "/auth/email",

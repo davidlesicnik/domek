@@ -79,6 +79,7 @@ model User {
   expenses                   Expense[]
   choresCreated              Chore[]
   choreCompletions           ChoreCompletion[]
+  pushSubscriptions          PushSubscription[]
   createdAt                  DateTime          @default(now())
   updatedAt                  DateTime          @updatedAt
 }
@@ -391,6 +392,18 @@ model ContactMessage {
 
   @@index([email])
   @@index([createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique @db.VarChar(2048)
+  p256dh    String   @db.VarChar(512)
+  auth      String   @db.VarChar(256)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model HouseholdInvite {
