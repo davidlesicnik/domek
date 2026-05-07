@@ -257,6 +257,20 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
 
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
+  useEffect(() => {
+    setLists(initialLists);
+    setSelectedListId((currentSelectedListId) => {
+      if (
+        currentSelectedListId &&
+        initialLists.some((list) => list.id === currentSelectedListId)
+      ) {
+        return currentSelectedListId;
+      }
+
+      return initialLists[0]?.id ?? null;
+    });
+  }, [initialLists]);
+
   function focusItemInput() {
     if (!globalThis.matchMedia("(pointer: coarse)").matches) {
       newItemInputRef.current?.focus();
