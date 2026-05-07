@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import {
+  getCurrentSubscription,
+  isPushSupported,
+  subscribeToPush,
+} from "@/lib/notifications/client-subscription";
 import { MS_PER_DAY } from "@/lib/time-constants";
 
 const DISMISS_STORAGE_KEY = "domek-notification-prompt-dismissed-at";
@@ -21,32 +26,18 @@ function saveDismissedAt(now: number) {
   window.localStorage.setItem(DISMISS_STORAGE_KEY, String(now));
 }
 
-function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const buf = new ArrayBuffer(rawData.length);
-  const view = new Uint8Array(buf);
-  for (let i = 0; i < rawData.length; i++) {
-    view[i] = rawData.charCodeAt(i);
-  }
-  return buf;
-}
-
 export function NotificationPrompt() {
   const t = useTranslations("notifications");
   const [isVisible, setIsVisible] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
-    if (!("PushManager" in window) || !("serviceWorker" in navigator)) return;
+    if (!isPushSupported()) return;
     if (Notification.permission !== "default") return;
     if (isDismissedRecently(Date.now())) return;
 
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        if (!sub) setIsVisible(true);
-      });
+    getCurrentSubscription().then((sub) => {
+      if (!sub) setIsVisible(true);
     });
   }, []);
 
@@ -62,23 +53,9 @@ export function NotificationPrompt() {
     setIsSubscribing(true);
 
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToArrayBuffer(vapidKey),
-      });
+      const { sub, ok } = await subscribeToPush(vapidKey);
 
-      const json = sub.toJSON();
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: sub.endpoint,
-          keys: { p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" },
-        }),
-      });
-
-      if (!res.ok) {
+      if (!ok) {
         await sub.unsubscribe();
       }
     } catch {

@@ -3,25 +3,19 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import {
+  getCurrentSubscription,
+  isPushSupported,
+  subscribeToPush,
+} from "@/lib/notifications/client-subscription";
+
 type State = "unsupported" | "denied" | "subscribed" | "unsubscribed" | "loading";
 
 function getInitialState(): State {
   if (typeof window === "undefined") return "loading";
-  if (!("PushManager" in window) || !("serviceWorker" in navigator)) return "unsupported";
+  if (!isPushSupported()) return "unsupported";
   if (Notification.permission === "denied") return "denied";
   return "loading";
-}
-
-function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const buf = new ArrayBuffer(rawData.length);
-  const view = new Uint8Array(buf);
-  for (let i = 0; i < rawData.length; i++) {
-    view[i] = rawData.charCodeAt(i);
-  }
-  return buf;
 }
 
 export function NotificationToggle() {
@@ -31,10 +25,8 @@ export function NotificationToggle() {
   useEffect(() => {
     if (state !== "loading") return;
 
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setState(sub ? "subscribed" : "unsubscribed");
-      });
+    getCurrentSubscription().then((sub) => {
+      setState(sub ? "subscribed" : "unsubscribed");
     });
   }, [state]);
 
@@ -45,23 +37,9 @@ export function NotificationToggle() {
     setState("loading");
 
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToArrayBuffer(vapidKey),
-      });
+      const { sub, ok } = await subscribeToPush(vapidKey);
 
-      const json = sub.toJSON();
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: sub.endpoint,
-          keys: { p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" },
-        }),
-      });
-
-      if (!res.ok) {
+      if (!ok) {
         await sub.unsubscribe();
         setState("unsubscribed");
         return;
@@ -77,8 +55,7 @@ export function NotificationToggle() {
     setState("loading");
 
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
+      const sub = await getCurrentSubscription();
 
       if (sub) {
         await fetch("/api/push/subscribe", {

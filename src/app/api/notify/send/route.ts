@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { getNotifyConfig } from "@/lib/env";
 import { sendDailyNotifications } from "@/lib/notifications/sender";
 
@@ -10,7 +11,12 @@ export async function POST(request: Request) {
   }
 
   const authHeader = request.headers.get("Authorization") ?? "";
-  if (authHeader !== `Bearer ${secret}`) {
+  const expected = `Bearer ${secret}`;
+  const provided = authHeader;
+  const isValid =
+    provided.length === expected.length &&
+    timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+  if (!isValid) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
