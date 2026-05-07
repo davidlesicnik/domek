@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 import { DashboardPlanner } from "@/components/dashboard/dashboard-planner";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -241,14 +242,34 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                         ) : null}
                       </div>
                     </div>
-                    <p
-                      className={`text-sm font-semibold tabular-nums sm:shrink-0 sm:text-right ${
-                        expense.type === "INCOME" ? "text-[#2d4f34]" : "text-[#8d3028]"
-                      }`}
-                    >
-                      {expense.type === "INCOME" ? "+" : "−"}
-                      {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
-                    </p>
+                    <div className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-[var(--text-strong)] sm:shrink-0 sm:justify-end">
+                      <span
+                        className={`inline-flex min-w-12 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
+                          expense.type === "INCOME"
+                            ? "border-[var(--accent-sage-border)] bg-[var(--accent-sage-soft)] text-[var(--accent-sage-text)]"
+                            : "border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? t("incomeLabel") : t("spendingLabel")}
+                      </span>
+                      <p
+                        className={`inline-flex items-center gap-1 ${
+                          expense.type === "INCOME"
+                            ? "text-[var(--accent-sage-strong)]"
+                            : "text-[var(--accent-rose-strong)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? (
+                          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+                        ) : (
+                          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
+                        )}
+                        <span>
+                          {expense.type === "INCOME" ? "+" : "−"}
+                          {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
