@@ -86,48 +86,10 @@ type Props = {
 };
 
 type ExpensesTranslator = ReturnType<typeof useTranslations>;
+type ExpenseType = ExpenseView["type"];
 const UNCATEGORIZED_COLOR = "#c8c4bb";
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * 42;
 const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
-
-type ExpenseTypeAmountProps = {
-  amount: number;
-  locale: string;
-  t: ExpensesTranslator;
-  type: ExpenseView["type"];
-  wrapperClassName: string;
-};
-
-function ExpenseTypeAmount({ amount, locale, t, type, wrapperClassName }: ExpenseTypeAmountProps) {
-  return (
-    <span className={wrapperClassName}>
-      <span
-        className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
-          type === "INCOME"
-            ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
-            : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
-        }`}
-      >
-        {type === "INCOME" ? t("income") : t("expense")}
-      </span>
-      <span
-        className={`inline-flex items-center gap-1 ${
-          type === "INCOME" ? "text-[color:var(--accent-sage-strong)]" : "text-[color:var(--accent-rose-strong)]"
-        }`}
-      >
-        {type === "INCOME" ? (
-          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
-        ) : (
-          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
-        )}
-        <span>
-          {type === "INCOME" ? "+" : "−"}
-          {formatAmount(amount, locale)}
-        </span>
-      </span>
-    </span>
-  );
-}
 
 function formatAmount(n: number, locale: string): string {
   return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -173,6 +135,52 @@ function todayISO(): string {
 
 function monthValue(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function expensePolarityLabel(type: ExpenseType, t: ExpensesTranslator) {
+  return type === "INCOME" ? t("income") : t("expense");
+}
+
+function expensePolarityAmount(type: ExpenseType, amount: number, locale: string) {
+  return `${type === "INCOME" ? "+" : "−"}${formatAmount(amount, locale)}`;
+}
+
+function expensePolarityColorClass(type: ExpenseType) {
+  return type === "INCOME" ? "text-[color:var(--accent-sage-strong)]" : "text-[color:var(--accent-rose-strong)]";
+}
+
+function expenseTypeBadgeClass(type: ExpenseType) {
+  return type === "INCOME"
+    ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
+    : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]";
+}
+
+function ExpensePolarityCell({
+  amount,
+  locale,
+  t,
+  type,
+}: {
+  amount: number;
+  locale: string;
+  t: ExpensesTranslator;
+  type: ExpenseType;
+}) {
+  return (
+    <>
+      <span
+        className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${expenseTypeBadgeClass(
+          type,
+        )}`}
+      >
+        {expensePolarityLabel(type, t)}
+      </span>
+      <span className={`inline-flex items-center gap-1 ${expensePolarityColorClass(type)}`}>
+        {type === "INCOME" ? <ArrowUpRight aria-hidden className="h-3.5 w-3.5" /> : <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />}
+        <span>{expensePolarityAmount(type, amount, locale)}</span>
+      </span>
+    </>
+  );
 }
 
 function currentYearMonth() {
@@ -2003,13 +2011,9 @@ export function ExpensesBoard({
                         {formatExpenseDate(expense.date, locale)}
                       </p>
                     </div>
-                    <ExpenseTypeAmount
-                      amount={expense.amount}
-                      locale={locale}
-                      t={t}
-                      type={expense.type}
-                      wrapperClassName="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium tabular-nums text-[color:var(--text-strong)]"
-                    />
+                    <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium tabular-nums text-[color:var(--text-strong)]">
+                      <ExpensePolarityCell amount={expense.amount} locale={locale} t={t} type={expense.type} />
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
                     {expense.categoryName ? (
@@ -2227,13 +2231,9 @@ export function ExpensesBoard({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
-                        <ExpenseTypeAmount
-                          amount={expense.amount}
-                          locale={locale}
-                          t={t}
-                          type={expense.type}
-                          wrapperClassName="inline-flex items-center gap-1.5 font-medium tabular-nums text-[color:var(--text-strong)]"
-                        />
+                        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-[color:var(--text-strong)]">
+                          <ExpensePolarityCell amount={expense.amount} locale={locale} t={t} type={expense.type} />
+                        </span>
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
                         <div className="flex justify-end gap-1">
