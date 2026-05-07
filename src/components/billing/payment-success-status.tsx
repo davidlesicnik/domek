@@ -36,6 +36,7 @@ export function PaymentSuccessStatus({
     }, intervalMs);
 
     const timeoutId = window.setTimeout(() => {
+      window.clearInterval(intervalId);
       setTimedOut(true);
     }, timeoutMs);
 
