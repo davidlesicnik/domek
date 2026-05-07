@@ -934,6 +934,10 @@
     "permissionDenied": "Obvestila so blokirana. Dovolite jih v nastavitvah brskalnika.",
     "unsupported": "Potisna obvestila niso podprta v tem brskalniku.",
     "sectionTitle": "Potisna obvestila",
-    "sectionDescription": "Prejemajte dnevne opomnike za prihajajoče dogodke, opravila in hišna dela."
+    "sectionDescription": "Prejemajte dnevne opomnike za prihajajoče dogodke, opravila in hišna dela.",
+    "promptTitle": "Ostanite na tekočem",
+    "promptBody": "Prejemajte dnevne opomnike za prihajajoče dogodke, opravila in hišna dela.",
+    "promptCta": "Vklopi",
+    "promptDismiss": "Zapri obvestilo o obvestilih"
   }
 }

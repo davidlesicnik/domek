@@ -934,6 +934,10 @@
     "permissionDenied": "Notifications are blocked. Allow them in your browser settings.",
     "unsupported": "Push notifications are not supported in this browser.",
     "sectionTitle": "Push notifications",
-    "sectionDescription": "Receive daily reminders for upcoming calendar events, todos, and chores."
+    "sectionDescription": "Receive daily reminders for upcoming calendar events, todos, and chores.",
+    "promptTitle": "Stay on top of things",
+    "promptBody": "Get daily reminders for upcoming events, todos, and chores.",
+    "promptCta": "Turn on",
+    "promptDismiss": "Dismiss notification prompt"
   }
 }
