@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Download, Share2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { MS_PER_DAY } from "@/lib/time-constants";
+
 const DISMISS_STORAGE_KEY = "domek-install-prompt-dismissed-at";
-const DISMISS_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
+const DISMISS_DURATION_MS = 14 * MS_PER_DAY;
 const FALLBACK_PROMPT_DELAY_MS = 3500;
 
 type BeforeInstallPromptEvent = Event & {
