@@ -5,6 +5,7 @@ import {
   getCurrentTodoScope,
   parseTodoListInput,
 } from "@/lib/todo-lists";
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
 export async function POST(request: Request) {
   const scope = await getCurrentTodoScope();
@@ -17,6 +18,7 @@ export async function POST(request: Request) {
     const input = parseTodoListInput(await request.json());
     const list = await createTodoList(input.name, scope);
 
+    revalidateDashboard();
     return Response.json({ list }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {

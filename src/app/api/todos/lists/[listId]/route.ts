@@ -1,4 +1,5 @@
 import { deleteTodoList, getCurrentTodoScope } from "@/lib/todo-lists";
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
 export async function DELETE(
   _request: Request,
@@ -17,5 +18,6 @@ export async function DELETE(
     return Response.json({ error: "Not found." }, { status: 404 });
   }
 
+  revalidateDashboard();
   return Response.json({ ok: true });
 }
