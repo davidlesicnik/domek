@@ -357,9 +357,10 @@
     "paymentSuccessDescription": "Zdaj potrjujemo vašo naročnino. Stran se samodejno osveži in vas preusmeri takoj, ko bo preizkus za vaše gospodinjstvo pripravljen.",
     "paymentSuccessDelayNote": "Samodejno bomo preverjali še nekaj trenutkov.",
     "paymentSuccessHeadBack": "se vrnite na plačilo",
-    "paymentSuccessFallbackDescription": "Potrditve iz Paddla še nismo prejeli. Poskusite osvežiti zdaj ali se vrnite na plačilo in znova odprite zaključek nakupa.",
+    "paymentSuccessFallbackDescription": "Vaše plačilo smo prejeli. Za odklep preizkusa gospodinjstva še čakamo na končno potrditev iz Paddla. Zdaj osvežite stran; če se to ponavlja, kontaktirajte podporo.",
     "paymentSuccessFallbackRetry": "Osveži zdaj",
-    "paymentSuccessFallbackBack": "Nazaj na plačilo"
+    "paymentSuccessFallbackBack": "Nazaj na plačilo",
+    "paymentSuccessFallbackSupport": "Kontaktiraj podporo"
   },
   "trialEnded": {
     "metaTitle": "Preizkus je končan – Domek",

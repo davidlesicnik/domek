@@ -357,9 +357,10 @@
     "paymentSuccessDescription": "We’re confirming your subscription now. This page refreshes on its own and will send you forward as soon as your household trial is ready.",
     "paymentSuccessDelayNote": "We’ll keep checking automatically for a few moments.",
     "paymentSuccessHeadBack": "head back to payment",
-    "paymentSuccessFallbackDescription": "We still have not received confirmation from Paddle. Try refreshing now, or return to payment and reopen checkout.",
+    "paymentSuccessFallbackDescription": "Your payment was received. We still need a final confirmation from Paddle to unlock your household trial. Refresh now, and if this keeps happening, contact support.",
     "paymentSuccessFallbackRetry": "Refresh now",
-    "paymentSuccessFallbackBack": "Back to payment"
+    "paymentSuccessFallbackBack": "Back to payment",
+    "paymentSuccessFallbackSupport": "Contact support"
   },
   "trialEnded": {
     "metaTitle": "Trial ended – Domek",

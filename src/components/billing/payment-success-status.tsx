@@ -10,6 +10,8 @@ type PaymentSuccessStatusProps = Readonly<{
   fallbackBackLabel: string;
   fallbackDescription: string;
   fallbackRetryLabel: string;
+  fallbackSupportLabel: string;
+  fallbackSupportHref: string;
   intervalMs?: number;
   timeoutMs?: number;
 }>;
@@ -20,8 +22,10 @@ export function PaymentSuccessStatus({
   fallbackBackLabel,
   fallbackDescription,
   fallbackRetryLabel,
+  fallbackSupportLabel,
+  fallbackSupportHref,
   intervalMs = 3000,
-  timeoutMs = 20000,
+  timeoutMs = 60000,
 }: PaymentSuccessStatusProps) {
   const router = useRouter();
   const [timedOut, setTimedOut] = useState(false);
@@ -69,6 +73,12 @@ export function PaymentSuccessStatus({
         >
           {fallbackBackLabel}
         </Link>
+        <a
+          className="inline-flex h-9 items-center rounded-md border border-[#d9d6ce] bg-[#fffdf8] px-3 text-xs font-semibold text-[#3c413e] transition hover:border-[#bfc9bd] hover:bg-[#f8f6f1]"
+          href={fallbackSupportHref}
+        >
+          {fallbackSupportLabel}
+        </a>
       </div>
     </div>
   );

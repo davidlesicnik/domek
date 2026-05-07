@@ -48,6 +48,8 @@ function PaymentSuccessView() {
             fallbackBackLabel={t("paymentSuccessFallbackBack")}
             fallbackDescription={t("paymentSuccessFallbackDescription")}
             fallbackRetryLabel={t("paymentSuccessFallbackRetry")}
+            fallbackSupportHref="mailto:support@domekapp.com"
+            fallbackSupportLabel={t("paymentSuccessFallbackSupport")}
           />
         </section>
       </div>
