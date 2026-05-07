@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { sendInviteEmail } from "@/lib/email";
 import { getAppRuntimeConfig, getOptionalEmailConfig } from "@/lib/env";
 import { createInvite, revokeInvite } from "@/lib/invites";
+import { logger } from "@/lib/logger";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 const inviteEmailSchema = z.string().trim().email().max(320);
@@ -77,7 +78,7 @@ export async function sendHouseholdInvite(
       locale,
     });
   } catch (err) {
-    console.error("[sendHouseholdInvite] email failed:", err);
+    logger.error("[sendHouseholdInvite] email failed", { err });
     return { ok: false, error: "failed" };
   }
 

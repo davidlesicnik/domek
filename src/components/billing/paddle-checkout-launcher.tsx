@@ -3,6 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
+import { logger } from "@/lib/logger";
+
 type PaddleEnvironment = "live" | "sandbox";
 
 type PaddleCheckoutWindow = Window & {
@@ -120,7 +122,7 @@ export function PaddleCheckoutLauncher({
           setIsReady(true);
         }
       } catch (error) {
-        console.error("[PaddleCheckoutLauncher] initialize failed", error);
+        logger.error("[PaddleCheckoutLauncher] initialize failed", { error });
         finishWithError(t("paymentCheckoutErrorSetup"));
       }
     }
@@ -193,7 +195,7 @@ export function PaddleCheckoutLauncher({
         },
       });
     } catch (error) {
-      console.error("[PaddleCheckoutLauncher] checkout open failed", error);
+      logger.error("[PaddleCheckoutLauncher] checkout open failed", { error });
       setCheckoutError(t("paymentCheckoutErrorOpen"));
     }
   }

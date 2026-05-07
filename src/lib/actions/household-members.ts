@@ -12,6 +12,7 @@ import { createInvite, revokeInvite } from "@/lib/invites";
 import { normalizeMemberEmoji } from "@/lib/member-avatar";
 import { isMemberColorKey } from "@/lib/member-colors";
 import { getFirstHouseholdMembership } from "@/lib/users";
+import { logger } from "@/lib/logger";
 
 const inviteEmailSchema = z.string().trim().email().max(320);
 const memberNameSchema = z.string().trim().min(1).max(120);
@@ -114,7 +115,7 @@ export async function sendHouseholdMemberInviteAction(
       locale,
     });
   } catch (error) {
-    console.error("[sendHouseholdMemberInviteAction] email failed:", error);
+    logger.error("[sendHouseholdMemberInviteAction] email failed", { error });
     return {
       success: false,
       error: t("errorInviteSend"),

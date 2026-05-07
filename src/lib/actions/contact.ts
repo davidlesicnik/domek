@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { sendContactMessageEmail } from "@/lib/email";
 import { getOptionalEmailConfig } from "@/lib/env";
 import { PUBLIC_MUTATION_COOLDOWN_MS } from "@/lib/public-form";
+import { logger } from "@/lib/logger";
 import { validatePublicServerActionRequest } from "@/lib/public-request-guard";
 
 export type ContactActionState = {
@@ -90,7 +91,7 @@ export async function sendContactMessageAction(
     await sendContactMessageEmail(parsed.data);
   } catch (error) {
     const deliveryError = error instanceof Error ? error.message : "Unknown email delivery failure.";
-    console.error("[sendContactMessageAction] email failed:", error);
+    logger.error("[sendContactMessageAction] email failed", { error });
 
     await prisma.contactMessage.update({
       data: { deliveryError },
