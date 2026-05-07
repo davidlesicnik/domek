@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 import { DashboardPlanner } from "@/components/dashboard/dashboard-planner";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -251,9 +252,22 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
                       >
                         {expense.type === "INCOME" ? t("incomeLabel") : t("spendingLabel")}
                       </span>
-                      <p>
-                        {expense.type === "INCOME" ? "+" : "−"}
-                        {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
+                      <p
+                        className={`inline-flex items-center gap-1 ${
+                          expense.type === "INCOME"
+                            ? "text-[var(--accent-sage-strong)]"
+                            : "text-[var(--accent-rose-strong)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? (
+                          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+                        ) : (
+                          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
+                        )}
+                        <span>
+                          {expense.type === "INCOME" ? "+" : "−"}
+                          {formatSignedAmount(expense.amount, locale).replace(/^[+−]/, "")}
+                        </span>
                       </p>
                     </div>
                   </div>

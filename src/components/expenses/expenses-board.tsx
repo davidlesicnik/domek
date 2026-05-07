@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Settings, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -1974,9 +1974,22 @@ export function ExpensesBoard({
                       >
                         {expense.type === "INCOME" ? t("income") : t("expense")}
                       </span>
-                      <span>
-                        {expense.type === "INCOME" ? "+" : "−"}
-                        {formatAmount(expense.amount, locale)}
+                      <span
+                        className={`inline-flex items-center gap-1 ${
+                          expense.type === "INCOME"
+                            ? "text-[color:var(--accent-sage-strong)]"
+                            : "text-[color:var(--accent-rose-strong)]"
+                        }`}
+                      >
+                        {expense.type === "INCOME" ? (
+                          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+                        ) : (
+                          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
+                        )}
+                        <span>
+                          {expense.type === "INCOME" ? "+" : "−"}
+                          {formatAmount(expense.amount, locale)}
+                        </span>
                       </span>
                     </span>
                   </div>
@@ -2206,9 +2219,22 @@ export function ExpensesBoard({
                           >
                             {expense.type === "INCOME" ? t("income") : t("expense")}
                           </span>
-                          <span>
-                            {expense.type === "INCOME" ? "+" : "−"}
-                            {formatAmount(expense.amount, locale)}
+                          <span
+                            className={`inline-flex items-center gap-1 ${
+                              expense.type === "INCOME"
+                                ? "text-[color:var(--accent-sage-strong)]"
+                                : "text-[color:var(--accent-rose-strong)]"
+                            }`}
+                          >
+                            {expense.type === "INCOME" ? (
+                              <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+                            ) : (
+                              <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
+                            )}
+                            <span>
+                              {expense.type === "INCOME" ? "+" : "−"}
+                              {formatAmount(expense.amount, locale)}
+                            </span>
                           </span>
                         </span>
                       </td>
