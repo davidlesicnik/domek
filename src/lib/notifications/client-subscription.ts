@@ -35,6 +35,12 @@ export function isPushSupported() {
 }
 
 export async function subscribeToPush(vapidKey: string) {
+  // Firefox Android requires an explicit permission request before pushManager.subscribe()
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    throw new Error("Notification permission not granted");
+  }
+
   const reg = await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
