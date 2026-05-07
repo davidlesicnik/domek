@@ -2,6 +2,7 @@ import webpush from "web-push";
 
 import { prisma } from "@/lib/db";
 import { getOptionalVapidConfig } from "@/lib/env";
+import { getEndOfToday } from "@/lib/notifications/todo-window";
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -111,6 +112,7 @@ export async function sendDailyNotifications(): Promise<SendResult> {
   const tomorrowKey = formatDateKey(tomorrow);
   const todayKey = formatDateKey(startOfDay(now));
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const endOfToday = getEndOfToday(now);
 
   const subscriptions = await prisma.pushSubscription.findMany({
     include: {
@@ -147,7 +149,7 @@ export async function sendDailyNotifications(): Promise<SendResult> {
       prisma.todoItem.findMany({
         where: {
           done: false,
-          dueDate: { lte: in24h },
+          dueDate: { lte: endOfToday },
           list: { householdId },
         },
         select: { id: true, text: true, dueDate: true },

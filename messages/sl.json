@@ -931,6 +931,7 @@
   "notifications": {
     "enableButton": "Vklopi obvestila",
     "disableButton": "Izklopi obvestila",
+    "enableFailed": "Obvestil ni bilo mogoče vklopiti. Poskusite znova.",
     "permissionDenied": "Obvestila so blokirana. Dovolite jih v nastavitvah brskalnika.",
     "unsupported": "Potisna obvestila niso podprta v tem brskalniku.",
     "sectionTitle": "Potisna obvestila",
