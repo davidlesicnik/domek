@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import {
+  fetchVapidPublicKey,
   getCurrentSubscription,
   isPushSupported,
   subscribeToPush,
@@ -35,7 +36,7 @@ export function NotificationToggle() {
   }, [state, t]);
 
   async function subscribe() {
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapidKey = await fetchVapidPublicKey();
     if (!vapidKey) {
       setError(t("enableFailed"));
       return;
