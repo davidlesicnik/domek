@@ -102,46 +102,57 @@ export async function DashboardOverview({ data }: DashboardOverviewProps) {
             </h1>
             <p className="mt-3 max-w-xl text-base leading-7 text-[var(--text-muted)]">{summaryState.summary}</p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-[var(--text-muted)] sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+              <Link
+                className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)] sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:hover:bg-transparent"
+                href="/app/todos"
+              >
                 <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.todosThisWeek}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("tasksDue", { count: actionSummary.todosThisWeek })}
                 </span>
-              </span>
+              </Link>
               <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[var(--border-strong)] sm:block" />
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+              <Link
+                className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)] sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:hover:bg-transparent"
+                href="/app#dashboard-planner"
+              >
                 <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.calendarThisWeek}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("events", { count: actionSummary.calendarThisWeek })}
                 </span>
-              </span>
+              </Link>
               <span aria-hidden className="hidden h-1 w-1 rounded-full bg-[var(--border-strong)] sm:block" />
-              <span className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+              <Link
+                className="inline-flex min-w-0 flex-col items-start gap-1 rounded-md border border-[var(--border-muted)] bg-[var(--surface-muted)] px-2.5 py-2 transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-secondary)] sm:flex-row sm:items-baseline sm:gap-1.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:hover:bg-transparent"
+                href="/app/chores"
+              >
                 <span className="font-serif text-xl font-semibold leading-none text-[var(--text-strong)] sm:text-[30px]">
                   {actionSummary.overdueChores}
                 </span>
                 <span className="text-xs font-medium leading-4 sm:text-[15px] sm:leading-5">
                   {t("overdueChores", { count: actionSummary.overdueChores })}
                 </span>
-              </span>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <DashboardPlanner
-        agendaDays={agendaDays}
-        calendarEvents={data.calendarEvents}
-        calendarGroups={data.calendarGroups}
-        calendarMembers={data.calendarMembers}
-        monthItemCountsByDate={monthItemCountsByDate}
-        nonCalendarItemsByDate={data.nonCalendarItemsByDate}
-        todayKey={todayKey}
-      />
+      <section id="dashboard-planner">
+        <DashboardPlanner
+          agendaDays={agendaDays}
+          calendarEvents={data.calendarEvents}
+          calendarGroups={data.calendarGroups}
+          calendarMembers={data.calendarMembers}
+          monthItemCountsByDate={monthItemCountsByDate}
+          nonCalendarItemsByDate={data.nonCalendarItemsByDate}
+          todayKey={todayKey}
+        />
+      </section>
 
       {hasExpenseActivity ? (
         <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)]">
