@@ -8,8 +8,10 @@ import {
   isPushSupported,
   subscribeToPush,
 } from "@/lib/notifications/client-subscription";
-
-type State = "unsupported" | "denied" | "subscribed" | "unsubscribed" | "loading";
+import {
+  resolveSubscriptionInitState,
+  type NotificationToggleState as State,
+} from "@/lib/notifications/toggle-state";
 
 function getInitialState(): State {
   if (typeof window === "undefined") return "loading";
@@ -21,19 +23,25 @@ function getInitialState(): State {
 export function NotificationToggle() {
   const t = useTranslations("notifications");
   const [state, setState] = useState<State>(getInitialState);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (state !== "loading") return;
 
-    getCurrentSubscription().then((sub) => {
-      setState(sub ? "subscribed" : "unsubscribed");
+    resolveSubscriptionInitState(getCurrentSubscription, t("enableFailed")).then((result) => {
+      setState(result.state);
+      setError(result.error);
     });
-  }, [state]);
+  }, [state, t]);
 
   async function subscribe() {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) return;
+    if (!vapidKey) {
+      setError(t("enableFailed"));
+      return;
+    }
 
+    setError(null);
     setState("loading");
 
     try {
@@ -42,16 +50,21 @@ export function NotificationToggle() {
       if (!ok) {
         await sub.unsubscribe();
         setState("unsubscribed");
+        setError(t("enableFailed"));
         return;
       }
 
       setState("subscribed");
     } catch {
       setState(Notification.permission === "denied" ? "denied" : "unsubscribed");
+      if (Notification.permission !== "denied") {
+        setError(t("enableFailed"));
+      }
     }
   }
 
   async function unsubscribe() {
+    setError(null);
     setState("loading");
 
     try {
@@ -81,13 +94,16 @@ export function NotificationToggle() {
   }
 
   return (
-    <button
-      className="inline-flex h-9 items-center rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-50"
-      disabled={state === "loading"}
-      onClick={state === "subscribed" ? unsubscribe : subscribe}
-      type="button"
-    >
-      {state === "subscribed" ? t("disableButton") : t("enableButton")}
-    </button>
+    <div className="space-y-2">
+      <button
+        className="inline-flex h-9 items-center rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-50"
+        disabled={state === "loading"}
+        onClick={state === "subscribed" ? unsubscribe : subscribe}
+        type="button"
+      >
+        {state === "subscribed" ? t("disableButton") : t("enableButton")}
+      </button>
+      {error ? <p className="text-xs text-[var(--danger-text)]">{error}</p> : null}
+    </div>
   );
 }

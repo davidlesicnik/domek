@@ -31,6 +31,7 @@ export function NotificationPrompt() {
   const [isVisible, setIsVisible] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [isDenied, setIsDenied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isPushSupported()) return;
@@ -49,8 +50,13 @@ export function NotificationPrompt() {
 
   async function handleEnable() {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey || isSubscribing) return;
+    if (isSubscribing) return;
+    if (!vapidKey) {
+      setError(t("enableFailed"));
+      return;
+    }
 
+    setError(null);
     setIsSubscribing(true);
 
     try {
@@ -58,6 +64,8 @@ export function NotificationPrompt() {
 
       if (!ok) {
         await sub.unsubscribe();
+        setError(t("enableFailed"));
+        return;
       }
 
       setIsVisible(false);
@@ -65,7 +73,7 @@ export function NotificationPrompt() {
       if (Notification.permission === "denied") {
         setIsDenied(true);
       } else {
-        setIsVisible(false);
+        setError(t("enableFailed"));
       }
     } finally {
       setIsSubscribing(false);
@@ -86,14 +94,17 @@ export function NotificationPrompt() {
           {isDenied ? (
             <p className="mt-2 text-xs text-[var(--text-muted)]">{t("permissionDenied")}</p>
           ) : (
-            <button
-              className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sun-border)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-60"
-              disabled={isSubscribing}
-              onClick={() => void handleEnable()}
-              type="button"
-            >
-              {t("promptCta")}
-            </button>
+            <>
+              <button
+                className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sun-border)] bg-[var(--surface-primary)] px-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--surface-secondary)] disabled:opacity-60"
+                disabled={isSubscribing}
+                onClick={() => void handleEnable()}
+                type="button"
+              >
+                {t("promptCta")}
+              </button>
+              {error ? <p className="mt-2 text-xs text-[var(--danger-text)]">{error}</p> : null}
+            </>
           )}
         </div>
         <button
