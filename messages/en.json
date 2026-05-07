@@ -355,8 +355,11 @@
     "paymentSuccessLabel": "Activating trial",
     "paymentSuccessTitle": "Setting up your Domek access",
     "paymentSuccessDescription": "We’re confirming your subscription now. This page refreshes on its own and will send you forward as soon as your household trial is ready.",
-    "paymentSuccessDelayNote": "If this takes longer than expected, ",
-    "paymentSuccessHeadBack": "head back to payment"
+    "paymentSuccessDelayNote": "We’ll keep checking automatically for a few moments.",
+    "paymentSuccessHeadBack": "head back to payment",
+    "paymentSuccessFallbackDescription": "We still have not received confirmation from Paddle. Try refreshing now, or return to payment and reopen checkout.",
+    "paymentSuccessFallbackRetry": "Refresh now",
+    "paymentSuccessFallbackBack": "Back to payment"
   },
   "trialEnded": {
     "metaTitle": "Trial ended – Domek",

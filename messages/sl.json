@@ -355,8 +355,11 @@
     "paymentSuccessLabel": "Aktivacija preizkusa",
     "paymentSuccessTitle": "Nastavljamo vaš dostop do Domeka",
     "paymentSuccessDescription": "Zdaj potrjujemo vašo naročnino. Stran se samodejno osveži in vas preusmeri takoj, ko bo preizkus za vaše gospodinjstvo pripravljen.",
-    "paymentSuccessDelayNote": "Če to traja dlje, kot ste pričakovali, ",
-    "paymentSuccessHeadBack": "se vrnite na plačilo"
+    "paymentSuccessDelayNote": "Samodejno bomo preverjali še nekaj trenutkov.",
+    "paymentSuccessHeadBack": "se vrnite na plačilo",
+    "paymentSuccessFallbackDescription": "Potrditve iz Paddla še nismo prejeli. Poskusite osvežiti zdaj ali se vrnite na plačilo in znova odprite zaključek nakupa.",
+    "paymentSuccessFallbackRetry": "Osveži zdaj",
+    "paymentSuccessFallbackBack": "Nazaj na plačilo"
   },
   "trialEnded": {
     "metaTitle": "Preizkus je končan – Domek",
