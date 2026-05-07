@@ -90,6 +90,45 @@ const UNCATEGORIZED_COLOR = "#c8c4bb";
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * 42;
 const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
+type ExpenseTypeAmountProps = {
+  amount: number;
+  locale: string;
+  t: ExpensesTranslator;
+  type: ExpenseView["type"];
+  wrapperClassName: string;
+};
+
+function ExpenseTypeAmount({ amount, locale, t, type, wrapperClassName }: ExpenseTypeAmountProps) {
+  return (
+    <span className={wrapperClassName}>
+      <span
+        className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
+          type === "INCOME"
+            ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
+            : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
+        }`}
+      >
+        {type === "INCOME" ? t("income") : t("expense")}
+      </span>
+      <span
+        className={`inline-flex items-center gap-1 ${
+          type === "INCOME" ? "text-[color:var(--accent-sage-strong)]" : "text-[color:var(--accent-rose-strong)]"
+        }`}
+      >
+        {type === "INCOME" ? (
+          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
+        )}
+        <span>
+          {type === "INCOME" ? "+" : "−"}
+          {formatAmount(amount, locale)}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function formatAmount(n: number, locale: string): string {
   return n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -1964,34 +2003,13 @@ export function ExpensesBoard({
                         {formatExpenseDate(expense.date, locale)}
                       </p>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium tabular-nums text-[color:var(--text-strong)]">
-                      <span
-                        className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
-                          expense.type === "INCOME"
-                            ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
-                            : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
-                        }`}
-                      >
-                        {expense.type === "INCOME" ? t("income") : t("expense")}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 ${
-                          expense.type === "INCOME"
-                            ? "text-[color:var(--accent-sage-strong)]"
-                            : "text-[color:var(--accent-rose-strong)]"
-                        }`}
-                      >
-                        {expense.type === "INCOME" ? (
-                          <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
-                        ) : (
-                          <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
-                        )}
-                        <span>
-                          {expense.type === "INCOME" ? "+" : "−"}
-                          {formatAmount(expense.amount, locale)}
-                        </span>
-                      </span>
-                    </span>
+                    <ExpenseTypeAmount
+                      amount={expense.amount}
+                      locale={locale}
+                      t={t}
+                      type={expense.type}
+                      wrapperClassName="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium tabular-nums text-[color:var(--text-strong)]"
+                    />
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
                     {expense.categoryName ? (
@@ -2209,34 +2227,13 @@ export function ExpensesBoard({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right">
-                        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-[color:var(--text-strong)]">
-                          <span
-                            className={`inline-flex min-w-16 items-center justify-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-tight ${
-                              expense.type === "INCOME"
-                                ? "border-[color:var(--accent-sage-border)] bg-[color:var(--accent-sage-soft)] text-[color:var(--accent-sage-text)]"
-                                : "border-[color:var(--accent-rose-border)] bg-[color:var(--accent-rose-soft)] text-[color:var(--accent-rose-text)]"
-                            }`}
-                          >
-                            {expense.type === "INCOME" ? t("income") : t("expense")}
-                          </span>
-                          <span
-                            className={`inline-flex items-center gap-1 ${
-                              expense.type === "INCOME"
-                                ? "text-[color:var(--accent-sage-strong)]"
-                                : "text-[color:var(--accent-rose-strong)]"
-                            }`}
-                          >
-                            {expense.type === "INCOME" ? (
-                              <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
-                            ) : (
-                              <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />
-                            )}
-                            <span>
-                              {expense.type === "INCOME" ? "+" : "−"}
-                              {formatAmount(expense.amount, locale)}
-                            </span>
-                          </span>
-                        </span>
+                        <ExpenseTypeAmount
+                          amount={expense.amount}
+                          locale={locale}
+                          t={t}
+                          type={expense.type}
+                          wrapperClassName="inline-flex items-center gap-1.5 font-medium tabular-nums text-[color:var(--text-strong)]"
+                        />
                       </td>
                       <td className="w-32 px-2 py-3 text-right">
                         <div className="flex justify-end gap-1">
