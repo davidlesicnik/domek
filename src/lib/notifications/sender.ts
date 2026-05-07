@@ -14,8 +14,46 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+type NotificationLocale = "en" | "sl";
+
+type NotificationCopy = {
+  allDay: string;
+  dueNow: string;
+  tomorrowPrefix: string;
+  todayPrefix: string;
+  todoDuePrefix: string;
+  choreDuePrefix: string;
+  remindersForToday: (count: number) => string;
+};
+
+const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
+  en: {
+    allDay: "All day",
+    dueNow: "Due now",
+    tomorrowPrefix: "Tomorrow",
+    todayPrefix: "Today",
+    todoDuePrefix: "Todo due",
+    choreDuePrefix: "Chore due",
+    remindersForToday: (count) => `${count} reminders for today`,
+  },
+  sl: {
+    allDay: "Cel dan",
+    dueNow: "Rok zdaj",
+    tomorrowPrefix: "Jutri",
+    todayPrefix: "Danes",
+    todoDuePrefix: "Rok opravila",
+    choreDuePrefix: "Rok opravila doma",
+    remindersForToday: (count) => `${count} opomnikov za danes`,
+  },
+};
+
+function normalizeLocale(locale: string): NotificationLocale {
+  return locale === "sl" ? "sl" : "en";
+}
+
+function formatDate(date: Date, locale: NotificationLocale): string {
+  const languageTag = locale === "sl" ? "sl-SI" : "en-US";
+  return date.toLocaleDateString(languageTag, { month: "short", day: "numeric" });
 }
 
 function formatDateKey(date: Date): string {
@@ -133,6 +171,8 @@ export async function sendDailyNotifications(): Promise<SendResult> {
   const deadIds: string[] = [];
 
   for (const sub of subscriptions) {
+    const locale = normalizeLocale(sub.locale);
+    const copy = notificationCopy[locale];
     const householdId = sub.user.memberships[0]?.householdId;
     if (!householdId) continue;
 
@@ -176,13 +216,13 @@ export async function sendDailyNotifications(): Promise<SendResult> {
     for (const event of calendarEvents) {
       if (event.dateKey === tomorrowKey) {
         payloads.push({
-          title: "Tomorrow: " + event.name,
-          body: event.allDay ? "All day" : (event.time ?? ""),
+          title: `${copy.tomorrowPrefix}: ${event.name}`,
+          body: event.allDay ? copy.allDay : (event.time ?? ""),
           url: "/app/calendar",
         });
       } else if (event.dateKey === todayKey && !event.allDay && event.time) {
         payloads.push({
-          title: "Today: " + event.name,
+          title: `${copy.todayPrefix}: ${event.name}`,
           body: event.time,
           url: "/app/calendar",
         });
@@ -191,8 +231,8 @@ export async function sendDailyNotifications(): Promise<SendResult> {
 
     for (const item of todoItems) {
       payloads.push({
-        title: "Todo due: " + item.text.slice(0, 80),
-        body: item.dueDate ? formatDate(item.dueDate) : "Due now",
+        title: `${copy.todoDuePrefix}: ${item.text.slice(0, 80)}`,
+        body: item.dueDate ? formatDate(item.dueDate, locale) : copy.dueNow,
         url: "/app/todos",
       });
     }
@@ -201,8 +241,8 @@ export async function sendDailyNotifications(): Promise<SendResult> {
       const nextDue = getChoreNextDueDate(chore);
       if (nextDue <= in24h) {
         payloads.push({
-          title: "Chore due: " + chore.name,
-          body: formatDate(nextDue),
+          title: `${copy.choreDuePrefix}: ${chore.name}`,
+          body: formatDate(nextDue, locale),
           url: "/app/chores",
         });
       }
@@ -213,7 +253,7 @@ export async function sendDailyNotifications(): Promise<SendResult> {
     const summary: NotificationPayload =
       payloads.length === 1
         ? payloads[0]
-        : { title: `${payloads.length} reminders for today`, body: payloads.map((p) => p.title).join(", "), url: "/app" };
+        : { title: copy.remindersForToday(payloads.length), body: payloads.map((p) => p.title).join(", "), url: "/app" };
 
     const result = await sendOne(sub, summary);
     if (result === "ok") {

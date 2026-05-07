@@ -400,6 +400,7 @@ model PushSubscription {
   endpoint  String   @unique @db.VarChar(2048)
   p256dh    String   @db.VarChar(512)
   auth      String   @db.VarChar(256)
+  locale    String   @default("en") @db.VarChar(5)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
