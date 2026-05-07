@@ -154,6 +154,34 @@ Authorization: Bearer <NOTIFY_SECRET>
 
 `sendDailyNotifications()` auto-deletes `PushSubscription` rows when the push service returns 404 or 410.
 
+## Git Workflow
+
+Every Coder agent MUST follow this workflow for every assigned task:
+
+### Starting work
+
+1. **Create a fresh branch** from `main` before writing any code:
+   ```bash
+   git checkout main && git pull
+   git checkout -b feat/<short-description>   # or fix/, chore/, etc.
+   ```
+2. Never commit directly to `main` or reuse a stale branch from a previous task.
+3. Branch name should reflect the task — use the issue identifier when possible (e.g. `feat/DOMA-42-calendar-reminders`).
+
+### Finishing work
+
+1. Push commits to the feature branch and open a PR targeting `main`.
+2. Hand the PR to QA for review (set issue status to `in_review`, link the PR).
+3. Do **not** merge or push to `main` yourself.
+
+### QA sign-off
+
+1. QA reviews the branch and verifies the work.
+2. When approved, QA commits any final fixups and pushes to the feature branch.
+3. Commit message must follow Conventional Commits: `type(scope): subject` — e.g. `feat(chores): add recurrence support`.
+4. QA opens a GitHub PR targeting `main` and marks the issue `done`.
+5. Do **not** merge the PR — leave that to the board/maintainer.
+
 ## Security Notes
 
 - Protected app areas should use server-side session checks.
