@@ -49,7 +49,8 @@ export async function PATCH(
       return Response.json({ error: "Invalid todo item." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[PATCH /api/todos/items/[itemId]]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

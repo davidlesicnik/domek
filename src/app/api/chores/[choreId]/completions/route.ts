@@ -26,6 +26,7 @@ export async function POST(
       return Response.json({ error: "Invalid chore id." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[POST /api/chores/[choreId]/completions]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

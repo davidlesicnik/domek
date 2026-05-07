@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid todo list." }, { status: 400 });
     }
 
-    throw error;
+    console.error("[POST /api/todos/lists]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

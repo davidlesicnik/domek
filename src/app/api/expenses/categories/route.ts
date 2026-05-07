@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
       return Response.json({ error: "Invalid category." }, { status: 400 });
     }
-    throw error;
+    console.error("[POST /api/expenses/categories]", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
