@@ -16,7 +16,7 @@ type RightPaneState =
   | { mode: "new" }
   | { mode: "edit"; noteId: string };
 
-type SaveStatus = "idle" | "saving" | "saved";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 type NotesTranslator = ReturnType<typeof useTranslations>;
 
 function notePreview(body: string, t: NotesTranslator): string {
@@ -173,7 +173,7 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 2000);
     } catch {
-      setSaveStatus("idle");
+      setSaveStatus("error");
     } finally {
       isSavingRef.current = false;
     }
@@ -263,9 +263,12 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
 
   const selectedNoteId = pane.mode === "edit" ? pane.noteId : null;
   const activeNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
+  const showRetry = saveStatus === "error";
   const saveMessage =
     saveStatus === "saving"
       ? t("savingChanges")
+      : saveStatus === "error"
+        ? t("saveErrorMessage")
       : pane.mode === "new" && !editTitle.trim()
         ? t("startWritingToSave")
         : formatLastEditedLabel(activeNote?.updatedAt ?? null, nowMs, t);
@@ -411,6 +414,15 @@ export function NotesBoard({ initialNotes }: NotesBoardProps) {
                     />
                     <div className="mt-3 text-sm text-[var(--text-muted)]">
                       <p>{saveMessage}</p>
+                      {showRetry ? (
+                        <button
+                          className="mt-2 min-h-7 rounded bg-[var(--accent-rose-soft)] px-2 py-1 text-xs font-medium text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)]"
+                          onClick={() => saveRef.current().catch(() => undefined)}
+                          type="button"
+                        >
+                          {t("retrySave")}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>

@@ -661,6 +661,8 @@
     "bodyPlaceholder": "Write down a plan, reminder, or little household thought...",
     "addNoteAria": "Add note",
     "savingChanges": "Saving changes...",
+    "saveErrorMessage": "Couldn't save your changes.",
+    "retrySave": "Retry save",
     "startWritingToSave": "Start writing to save this note.",
     "autosaveHint": "Changes are saved automatically.",
     "lastEditedJustNow": "Last edited just now",
