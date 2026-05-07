@@ -661,6 +661,8 @@
     "bodyPlaceholder": "Zapišite načrt, opomnik ali drobno domačo misel …",
     "addNoteAria": "Dodaj beležko",
     "savingChanges": "Shranjujem spremembe …",
+    "saveErrorMessage": "Sprememb ni bilo mogoče shraniti.",
+    "retrySave": "Poskusi znova",
     "startWritingToSave": "Začnite pisati in beležka se bo shranila.",
     "autosaveHint": "Spremembe se shranjujejo samodejno.",
     "lastEditedJustNow": "Urejeno pravkar",
