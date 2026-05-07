@@ -1,10 +1,16 @@
 type SubscriptionPayload = {
   endpoint: string;
+  locale: "en" | "sl";
   keys: {
     p256dh: string;
     auth: string;
   };
 };
+
+function resolveLocale(): "en" | "sl" {
+  if (typeof navigator === "undefined") return "en";
+  return navigator.language.toLowerCase().startsWith("sl") ? "sl" : "en";
+}
 
 type VapidPublicKeyResponse = {
   publicKey?: string;
@@ -27,6 +33,7 @@ function toSubscriptionPayload(sub: PushSubscription): SubscriptionPayload {
 
   return {
     endpoint: sub.endpoint,
+    locale: resolveLocale(),
     keys: {
       p256dh: json.keys?.p256dh ?? "",
       auth: json.keys?.auth ?? "",
