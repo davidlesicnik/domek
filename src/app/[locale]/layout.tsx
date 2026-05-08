@@ -9,6 +9,7 @@ import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { routing } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
+import { getOptionalMetaPixelId } from "@/lib/env";
 import { themePreferenceToForcedTheme } from "@/lib/theme";
 
 import "../globals.css";
@@ -52,6 +53,7 @@ export default async function LocaleLayout({
 
   const [messages, session] = await Promise.all([getMessages(), getCurrentAppSession()]);
   const forcedTheme = themePreferenceToForcedTheme(session?.user.themePreference);
+  const metaPixelId = getOptionalMetaPixelId();
 
   return (
     <html
@@ -64,7 +66,7 @@ export default async function LocaleLayout({
           <NextIntlClientProvider messages={messages}>
             {children}
             <UmamiAnalytics />
-            <MetaPixel />
+            <MetaPixel pixelId={metaPixelId} />
           </NextIntlClientProvider>
         </AppThemeProvider>
       </body>

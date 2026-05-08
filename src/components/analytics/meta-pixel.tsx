@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 declare global {
   interface Window {
@@ -11,11 +11,16 @@ declare global {
   }
 }
 
-export function MetaPixel() {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+export function MetaPixel({ pixelId }: { pixelId?: string | null }) {
   const pathname = usePathname();
+  const isFirstPathnameEffect = useRef(true);
 
   useEffect(() => {
+    if (isFirstPathnameEffect.current) {
+      isFirstPathnameEffect.current = false;
+      return;
+    }
+
     if (pixelId && typeof window.fbq === "function") {
       window.fbq("track", "PageView");
     }

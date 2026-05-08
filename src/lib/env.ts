@@ -206,6 +206,14 @@ const notifySchema = z.object({
   secret: z.string().min(1),
 });
 
+export function getOptionalMetaPixelId() {
+  return (
+    readOptionalEnv("META_PIXEL_ID") ??
+    readOptionalEnv("NEXT_PUBLIC_META_PIXEL_ID") ??
+    null
+  );
+}
+
 export function getVapidConfig() {
   return vapidSchema.parse({
     publicKey: readOptionalEnv("VAPID_PUBLIC_KEY"),
