@@ -4,6 +4,7 @@ import type { ReactNode, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { useRouter } from "@/i18n/navigation";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export type ListItemView = { id: string; text: string; done: boolean };
@@ -236,6 +237,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
   renderItemMeta,
 }: ListBoardProps<TItem, TCreateItemInput>) {
   const t = useTranslations("listBoard");
+  const router = useRouter();
   const [lists, setLists] = useState<ListView<TItem>[]>(initialLists);
   const [selectedListId, setSelectedListId] = useState<string | null>(
     initialLists[0]?.id ?? null,
@@ -378,6 +380,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
       setLists((prev) => [...prev, list]);
       setSelectedListId(list.id);
       setIsMobileListOpen(true);
+      router.refresh();
       trackAnalyticsEvent("list_created", { area: analyticsArea });
     } catch {
       setNewListName(name);
@@ -400,6 +403,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
     try {
       const res = await fetch(`${listsPath}/${listId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete list");
+      router.refresh();
     } catch {
       setLists(prev);
       setSelectedListId(listId);
@@ -433,6 +437,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
       const { item } = (await res.json()) as { item: TItem };
       setLists((prev) => withItemReplaced(prev, selectedList.id, optimisticId, item));
       markItemEntering(item.id);
+      router.refresh();
       onItemCreated?.();
       trackAnalyticsEvent("list_item_added", { area: analyticsArea });
     } catch {
@@ -453,6 +458,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
     try {
       const res = await fetch(`${itemsPath}/${itemId}`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to toggle item");
+      router.refresh();
       if (!currentDone) {
         trackAnalyticsEvent("list_item_checked", { area: analyticsArea });
       }
@@ -470,6 +476,7 @@ export function ListBoard<TItem extends ListItemView, TCreateItemInput extends o
     try {
       const res = await fetch(`${itemsPath}/${itemId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete item");
+      router.refresh();
     } catch {
       if (prevItem) {
         setLists((prev) => withItemAppended(prev, listId, prevItem));

@@ -5,6 +5,7 @@ import { Check, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 
+import { useRouter } from "@/i18n/navigation";
 import { MemberAvatar } from "@/components/ui/member-avatar";
 import type { ChoreCategoryView, ChoreMemberView, ChoreView } from "@/lib/chores";
 
@@ -487,6 +488,7 @@ export function ChoreBoard({
 }: ChoreBoardProps) {
   const t = useTranslations("choresPage");
   const locale = useLocale();
+  const router = useRouter();
   const [chores, setChores] = useState<ChoreView[]>(initialChores);
   const [categories, setCategories] = useState<ChoreCategoryView[]>(initialCategories);
   const [form, setForm] = useState<CreateChoreFormState>(() => defaultForm());
@@ -710,6 +712,7 @@ export function ChoreBoard({
 
       const payload = (await response.json()) as { chore: ChoreView };
       applyChoreUpdate(payload.chore);
+      router.refresh();
       if (
         payload.chore.categoryId &&
         payload.chore.categoryName &&
@@ -744,6 +747,7 @@ export function ChoreBoard({
         const payload = (await response.json()) as { chore: ChoreView };
         await new Promise((resolve) => window.setTimeout(resolve, 220));
         applyChoreUpdate(payload.chore);
+        router.refresh();
       } finally {
         setCompletingChoreIds((current) => current.filter((id) => id !== choreId));
       }
@@ -765,6 +769,7 @@ export function ChoreBoard({
 
       setChores((current) => current.filter((chore) => chore.id !== choreId));
       setConfirmDeleteId(null);
+      router.refresh();
     });
   }
 
