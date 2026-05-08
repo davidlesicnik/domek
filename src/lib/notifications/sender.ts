@@ -220,10 +220,10 @@ export async function sendDailyNotifications(): Promise<SendResult> {
           body: event.allDay ? copy.allDay : (event.time ?? ""),
           url: "/app/calendar",
         });
-      } else if (event.dateKey === todayKey && !event.allDay && event.time) {
+      } else if (event.dateKey === todayKey) {
         payloads.push({
           title: `${copy.todayPrefix}: ${event.name}`,
-          body: event.time,
+          body: event.allDay ? copy.allDay : (event.time ?? ""),
           url: "/app/calendar",
         });
       }
