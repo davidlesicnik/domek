@@ -206,6 +206,10 @@ const notifySchema = z.object({
   secret: z.string().min(1),
 });
 
+export function isGoogleCalendarEnabled() {
+  return readBooleanEnv("GOOGLE_CALENDAR_ENABLED");
+}
+
 export function getVapidConfig() {
   return vapidSchema.parse({
     publicKey: readOptionalEnv("VAPID_PUBLIC_KEY"),

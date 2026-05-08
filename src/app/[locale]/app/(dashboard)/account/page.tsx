@@ -3,17 +3,14 @@ import { BillingSubscriptionStatus } from "@prisma/client";
 import { getTranslations, getLocale } from "next-intl/server";
 
 import { ThemeSettings, type ThemePreferenceActionState } from "@/components/account/theme-settings";
+import { GoogleCalendarControls } from "@/components/account/google-calendar-controls";
 import { NotificationToggle } from "@/components/pwa/notification-toggle";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { getOptionalPaddleServerConfig } from "@/lib/env";
-import {
-  disconnectGoogleCalendarConnection,
-  getOptionalGoogleOAuthConfig,
-  syncGoogleCalendarForUser,
-} from "@/lib/google-calendar";
+import { getOptionalPaddleServerConfig, isGoogleCalendarEnabled } from "@/lib/env";
+import { getOptionalGoogleOAuthConfig } from "@/lib/google-calendar";
 import {
   cancelPaddleSubscriptionAtPeriodEnd,
   cancelPaddleSubscriptionImmediately,
@@ -171,37 +168,6 @@ async function deleteAccountAction(formData: FormData) {
   return await redirect("/login");
 }
 
-async function syncGoogleCalendarAction() {
-  "use server";
-
-  const session = await requireAppSession();
-  const membership = await getFirstHouseholdMembership(session.user.id);
-
-  if (!membership?.householdId) {
-    return await redirect("/app/account?error=google_calendar_no_household");
-  }
-
-  try {
-    await syncGoogleCalendarForUser({
-      householdId: membership.householdId,
-      userId: session.user.id,
-    });
-  } catch (error) {
-    console.error("[syncGoogleCalendarAction]", error);
-    return await redirect("/app/account?error=google_calendar_sync_failed");
-  }
-
-  return await redirect("/app/account?googleCalendar=sync_success");
-}
-
-async function disconnectGoogleCalendarAction() {
-  "use server";
-
-  const session = await requireAppSession();
-  await disconnectGoogleCalendarConnection(session.user.id);
-  return await redirect("/app/account?googleCalendar=disconnected");
-}
-
 async function updateThemePreferenceAction(
   _prevState: ThemePreferenceActionState,
   formData: FormData,
@@ -313,7 +279,8 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         : googleCalendarParam === "disconnected"
           ? t("googleCalendarDisconnected")
           : null;
-  const googleOAuthConfigured = Boolean(getOptionalGoogleOAuthConfig());
+  const googleCalendarEnabled = isGoogleCalendarEnabled();
+  const googleOAuthConfigured = googleCalendarEnabled && Boolean(getOptionalGoogleOAuthConfig());
   const googleCalendarConnection = await prisma.googleCalendarConnection.findUnique({
     where: { userId: session.user.id },
   });
@@ -394,37 +361,17 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           </p>
         ) : null}
         {googleOAuthConfigured ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {googleCalendarConnection ? (
-              <>
-                <form action={syncGoogleCalendarAction}>
-                  <button
-                    className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)] transition hover:bg-[var(--accent-sage-soft)]"
-                    type="submit"
-                  >
-                    {t("googleCalendarSyncNow")}
-                  </button>
-                </form>
-                <form action={disconnectGoogleCalendarAction}>
-                  <button
-                    className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)]"
-                    type="submit"
-                  >
-                    {t("googleCalendarDisconnect")}
-                  </button>
-                </form>
-              </>
-            ) : (
-              <form action="/api/google-calendar/connect" method="get">
-                <button
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)] transition hover:bg-[var(--accent-sage-soft)]"
-                  type="submit"
-                >
-                  {t("googleCalendarConnect")}
-                </button>
-              </form>
-            )}
-          </div>
+          <GoogleCalendarControls
+            cancelButton={t("googleCalendarDisconnectCancel")}
+            confirmBody={t("googleCalendarDisconnectConfirmBody")}
+            confirmButton={t("googleCalendarDisconnectConfirmButton")}
+            confirmTitle={t("googleCalendarDisconnectConfirmTitle")}
+            connectLabel={t("googleCalendarConnect")}
+            connected={Boolean(googleCalendarConnection)}
+            disconnectLabel={t("googleCalendarDisconnect")}
+            syncLabel={t("googleCalendarSyncNow")}
+            syncingLabel={t("googleCalendarSyncing")}
+          />
         ) : (
           <p className="mt-3 text-xs font-medium text-[var(--accent-rose-text)]">
             {t("googleCalendarErrorNotConfigured")}

@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 import { prisma } from "@/lib/db";
-import { getAppRuntimeConfig } from "@/lib/env";
+import { getAppRuntimeConfig, isGoogleCalendarEnabled } from "@/lib/env";
 
 export const GOOGLE_CALENDAR_PROVIDER = "google_calendar";
 
@@ -47,6 +47,10 @@ type GoogleCalendarEventItem = Readonly<{
 }>;
 
 export function getOptionalGoogleOAuthConfig(): GoogleOAuthConfig | null {
+  if (!isGoogleCalendarEnabled()) {
+    return null;
+  }
+
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET?.trim();
   const tokenEncryptionKey = process.env.GOOGLE_CALENDAR_TOKEN_ENCRYPTION_KEY?.trim();

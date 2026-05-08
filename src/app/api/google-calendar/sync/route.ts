@@ -1,9 +1,14 @@
 import { requireAppSession } from "@/lib/authz";
+import { isGoogleCalendarEnabled } from "@/lib/env";
 import { syncGoogleCalendarForUser } from "@/lib/google-calendar";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
 export async function POST() {
   try {
+    if (!isGoogleCalendarEnabled()) {
+      return Response.json({ error: "Google Calendar integration is disabled." }, { status: 403 });
+    }
+
     const session = await requireAppSession();
     const membership = await getFirstHouseholdMembership(session.user.id);
 
