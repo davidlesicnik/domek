@@ -4,6 +4,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 const paddleScriptOrigin = "https://cdn.paddle.com";
 const umamiOrigin = "https://cloud.umami.is";
 const umamiApiOrigin = "https://api-gateway.umami.dev";
+const metaPixelScriptOrigin = "https://connect.facebook.net";
 const paddleOriginPattern = "https://*.paddle.com";
 const isProduction = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,7 +26,7 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
   `frame-src 'self' ${paddleOriginPattern}`,
   "img-src 'self' data: blob: https:",
-  `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "} ${paddleScriptOrigin} ${umamiOrigin}`.replace(
+  `script-src 'self' 'unsafe-inline' ${isProduction ? "" : "'unsafe-eval' "} ${paddleScriptOrigin} ${umamiOrigin} ${metaPixelScriptOrigin}`.replace(
     /\s+/g,
     " ",
   ).trim(),
