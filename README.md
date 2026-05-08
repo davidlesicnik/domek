@@ -134,6 +134,42 @@ npx web-push generate-vapid-keys
 
 Set `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same value (the public key). The public key is safe to expose to the browser; the private key is a server secret.
 
+## Google Calendar Integration (Phase 1)
+
+Google Calendar integration is optional and is disabled by default.
+
+### Setup
+
+1. In Google Cloud Console, configure an OAuth 2.0 Web application credential.
+2. Add this redirect URI:
+   - `https://<your-app-origin>/api/google-calendar/callback`
+   - Local development example: `http://localhost:3000/api/google-calendar/callback`
+3. Set these environment variables:
+
+```bash
+GOOGLE_CALENDAR_ENABLED="true"
+GOOGLE_CALENDAR_CLIENT_ID="..."
+GOOGLE_CALENDAR_CLIENT_SECRET="..."
+GOOGLE_CALENDAR_TOKEN_ENCRYPTION_KEY="..."
+```
+
+`GOOGLE_CALENDAR_TOKEN_ENCRYPTION_KEY` must be a base64-encoded 32-byte key. Generate one with:
+
+```bash
+openssl rand -base64 32
+```
+
+`APP_URL` should be set in non-local environments so OAuth redirect URI generation matches your deployed origin.
+
+### Auth and behavior
+
+- Connect endpoint: `GET /api/google-calendar/connect` (auth required)
+- Callback endpoint: `GET /api/google-calendar/callback` (public path; validates OAuth state and user session)
+- Sync endpoint: `POST /api/google-calendar/sync` (auth required)
+- Disconnect endpoint: `POST /api/google-calendar/disconnect` (auth required)
+
+If `GOOGLE_CALENDAR_ENABLED` is `false` or required credentials are missing, account settings show the integration as not configured and API routes reject sync/disconnect requests.
+
 ## Push Notifications
 
 Domek supports opt-in Web Push notifications that fire daily and remind household members about:
