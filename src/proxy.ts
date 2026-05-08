@@ -33,6 +33,7 @@ const PUBLIC_PATHS = [
   "/auth/email",
   "/auth/start",
   "/api/auth/signout",
+  "/api/integrations/google-calendar/callback",
 ];
 
 const NON_LOCALIZED_PATHS = [

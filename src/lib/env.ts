@@ -206,6 +206,45 @@ const notifySchema = z.object({
   secret: z.string().min(1),
 });
 
+const googleCalendarConfigSchema = z
+  .object({
+    enabled: z.boolean(),
+    clientId: z.string().min(1).optional(),
+    clientSecret: z.string().min(1).optional(),
+    redirectUri: z.string().url().optional(),
+    tokenEncryptionKey: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.enabled) {
+      return;
+    }
+
+    if (!value.clientId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "GOOGLE_CALENDAR_CLIENT_ID is required when GOOGLE_CALENDAR_ENABLED is true.",
+        path: ["clientId"],
+      });
+    }
+
+    if (!value.clientSecret) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "GOOGLE_CALENDAR_CLIENT_SECRET is required when GOOGLE_CALENDAR_ENABLED is true.",
+        path: ["clientSecret"],
+      });
+    }
+
+    if (!value.tokenEncryptionKey) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "GOOGLE_CALENDAR_TOKEN_ENCRYPTION_KEY is required when GOOGLE_CALENDAR_ENABLED is true.",
+        path: ["tokenEncryptionKey"],
+      });
+    }
+  });
+
 export function getVapidConfig() {
   return vapidSchema.parse({
     publicKey: readOptionalEnv("VAPID_PUBLIC_KEY"),
@@ -232,6 +271,16 @@ export function getNotifyConfig() {
   });
 }
 
+export function getGoogleCalendarConfig() {
+  return googleCalendarConfigSchema.parse({
+    clientId: readOptionalEnv("GOOGLE_CALENDAR_CLIENT_ID"),
+    clientSecret: readOptionalEnv("GOOGLE_CALENDAR_CLIENT_SECRET"),
+    enabled: readBooleanEnv("GOOGLE_CALENDAR_ENABLED"),
+    redirectUri: readOptionalEnv("GOOGLE_CALENDAR_REDIRECT_URI"),
+    tokenEncryptionKey: readOptionalEnv("GOOGLE_CALENDAR_TOKEN_ENCRYPTION_KEY"),
+  });
+}
+
 export function assertRuntimeEnv() {
   return {
     supabase: supabaseRuntimeSchema.parse(getSupabaseEnv()),
@@ -244,5 +293,6 @@ export function assertRuntimeEnv() {
     paddleServer: getOptionalPaddleServerConfig(),
     developmentAccessBypass: getDevelopmentAccessBypassConfig(),
     vapid: getOptionalVapidConfig(),
+    googleCalendar: getGoogleCalendarConfig(),
   };
 }
