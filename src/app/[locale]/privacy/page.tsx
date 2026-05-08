@@ -5,7 +5,7 @@ export const metadata = {
   title: "Privacy policy — Domek",
 };
 
-const lastUpdated = "5 May 2026";
+const lastUpdated = "8 May 2026";
 
 export default function PrivacyPage() {
   return (
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <ul className="mt-3 list-disc space-y-2 pl-5">
               <li>Domek uses your data to run your household board, keep accounts secure, and send service messages.</li>
               <li>We do not sell personal data or household content.</li>
-              <li>If analytics is enabled, it is used only for aggregate product and website usage insights.</li>
+              <li>If analytics is enabled, we use Umami and Meta Pixel for website performance and marketing measurement.</li>
               <li>Paddle handles paid plan checkout and billing as merchant of record.</li>
               <li>You can ask to access, correct, delete, export, restrict, or object to use of your data.</li>
             </ul>
@@ -80,6 +80,10 @@ export default function PrivacyPage() {
                 Aggregate analytics data, if analytics is enabled for the site.
               </li>
               <li>
+                Marketing measurement data from Meta Pixel, such as page views and browser metadata associated with
+                visits to public pages.
+              </li>
+              <li>
                 Billing and subscription data processed through Paddle when paid plans are enabled.
               </li>
             </ul>
@@ -96,6 +100,7 @@ export default function PrivacyPage() {
               <li>Contact form data: receive and respond to support questions. Lawful basis: legitimate interests.</li>
               <li>Technical logs and security events: secure Domek and maintain infrastructure. Lawful basis: legitimate interests.</li>
               <li>Billing and subscription data: manage paid plans through Paddle. Lawful basis: contract performance and legal obligation.</li>
+              <li>Meta Pixel measurement data: measure campaign effectiveness and public-page usage. Lawful basis: consent where required, otherwise legitimate interests.</li>
               <li>
                 Aggregate analytics data: understand product and website usage trends without storing household content.
                 Lawful basis: legitimate interests. Read the{" "}
@@ -114,6 +119,7 @@ export default function PrivacyPage() {
               <li>Supabase, for authentication and database services.</li>
               <li>Resend, for transactional email delivery.</li>
               <li>Umami, for aggregate product and website analytics if enabled.</li>
+              <li>Meta Platforms, for Meta Pixel event processing and measurement if enabled.</li>
               <li>Paddle, for checkout, payment, tax, and subscription management.</li>
               <li>Hosting and infrastructure providers, including Railway if used for deployment.</li>
               <li>Authorities, courts, or advisers when required by law.</li>
@@ -131,7 +137,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-serif text-2xl font-semibold tracking-normal text-[#171a18]">Cookies and analytics</h2>
             <p className="mt-3">
-              Essential cookies keep you signed in and support secure authentication flows. Read the{" "}
+              Essential cookies keep you signed in and support secure authentication flows. If enabled, Meta Pixel may
+              set or read browser identifiers to measure ad and website performance. Read the{" "}
               <Link href="/cookies" className="font-medium text-[#3d6f4a] underline underline-offset-2 hover:text-[#2d5638]">
                 cookie policy
               </Link>{" "}
@@ -195,6 +202,11 @@ export default function PrivacyPage() {
               <li>
                 <a href="https://umami.is/privacy" rel="noreferrer" target="_blank" className="font-medium text-[#3d6f4a] underline underline-offset-2 hover:text-[#2d5638]">
                   Umami privacy policy
+                </a>
+              </li>
+              <li>
+                <a href="https://www.facebook.com/privacy/policy/" rel="noreferrer" target="_blank" className="font-medium text-[#3d6f4a] underline underline-offset-2 hover:text-[#2d5638]">
+                  Meta privacy policy
                 </a>
               </li>
             </ul>
