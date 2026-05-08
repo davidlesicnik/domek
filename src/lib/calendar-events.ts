@@ -31,6 +31,8 @@ const calendarEventSelect = {
   householdMemberIds: true,
   id: true,
   name: true,
+  sourceExternalId: true,
+  sourceProvider: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -110,6 +112,8 @@ function toCalendarEventView(
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
+    sourceExternalId: calendarEvent.sourceExternalId,
+    sourceProvider: calendarEvent.sourceProvider,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },

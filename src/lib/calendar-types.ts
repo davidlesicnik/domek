@@ -17,6 +17,8 @@ export type CalendarEventView = Readonly<{
   name: string;
   time: CalendarEventTime;
   householdMemberIds: string[];
+  sourceProvider: string | null;
+  sourceExternalId: string | null;
 }>;
 
 export type CalendarEventInput = Readonly<{

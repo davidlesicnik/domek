@@ -78,6 +78,7 @@ const sourceStyles: Record<
     labelKey: "sourceTodo",
   },
 };
+const GOOGLE_CALENDAR_PROVIDER = "google_calendar";
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -666,13 +667,17 @@ function PlannerDeleteButton({
 
 function PlannerItemBadge({
   chipClassName,
+  googleBadgeLabel,
   label,
   meta,
+  showGoogleBadge = false,
   uppercase = false,
 }: Readonly<{
   chipClassName: string;
+  googleBadgeLabel?: string;
   label: string;
   meta: string | null;
+  showGoogleBadge?: boolean;
   uppercase?: boolean;
 }>) {
   return (
@@ -686,8 +691,32 @@ function PlannerItemBadge({
       >
         {label}
       </span>
+      {showGoogleBadge ? <GoogleCalendarSourceBadge label={googleBadgeLabel ?? "Google Calendar"} /> : null}
       {meta ? <span className="text-[11px] font-medium text-[var(--text-subtle)]">{meta}</span> : null}
     </div>
+  );
+}
+
+function GoogleCalendarSourceBadge({ label }: Readonly<{ label: string }>) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8ddf2] bg-[#f7f9ff] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-[#405287]">
+      <GoogleCalendarGlyph />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function GoogleCalendarGlyph() {
+  return (
+    <svg aria-hidden className="h-4 w-4 shrink-0" viewBox="0 0 16 16">
+      <rect fill="#ffffff" height="14" rx="2.5" stroke="#dadce0" strokeWidth="0.8" width="14" x="1" y="1" />
+      <path d="M3 4.5h10" stroke="#EA4335" strokeWidth="1.3" />
+      <path d="M8 3v3" stroke="#FBBC04" strokeLinecap="round" strokeWidth="1.3" />
+      <circle cx="6" cy="9" fill="#34A853" r="1.3" />
+      <circle cx="10" cy="9" fill="#4285F4" r="1.3" />
+      <circle cx="6" cy="12" fill="#4285F4" r="1.1" />
+      <circle cx="10" cy="12" fill="#34A853" r="1.1" />
+    </svg>
   );
 }
 
@@ -905,6 +934,7 @@ function DashboardCalendarEventCard({
   const agendaItem = calendarEventAgendaItem(calendarEvent, membersById);
   const styles = sourceStyles.calendar;
   const meta = plannerItemMeta(agendaItem, t);
+  const isGoogleEvent = calendarEvent.sourceProvider === GOOGLE_CALENDAR_PROVIDER && !!calendarEvent.sourceExternalId;
   const assignedMembers = calendarEvent.householdMemberIds
     .map((memberId) => membersById.get(memberId))
     .filter((member): member is CalendarMemberOption => Boolean(member));
@@ -913,7 +943,13 @@ function DashboardCalendarEventCard({
     <article className="group rounded-md border border-[#e3ded6] bg-[#fbfaf6] p-4 transition hover:bg-[#f4f1ea]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <PlannerItemBadge chipClassName={styles.chip} label={t(styles.labelKey)} meta={meta} />
+          <PlannerItemBadge
+            chipClassName={styles.chip}
+            googleBadgeLabel={t("googleCalendarSourceBadge")}
+            label={t(styles.labelKey)}
+            meta={meta}
+            showGoogleBadge={isGoogleEvent}
+          />
           <h3 className="mt-2 text-base font-semibold text-[#202321]">{calendarEvent.name}</h3>
         </div>
         <div className="relative shrink-0">
@@ -2166,6 +2202,8 @@ export function DashboardPlanner({
                         item.source === "calendar"
                           ? (eventsByDate[item.dateKey] ?? []).find((event) => event.id === item.id) ?? null
                           : null;
+                      const isGoogleEvent =
+                        calendarEvent?.sourceProvider === GOOGLE_CALENDAR_PROVIDER && !!calendarEvent.sourceExternalId;
                       const itemContent = (
                         <>
                           <div className="flex items-start justify-between gap-3">
@@ -2176,8 +2214,10 @@ export function DashboardPlanner({
                               <div className="mt-2">
                                 <PlannerItemBadge
                                   chipClassName={styles.chip}
+                                  googleBadgeLabel={t("googleCalendarSourceBadge")}
                                   label={t(styles.labelKey)}
                                   meta={meta}
+                                  showGoogleBadge={isGoogleEvent}
                                   uppercase
                                 />
                               </div>
@@ -2221,8 +2261,10 @@ export function DashboardPlanner({
                                   <div className="mt-2">
                                     <PlannerItemBadge
                                       chipClassName={styles.chip}
+                                      googleBadgeLabel={t("googleCalendarSourceBadge")}
                                       label={t(styles.labelKey)}
                                       meta={meta}
+                                      showGoogleBadge={isGoogleEvent}
                                       uppercase
                                     />
                                   </div>

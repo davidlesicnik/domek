@@ -80,6 +80,7 @@ model User {
   choresCreated              Chore[]
   choreCompletions           ChoreCompletion[]
   pushSubscriptions          PushSubscription[]
+  googleCalendarConnection   GoogleCalendarConnection?
   createdAt                  DateTime          @default(now())
   updatedAt                  DateTime          @updatedAt
 }
@@ -102,6 +103,7 @@ model Household {
   choreCategories   ChoreCategory[]
   expenses          Expense[]
   chores            Chore[]
+  googleCalendarConnections GoogleCalendarConnection[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 }
@@ -169,6 +171,9 @@ model Chore {
   categoryId                String?
   householdId               String
   createdByUserId           String?
+  sourceProvider            String?            @db.VarChar(40)
+  sourceExternalId          String?            @db.VarChar(255)
+  sourceUpdatedAt           DateTime?
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
   completions               ChoreCompletion[]
@@ -181,6 +186,8 @@ model Chore {
   @@index([assignedHouseholdMemberId])
   @@index([categoryId])
   @@index([createdByUserId])
+  @@unique([householdId, sourceProvider, sourceExternalId])
+  @@index([householdId, sourceProvider])
 }
 
 model ChoreCategory {
@@ -220,6 +227,9 @@ model CalendarEvent {
   householdMemberIds String[]              @default([])
   householdId        String?
   createdByUserId    String?
+  sourceProvider     String?               @db.VarChar(40)
+  sourceExternalId   String?               @db.VarChar(255)
+  sourceUpdatedAt    DateTime?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   group              CalendarGroup?        @relation(fields: [groupId], references: [id], onDelete: Restrict)
@@ -230,6 +240,30 @@ model CalendarEvent {
   @@index([groupId])
   @@index([householdId, dateKey])
   @@index([createdByUserId, dateKey])
+  @@unique([householdId, sourceProvider, sourceExternalId])
+  @@index([householdId, sourceProvider])
+}
+
+model GoogleCalendarConnection {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  householdId           String
+  googleUserId          String    @db.VarChar(128)
+  googleEmail           String    @db.VarChar(320)
+  refreshTokenEncrypted String    @db.Text
+  tokenScope            String    @db.Text
+  selectedCalendarId    String?   @db.VarChar(255)
+  selectedCalendarName  String?   @db.VarChar(255)
+  syncEnabled           Boolean   @default(true)
+  lastSyncedAt          DateTime?
+  lastSyncError         String?   @db.VarChar(500)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([syncEnabled])
 }
 
 model CalendarGroup {
@@ -286,6 +320,9 @@ model TodoItem {
   assignedHouseholdMemberId String?
   dueDate                   DateTime?
   todoListId                String
+  sourceProvider            String?           @db.VarChar(40)
+  sourceExternalId          String?           @db.VarChar(255)
+  sourceUpdatedAt           DateTime?
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
   assignedHouseholdMember   HouseholdMember? @relation(fields: [assignedHouseholdMemberId], references: [id], onDelete: SetNull)
@@ -294,6 +331,8 @@ model TodoItem {
   @@index([assignedHouseholdMemberId])
   @@index([dueDate])
   @@index([todoListId])
+  @@unique([todoListId, sourceProvider, sourceExternalId])
+  @@index([todoListId, sourceProvider])
 }
 
 model ShoppingList {
