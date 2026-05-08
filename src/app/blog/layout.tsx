@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { BlogShell } from "@/components/blog/blog-shell";
 
@@ -11,6 +12,7 @@ export default function BlogLayout({ children }: Readonly<{ children: ReactNode 
       <body className="min-h-full">
         <BlogShell>{children}</BlogShell>
         <UmamiAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );

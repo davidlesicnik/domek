@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { routing } from "@/i18n/routing";
@@ -63,6 +64,7 @@ export default async function LocaleLayout({
           <NextIntlClientProvider messages={messages}>
             {children}
             <UmamiAnalytics />
+            <MetaPixel />
           </NextIntlClientProvider>
         </AppThemeProvider>
       </body>
