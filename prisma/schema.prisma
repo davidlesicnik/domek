@@ -69,6 +69,7 @@ model User {
   memberships                HouseholdMember[] @relation("HouseholdMemberAccount")
   createdHouseholdMembers    HouseholdMember[] @relation("HouseholdMemberCreatedBy")
   invitesSent                HouseholdInvite[] @relation("InvitesSent")
+  googleCalendarConnections  GoogleCalendarConnection[]
   calendarEvents             CalendarEvent[]
   calendarGroups             CalendarGroup[]
   todoLists                  TodoList[]
@@ -92,6 +93,7 @@ model Household {
   billingSubscription BillingSubscription?
   members           HouseholdMember[]
   invites           HouseholdInvite[]
+  googleCalendarConnection GoogleCalendarConnection?
   calendarEvents    CalendarEvent[]
   calendarGroups    CalendarGroup[]
   todoLists         TodoList[]
@@ -210,6 +212,25 @@ model ChoreCompletion {
   @@index([completedByUserId])
 }
 
+model GoogleCalendarConnection {
+  id                    String    @id @default(cuid())
+  householdId           String    @unique
+  userId                String
+  encryptedAccessToken  String
+  encryptedRefreshToken String
+  tokenExpiresAt        DateTime
+  scope                 String
+  googleEmail           String?
+  googleAccountId       String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([googleAccountId])
+}
+
 model CalendarEvent {
   id                 String                @id @default(cuid())
   dateKey            String                @db.VarChar(10)
@@ -218,6 +239,11 @@ model CalendarEvent {
   allDay             Boolean               @default(true)
   time               String?               @db.VarChar(5)
   householdMemberIds String[]              @default([])
+  googleEventId      String?
+  syncSource         String?
+  lastSyncedAt       DateTime?
+  syncStatus         String?
+  deletedAt          DateTime?
   householdId        String?
   createdByUserId    String?
   createdAt          DateTime              @default(now())
@@ -230,6 +256,10 @@ model CalendarEvent {
   @@index([groupId])
   @@index([householdId, dateKey])
   @@index([createdByUserId, dateKey])
+  @@unique([householdId, googleEventId])
+  @@index([syncSource])
+  @@index([syncStatus])
+  @@index([deletedAt])
 }
 
 model CalendarGroup {
