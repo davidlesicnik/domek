@@ -168,6 +168,10 @@ export async function getAccessTokenForHousehold(householdId: string): Promise<s
   return refreshConnectionAccessToken(connection.id, connection.encryptedRefreshToken);
 }
 
+export async function refreshTokenIfNeeded(householdId: string): Promise<string | null> {
+  return getAccessTokenForHousehold(householdId);
+}
+
 export async function getGoogleCalendarConnection(householdId: string) {
   return prisma.googleCalendarConnection.findUnique({
     select: {
