@@ -14,7 +14,7 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-type NotificationLocale = "en" | "sl";
+export type NotificationLocale = "en" | "sl";
 
 type NotificationCopy = {
   allDay: string;
@@ -23,10 +23,13 @@ type NotificationCopy = {
   todayPrefix: string;
   todoDuePrefix: string;
   choreDuePrefix: string;
+  inTenMinutes: string;
+  inOneHour: string;
+  tomorrow: string;
   remindersForToday: (count: number) => string;
 };
 
-const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
+export const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
   en: {
     allDay: "All day",
     dueNow: "Due now",
@@ -34,6 +37,9 @@ const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
     todayPrefix: "Today",
     todoDuePrefix: "Todo due",
     choreDuePrefix: "Chore due",
+    inTenMinutes: "In 10 minutes",
+    inOneHour: "In 1 hour",
+    tomorrow: "Tomorrow",
     remindersForToday: (count) => `${count} reminders for today`,
   },
   sl: {
@@ -43,11 +49,14 @@ const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
     todayPrefix: "Danes",
     todoDuePrefix: "Rok opravila",
     choreDuePrefix: "Rok opravila doma",
+    inTenMinutes: "Čez 10 minut",
+    inOneHour: "Čez 1 uro",
+    tomorrow: "Jutri",
     remindersForToday: (count) => `${count} opomnikov za danes`,
   },
 };
 
-function normalizeLocale(locale: string): NotificationLocale {
+export function normalizeLocale(locale: string): NotificationLocale {
   return locale === "sl" ? "sl" : "en";
 }
 

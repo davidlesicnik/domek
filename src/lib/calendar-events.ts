@@ -31,6 +31,7 @@ const calendarEventSelect = {
   householdMemberIds: true,
   id: true,
   name: true,
+  notificationOffsetMinutes: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -49,6 +50,7 @@ const calendarEventInputSchema = z
       .max(30)
       .transform((memberIds) => Array.from(new Set(memberIds))),
     name: z.string().trim().min(1).max(200),
+    notificationOffsetMinutes: z.union([z.literal(10), z.literal(60), z.literal(1440)]).nullable().optional(),
     time: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("all-day") }),
       z.object({ kind: z.literal("time"), value: z.string().regex(timePattern) }),
@@ -99,6 +101,14 @@ function pickCalendarGroupColor(existingColors: string[]) {
   );
 }
 
+function toNotificationOffsetMinutes(value: number | null): 10 | 60 | 1440 | null {
+  if (value === 10 || value === 60 || value === 1440) {
+    return value;
+  }
+
+  return null;
+}
+
 function toCalendarEventView(
   calendarEvent: Prisma.CalendarEventGetPayload<{ select: typeof calendarEventSelect }>,
 ): CalendarEventView {
@@ -110,6 +120,7 @@ function toCalendarEventView(
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
+    notificationOffsetMinutes: toNotificationOffsetMinutes(calendarEvent.notificationOffsetMinutes),
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },
@@ -250,6 +261,7 @@ export async function createCalendarEvent(input: CalendarEventInput, scope: Cale
       groupId: input.groupId,
       householdMemberIds: input.householdMemberIds,
       name: input.name,
+      notificationOffsetMinutes: input.notificationOffsetMinutes ?? null,
       time: input.time.kind === "time" ? input.time.value : null,
     },
     select: calendarEventSelect,
@@ -296,6 +308,7 @@ export async function updateCalendarEvent(
       groupId: input.groupId,
       householdMemberIds: input.householdMemberIds,
       name: input.name,
+      notificationOffsetMinutes: input.notificationOffsetMinutes ?? null,
       time: input.time.kind === "time" ? input.time.value : null,
     },
     select: calendarEventSelect,
