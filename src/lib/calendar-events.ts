@@ -49,6 +49,7 @@ const calendarEventInputSchema = z
       .max(30)
       .transform((memberIds) => Array.from(new Set(memberIds))),
     name: z.string().trim().min(1).max(200),
+    notificationOffsetMinutes: z.union([z.literal(10), z.literal(60), z.literal(1440), z.null()]),
     time: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("all-day") }),
       z.object({ kind: z.literal("time"), value: z.string().regex(timePattern) }),
@@ -110,6 +111,7 @@ function toCalendarEventView(
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
+    notificationOffsetMinutes: null,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },

@@ -211,6 +211,7 @@ function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEve
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
+    notificationOffsetMinutes: null,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },
