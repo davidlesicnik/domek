@@ -391,6 +391,8 @@ type GroupFormState = Readonly<{
 }>;
 
 const NEW_GROUP_OPTION = "__new__";
+const EVENT_NOTIFICATION_OPTION_NONE = "__none__";
+const EVENT_NOTIFICATION_OFFSETS = [10, 60, 1440] as const;
 
 function defaultGroupId(groups: CalendarGroupView[]) {
   return groups[0]?.id ?? NEW_GROUP_OPTION;
@@ -1094,6 +1096,7 @@ export function DashboardPlanner({
   const [newGroupName, setNewGroupName] = useState("");
   const [isAllDay, setIsAllDay] = useState(true);
   const [eventTime, setEventTime] = useState("");
+  const [eventNotificationOffsetMinutes, setEventNotificationOffsetMinutes] = useState<10 | 60 | 1440 | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -1140,6 +1143,16 @@ export function DashboardPlanner({
     setScheduledItemsByDate(nonCalendarItemsByDate);
   }, [nonCalendarItemsByDate]);
 
+  useEffect(() => {
+    if (!isAllDay) {
+      return;
+    }
+
+    setEventNotificationOffsetMinutes((currentOffset) =>
+      currentOffset === 10 || currentOffset === 60 ? null : currentOffset,
+    );
+  }, [isAllDay]);
+
   const monthDays = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
   const membersById = useMemo(
     () => new Map(calendarMembers.map((member) => [member.id, member])),
@@ -1175,6 +1188,7 @@ export function DashboardPlanner({
     setNewGroupName("");
     setIsAllDay(true);
     setEventTime("");
+    setEventNotificationOffsetMinutes(null);
     setSelectedMemberIds([]);
     setFormError(null);
   }
@@ -1212,6 +1226,7 @@ export function DashboardPlanner({
     setNewGroupName("");
     setIsAllDay(calendarEvent.time.kind === "all-day");
     setEventTime(calendarEvent.time.kind === "time" ? calendarEvent.time.value : "");
+    setEventNotificationOffsetMinutes(calendarEvent.notificationOffsetMinutes);
     setSelectedMemberIds([...calendarEvent.householdMemberIds]);
     setFormError(null);
     selectDate(calendarEvent.dateKey);
@@ -1362,6 +1377,7 @@ export function DashboardPlanner({
       groupId: ensuredGroupId,
       householdMemberIds: selectedMemberIds,
       name: trimmedEventName,
+      notificationOffsetMinutes: eventNotificationOffsetMinutes,
       time: isAllDay ? { kind: "all-day" } : { kind: "time", value: eventTime },
     };
 
@@ -1675,6 +1691,13 @@ export function DashboardPlanner({
       label: memberLabel(member, t),
       value: member.id,
     }));
+    const eventNotificationOptions: SelectOption[] = [
+      { label: t("notificationWhenNone"), value: EVENT_NOTIFICATION_OPTION_NONE },
+      ...EVENT_NOTIFICATION_OFFSETS.map((offsetMinutes) => ({
+        label: t(`notificationWhen${offsetMinutes}` as "notificationWhen10" | "notificationWhen60" | "notificationWhen1440"),
+        value: String(offsetMinutes),
+      })),
+    ].filter((option) => !isAllDay || option.value === EVENT_NOTIFICATION_OPTION_NONE || option.value === "1440");
     const eventFields: PlannerFieldDefinition[] = [
       plannerInputFieldDefinition("date", t("dateLabel"), {
           onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
@@ -1772,6 +1795,30 @@ export function DashboardPlanner({
             />
           ) : null}
         </div>
+
+        <PlannerField label={t("notificationWhenLabel")}>
+          <PlannerSelect
+            id="dashboard-event-notification-offset"
+            onChange={(value) => {
+              if (value === EVENT_NOTIFICATION_OPTION_NONE) {
+                setEventNotificationOffsetMinutes(null);
+                return;
+              }
+
+              const nextOffset = Number(value);
+              setEventNotificationOffsetMinutes(
+                nextOffset === 10 || nextOffset === 60 || nextOffset === 1440 ? nextOffset : null,
+              );
+            }}
+            options={eventNotificationOptions}
+            placeholder={t("notificationWhenPlaceholder")}
+            value={
+              eventNotificationOffsetMinutes === null
+                ? EVENT_NOTIFICATION_OPTION_NONE
+                : String(eventNotificationOffsetMinutes)
+            }
+          />
+        </PlannerField>
 
         <div className="grid gap-2 text-sm font-semibold text-[var(--text-primary)]">
           {t("whoInvolved")}

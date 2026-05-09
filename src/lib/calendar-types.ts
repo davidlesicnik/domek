@@ -16,6 +16,7 @@ export type CalendarEventView = Readonly<{
   groupName: string;
   name: string;
   time: CalendarEventTime;
+  notificationOffsetMinutes: 10 | 60 | 1440 | null;
   householdMemberIds: string[];
 }>;
 
@@ -24,6 +25,7 @@ export type CalendarEventInput = Readonly<{
   groupId: string;
   name: string;
   time: CalendarEventTime;
+  notificationOffsetMinutes: 10 | 60 | 1440 | null;
   householdMemberIds: string[];
 }>;
 
