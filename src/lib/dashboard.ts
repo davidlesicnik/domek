@@ -100,6 +100,7 @@ const dashboardCalendarEventSelect = {
   householdMemberIds: true,
   id: true,
   name: true,
+  notificationOffsetMinutes: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -203,6 +204,13 @@ function toCalendarGroupView(
 }
 
 function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEventView {
+  const notificationOffsetMinutes =
+    calendarEvent.notificationOffsetMinutes === 10 ||
+    calendarEvent.notificationOffsetMinutes === 60 ||
+    calendarEvent.notificationOffsetMinutes === 1440
+      ? calendarEvent.notificationOffsetMinutes
+      : null;
+
   return {
     dateKey: calendarEvent.dateKey,
     groupColor: calendarEvent.group?.color ?? "#8b918c",
@@ -211,7 +219,7 @@ function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEve
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
-    notificationOffsetMinutes: null,
+    notificationOffsetMinutes,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },

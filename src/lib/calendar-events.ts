@@ -31,6 +31,7 @@ const calendarEventSelect = {
   householdMemberIds: true,
   id: true,
   name: true,
+  notificationOffsetMinutes: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -103,6 +104,13 @@ function pickCalendarGroupColor(existingColors: string[]) {
 function toCalendarEventView(
   calendarEvent: Prisma.CalendarEventGetPayload<{ select: typeof calendarEventSelect }>,
 ): CalendarEventView {
+  const notificationOffsetMinutes =
+    calendarEvent.notificationOffsetMinutes === 10 ||
+    calendarEvent.notificationOffsetMinutes === 60 ||
+    calendarEvent.notificationOffsetMinutes === 1440
+      ? calendarEvent.notificationOffsetMinutes
+      : null;
+
   return {
     dateKey: calendarEvent.dateKey,
     groupColor: calendarEvent.group?.color ?? "#8b918c",
@@ -111,7 +119,7 @@ function toCalendarEventView(
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
-    notificationOffsetMinutes: null,
+    notificationOffsetMinutes,
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },
@@ -252,6 +260,7 @@ export async function createCalendarEvent(input: CalendarEventInput, scope: Cale
       groupId: input.groupId,
       householdMemberIds: input.householdMemberIds,
       name: input.name,
+      notificationOffsetMinutes: input.notificationOffsetMinutes,
       time: input.time.kind === "time" ? input.time.value : null,
     },
     select: calendarEventSelect,
@@ -298,6 +307,7 @@ export async function updateCalendarEvent(
       groupId: input.groupId,
       householdMemberIds: input.householdMemberIds,
       name: input.name,
+      notificationOffsetMinutes: input.notificationOffsetMinutes,
       time: input.time.kind === "time" ? input.time.value : null,
     },
     select: calendarEventSelect,

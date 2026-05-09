@@ -217,6 +217,7 @@ model CalendarEvent {
   groupId            String?
   allDay             Boolean               @default(true)
   time               String?               @db.VarChar(5)
+  notificationOffsetMinutes Int?
   householdMemberIds String[]              @default([])
   householdId        String?
   createdByUserId    String?
