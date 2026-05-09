@@ -2,6 +2,7 @@ import webpush from "web-push";
 
 import { prisma } from "@/lib/db";
 import { getOptionalVapidConfig } from "@/lib/env";
+import { sendPushToSubscription, type NotificationPayload } from "@/lib/notifications/push-delivery";
 import { getEndOfToday } from "@/lib/notifications/todo-window";
 
 function addDays(date: Date, days: number): Date {
@@ -72,12 +73,6 @@ function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-type NotificationPayload = {
-  title: string;
-  body: string;
-  url: string;
-};
-
 export type SendResult = {
   sent: number;
   errors: number;
@@ -126,23 +121,6 @@ function getChoreNextDueDate(chore: {
         base,
         chore.intervalUnit === "WEEKS" ? chore.intervalValue * 7 : chore.intervalValue,
       );
-  }
-}
-
-async function sendOne(
-  subscription: { endpoint: string; p256dh: string; auth: string; id: string },
-  payload: NotificationPayload,
-): Promise<"ok" | "dead" | "error"> {
-  try {
-    await webpush.sendNotification(
-      { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
-      JSON.stringify(payload),
-    );
-    return "ok";
-  } catch (err: unknown) {
-    const status = (err as { statusCode?: number }).statusCode;
-    if (status === 404 || status === 410) return "dead";
-    return "error";
   }
 }
 
@@ -264,7 +242,7 @@ export async function sendDailyNotifications(): Promise<SendResult> {
         ? payloads[0]
         : { title: copy.remindersForToday(payloads.length), body: payloads.map((p) => p.title).join(", "), url: "/app" };
 
-    const result = await sendOne(sub, summary);
+    const result = await sendPushToSubscription(sub, summary);
     if (result === "ok") {
       sent++;
     } else if (result === "dead") {

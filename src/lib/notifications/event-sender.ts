@@ -3,13 +3,8 @@ import { randomUUID } from "crypto";
 
 import { prisma } from "@/lib/db";
 import { getOptionalVapidConfig } from "@/lib/env";
+import { sendPushToSubscription } from "@/lib/notifications/push-delivery";
 import { normalizeLocale, notificationCopy, type SendResult } from "@/lib/notifications/sender";
-
-type NotificationPayload = {
-  title: string;
-  body: string;
-  url: string;
-};
 
 type EventRow = {
   id: string;
@@ -95,25 +90,6 @@ function bodyForOffset(locale: "en" | "sl", offsetMinutes: number): string {
   if (offsetMinutes === 10) return copy.inTenMinutes;
   if (offsetMinutes === 60) return copy.inOneHour;
   return copy.tomorrow;
-}
-
-async function sendOne(
-  subscription: { endpoint: string; p256dh: string; auth: string; id: string },
-  payload: NotificationPayload,
-): Promise<"ok" | "dead" | "error"> {
-  try {
-    await webpush.sendNotification(
-      { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
-      JSON.stringify(payload),
-    );
-    return "ok";
-  } catch (err: unknown) {
-    const status = (err as { statusCode?: number }).statusCode;
-    if (status === 404 || status === 410) {
-      return "dead";
-    }
-    return "error";
-  }
 }
 
 export async function sendEventNotifications(): Promise<SendResult> {
@@ -244,7 +220,7 @@ export async function sendEventNotifications(): Promise<SendResult> {
 
     for (const sub of eventSubscriptions) {
       const locale = normalizeLocale(sub.locale);
-      const result = await sendOne(sub, {
+      const result = await sendPushToSubscription(sub, {
         title: eventName,
         body: bodyForOffset(locale, offset),
         url: "/app/calendar",
