@@ -232,6 +232,19 @@ model CalendarEvent {
   @@index([groupId])
   @@index([householdId, dateKey])
   @@index([createdByUserId, dateKey])
+  @@index([notificationOffsetMinutes])
+}
+
+model EventNotificationLog {
+  id               String        @id @default(cuid())
+  eventId          String
+  offsetMinutes    Int
+  scheduledForDate DateTime
+  sentAt           DateTime      @default(now())
+  event            CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, offsetMinutes, scheduledForDate])
+  @@index([eventId])
 }
 
 model EventNotificationLog {
