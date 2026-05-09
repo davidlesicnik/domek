@@ -100,6 +100,7 @@ const dashboardCalendarEventSelect = {
   householdMemberIds: true,
   id: true,
   name: true,
+  notificationOffsetMinutes: true,
   time: true,
 } satisfies Prisma.CalendarEventSelect;
 
@@ -138,6 +139,14 @@ const agendaSourceOrder: Record<DashboardAgendaSource, number> = {
   chore: 1,
   todo: 2,
 };
+
+function toNotificationOffsetMinutes(value: number | null): 10 | 60 | 1440 | null {
+  if (value === 10 || value === 60 || value === 1440) {
+    return value;
+  }
+
+  return null;
+}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -211,7 +220,7 @@ function toCalendarEventView(calendarEvent: DashboardCalendarEvent): CalendarEve
     householdMemberIds: calendarEvent.householdMemberIds,
     id: calendarEvent.id,
     name: calendarEvent.name,
-    notificationOffsetMinutes: null,
+    notificationOffsetMinutes: toNotificationOffsetMinutes(calendarEvent.notificationOffsetMinutes),
     time: calendarEvent.allDay
       ? { kind: "all-day" }
       : { kind: "time", value: calendarEvent.time ?? "00:00" },

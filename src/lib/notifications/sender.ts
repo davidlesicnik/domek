@@ -2,6 +2,7 @@ import webpush from "web-push";
 
 import { prisma } from "@/lib/db";
 import { getOptionalVapidConfig } from "@/lib/env";
+import { sendPushToSubscription, type NotificationPayload } from "@/lib/notifications/push-delivery";
 import { getEndOfToday } from "@/lib/notifications/todo-window";
 
 function addDays(date: Date, days: number): Date {
@@ -14,7 +15,7 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-type NotificationLocale = "en" | "sl";
+export type NotificationLocale = "en" | "sl";
 
 type NotificationCopy = {
   allDay: string;
@@ -23,10 +24,13 @@ type NotificationCopy = {
   todayPrefix: string;
   todoDuePrefix: string;
   choreDuePrefix: string;
+  inTenMinutes: string;
+  inOneHour: string;
+  tomorrow: string;
   remindersForToday: (count: number) => string;
 };
 
-const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
+export const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
   en: {
     allDay: "All day",
     dueNow: "Due now",
@@ -34,6 +38,9 @@ const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
     todayPrefix: "Today",
     todoDuePrefix: "Todo due",
     choreDuePrefix: "Chore due",
+    inTenMinutes: "In 10 minutes",
+    inOneHour: "In 1 hour",
+    tomorrow: "Tomorrow",
     remindersForToday: (count) => `${count} reminders for today`,
   },
   sl: {
@@ -43,11 +50,14 @@ const notificationCopy: Record<NotificationLocale, NotificationCopy> = {
     todayPrefix: "Danes",
     todoDuePrefix: "Rok opravila",
     choreDuePrefix: "Rok opravila doma",
+    inTenMinutes: "Čez 10 minut",
+    inOneHour: "Čez 1 uro",
+    tomorrow: "Jutri",
     remindersForToday: (count) => `${count} opomnikov za danes`,
   },
 };
 
-function normalizeLocale(locale: string): NotificationLocale {
+export function normalizeLocale(locale: string): NotificationLocale {
   return locale === "sl" ? "sl" : "en";
 }
 
@@ -62,12 +72,6 @@ function formatDateKey(date: Date): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
-
-type NotificationPayload = {
-  title: string;
-  body: string;
-  url: string;
-};
 
 export type SendResult = {
   sent: number;
@@ -117,23 +121,6 @@ function getChoreNextDueDate(chore: {
         base,
         chore.intervalUnit === "WEEKS" ? chore.intervalValue * 7 : chore.intervalValue,
       );
-  }
-}
-
-async function sendOne(
-  subscription: { endpoint: string; p256dh: string; auth: string; id: string },
-  payload: NotificationPayload,
-): Promise<"ok" | "dead" | "error"> {
-  try {
-    await webpush.sendNotification(
-      { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
-      JSON.stringify(payload),
-    );
-    return "ok";
-  } catch (err: unknown) {
-    const status = (err as { statusCode?: number }).statusCode;
-    if (status === 404 || status === 410) return "dead";
-    return "error";
   }
 }
 
@@ -255,7 +242,7 @@ export async function sendDailyNotifications(): Promise<SendResult> {
         ? payloads[0]
         : { title: copy.remindersForToday(payloads.length), body: payloads.map((p) => p.title).join(", "), url: "/app" };
 
-    const result = await sendOne(sub, summary);
+    const result = await sendPushToSubscription(sub, summary);
     if (result === "ok") {
       sent++;
     } else if (result === "dead") {

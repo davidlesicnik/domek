@@ -1,0 +1,3 @@
+-- No-op: this migration was superseded by
+-- 20260509123117_add_event_notification_log and
+-- 20260509133000_add_event_notification_logs.

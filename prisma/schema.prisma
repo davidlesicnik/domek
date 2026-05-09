@@ -217,11 +217,13 @@ model CalendarEvent {
   groupId            String?
   allDay             Boolean               @default(true)
   time               String?               @db.VarChar(5)
+  notificationOffsetMinutes Int?
   householdMemberIds String[]              @default([])
   householdId        String?
   createdByUserId    String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
+  notificationLogs   EventNotificationLog[]
   group              CalendarGroup?        @relation(fields: [groupId], references: [id], onDelete: Restrict)
   household          Household?            @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdBy          User?                 @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
@@ -230,6 +232,20 @@ model CalendarEvent {
   @@index([groupId])
   @@index([householdId, dateKey])
   @@index([createdByUserId, dateKey])
+  @@index([notificationOffsetMinutes])
+}
+
+model EventNotificationLog {
+  id               String        @id @default(cuid())
+  eventId          String
+  offsetMinutes    Int
+  scheduledForDate DateTime
+  sentAt           DateTime      @default(now())
+  event            CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, offsetMinutes, scheduledForDate])
+  @@index([eventId])
+  @@index([scheduledForDate])
 }
 
 model CalendarGroup {

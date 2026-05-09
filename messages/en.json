@@ -487,6 +487,7 @@
     "customColor": "Custom",
     "timeLabel": "Time",
     "notificationWhenLabel": "Reminder",
+    "notificationDayBefore": "Remind me the day before",
     "notificationWhenPlaceholder": "Choose reminder timing",
     "notificationWhenNone": "No reminder",
     "notificationWhen10": "10 minutes before",

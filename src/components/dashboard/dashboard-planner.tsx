@@ -391,8 +391,7 @@ type GroupFormState = Readonly<{
 }>;
 
 const NEW_GROUP_OPTION = "__new__";
-const EVENT_NOTIFICATION_OPTION_NONE = "__none__";
-const EVENT_NOTIFICATION_OFFSETS = [10, 60, 1440] as const;
+const DAY_BEFORE_NOTIFICATION_OFFSET_MINUTES = 1440;
 
 function defaultGroupId(groups: CalendarGroupView[]) {
   return groups[0]?.id ?? NEW_GROUP_OPTION;
@@ -1691,13 +1690,6 @@ export function DashboardPlanner({
       label: memberLabel(member, t),
       value: member.id,
     }));
-    const eventNotificationOptions: SelectOption[] = [
-      { label: t("notificationWhenNone"), value: EVENT_NOTIFICATION_OPTION_NONE },
-      ...EVENT_NOTIFICATION_OFFSETS.map((offsetMinutes) => ({
-        label: t(`notificationWhen${offsetMinutes}` as "notificationWhen10" | "notificationWhen60" | "notificationWhen1440"),
-        value: String(offsetMinutes),
-      })),
-    ].filter((option) => !isAllDay || option.value === EVENT_NOTIFICATION_OPTION_NONE || option.value === "1440");
     const eventFields: PlannerFieldDefinition[] = [
       plannerInputFieldDefinition("date", t("dateLabel"), {
           onChange: (changeEvent) => setComposerDateKey(changeEvent.target.value),
@@ -1796,29 +1788,44 @@ export function DashboardPlanner({
           ) : null}
         </div>
 
-        <PlannerField label={t("notificationWhenLabel")}>
-          <PlannerSelect
-            id="dashboard-event-notification-offset"
-            onChange={(value) => {
-              if (value === EVENT_NOTIFICATION_OPTION_NONE) {
-                setEventNotificationOffsetMinutes(null);
-                return;
-              }
-
-              const nextOffset = Number(value);
-              setEventNotificationOffsetMinutes(
-                nextOffset === 10 || nextOffset === 60 || nextOffset === 1440 ? nextOffset : null,
-              );
+        {isAllDay ? (
+          <PlannerField label={t("notificationWhenLabel")}>
+            <label className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+              <input
+                checked={eventNotificationOffsetMinutes === DAY_BEFORE_NOTIFICATION_OFFSET_MINUTES}
+                className="h-4 w-4 accent-[var(--focus-ring)]"
+                onChange={(changeEvent) =>
+                  setEventNotificationOffsetMinutes(
+                    changeEvent.target.checked ? DAY_BEFORE_NOTIFICATION_OFFSET_MINUTES : null,
+                  )}
+                type="checkbox"
+              />
+              {t("notificationDayBefore")}
+            </label>
+          </PlannerField>
+        ) : (
+          <PlannerSelectField
+            label={t("notificationWhenLabel")}
+            selectProps={{
+              id: "dashboard-event-notification",
+              onChange: (value) =>
+                setEventNotificationOffsetMinutes(
+                  value === "10" ? 10 : value === "60" ? 60 : value === "1440" ? 1440 : null,
+                ),
+              options: [
+                { label: t("notificationWhenNone"), value: "none" },
+                { label: t("notificationWhen10"), value: "10" },
+                { label: t("notificationWhen60"), value: "60" },
+                { label: t("notificationWhen1440"), value: "1440" },
+              ],
+              placeholder: t("notificationWhenPlaceholder"),
+              value:
+                eventNotificationOffsetMinutes === null
+                  ? "none"
+                  : String(eventNotificationOffsetMinutes),
             }}
-            options={eventNotificationOptions}
-            placeholder={t("notificationWhenPlaceholder")}
-            value={
-              eventNotificationOffsetMinutes === null
-                ? EVENT_NOTIFICATION_OPTION_NONE
-                : String(eventNotificationOffsetMinutes)
-            }
           />
-        </PlannerField>
+        )}
 
         <div className="grid gap-2 text-sm font-semibold text-[var(--text-primary)]">
           {t("whoInvolved")}
