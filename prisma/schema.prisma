@@ -245,17 +245,6 @@ model EventNotificationLog {
 
   @@unique([eventId, offsetMinutes, scheduledForDate])
   @@index([eventId])
-}
-
-model EventNotificationLog {
-  id               String        @id @default(cuid())
-  eventId          String
-  offsetMinutes    Int
-  scheduledForDate String        @db.VarChar(10)
-  sentAt           DateTime      @default(now())
-  event            CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@unique([eventId, offsetMinutes, scheduledForDate])
   @@index([scheduledForDate])
 }
 

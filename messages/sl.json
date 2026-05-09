@@ -487,6 +487,7 @@
     "customColor": "Po meri",
     "timeLabel": "Ura",
     "notificationWhenLabel": "Opomnik",
+    "notificationDayBefore": "Opomni me dan prej",
     "notificationWhenPlaceholder": "Izberite čas opomnika",
     "notificationWhenNone": "Brez opomnika",
     "notificationWhen10": "10 minut prej",
