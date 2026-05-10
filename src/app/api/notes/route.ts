@@ -2,8 +2,8 @@ import { ZodError } from "zod";
 
 import { createNote, getCurrentNoteScope, listAllNotes, parseNoteInput } from "@/lib/notes";
 
-export async function GET() {
-  const scope = await getCurrentNoteScope();
+export async function GET(request: Request) {
+  const scope = await getCurrentNoteScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,7 +14,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const scope = await getCurrentNoteScope();
+  const scope = await getCurrentNoteScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

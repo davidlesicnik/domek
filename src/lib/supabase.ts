@@ -15,6 +15,19 @@ export function createSupabaseAdminClient() {
   });
 }
 
+export function createSupabaseAccessTokenClient(accessToken: string) {
+  const runtime = getSupabaseRuntimeConfig();
+
+  return createClient(runtime.supabaseUrl, runtime.supabaseAnonKey, {
+    auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}
+
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const runtime = getSupabaseRuntimeConfig();

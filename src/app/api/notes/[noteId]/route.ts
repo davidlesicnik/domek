@@ -6,7 +6,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ noteId: string }> },
 ) {
-  const scope = await getCurrentNoteScope();
+  const scope = await getCurrentNoteScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,10 +33,10 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ noteId: string }> },
 ) {
-  const scope = await getCurrentNoteScope();
+  const scope = await getCurrentNoteScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

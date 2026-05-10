@@ -58,10 +58,10 @@ export function parseOwnedItemInput(input: unknown): { text: string } {
   return ownedItemInputSchema.parse(input);
 }
 
-export async function getCurrentOwnedListScope<Create extends object, Where extends object>(): Promise<
+export async function getCurrentOwnedListScope<Create extends object, Where extends object>(request?: Request): Promise<
   OwnedListScope<Create, Where> | null
 > {
-  const session = await getCurrentAppSession();
+  const session = await getCurrentAppSession(request);
 
   if (!session) {
     return null;
