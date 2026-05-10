@@ -13,6 +13,7 @@
 # testing
 /coverage
 /playwright-results/
+/playwright/.auth/
 
 # next.js
 /.next/
