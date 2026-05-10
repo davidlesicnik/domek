@@ -65,6 +65,7 @@ model User {
   themePreference            ThemePreference   @default(SYSTEM)
   deletedAt                  DateTime?
   developmentAccessGrantedAt DateTime?
+  trialStartedAt             DateTime?
   billingSubscription        BillingSubscription?
   memberships                HouseholdMember[] @relation("HouseholdMemberAccount")
   createdHouseholdMembers    HouseholdMember[] @relation("HouseholdMemberCreatedBy")
