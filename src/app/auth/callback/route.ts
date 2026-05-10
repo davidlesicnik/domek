@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { billingStatusHasAccess } from "@/lib/billing";
+import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { sanitizeAuthCallbackNextPath } from "@/lib/auth-redirect";
 import { resolveAuthOrigin } from "@/lib/origin";
@@ -41,6 +41,25 @@ export async function GET(request: NextRequest) {
   }
 
   const appUser = await upsertSupabaseUser(user);
+  let trialStartedAt = appUser.trialStartedAt;
+
+  if (!trialStartedAt) {
+    const now = new Date();
+    const updateResult = await prisma.user.updateMany({
+      data: { trialStartedAt: now },
+      where: { id: appUser.id, trialStartedAt: null },
+    });
+
+    if (updateResult.count > 0) {
+      trialStartedAt = now;
+    } else {
+      const currentUser = await prisma.user.findUnique({
+        select: { trialStartedAt: true },
+        where: { id: appUser.id },
+      });
+      trialStartedAt = currentUser?.trialStartedAt ?? null;
+    }
+  }
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
     where: { accountId: appUser.id, household: { deletedAt: null } },
@@ -51,14 +70,18 @@ export async function GET(request: NextRequest) {
         select: { status: true },
         where: { userId: appUser.id },
       });
-  const hasBillingAccess = billingStatusHasAccess(billingSubscription?.status);
+  const hasBillingAccess = hasAccess({
+    billingSubscription,
+    developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
+    trialStartedAt,
+  });
 
   const isInviteNext = next.startsWith("/invite/");
   const destination = membership
     ? next
     : isInviteNext
       ? next
-      : appUser.developmentAccessGrantedAt || hasBillingAccess
+      : hasBillingAccess
         ? "/onboarding/household"
         : "/onboarding/payment";
   const response = NextResponse.redirect(new URL(destination, publicOrigin));
