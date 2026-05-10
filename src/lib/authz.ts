@@ -12,8 +12,12 @@ function getBearerToken(request: Request): string | null {
   const authHeader = request.headers.get("authorization")?.trim();
   if (!authHeader) return null;
 
-  const match = authHeader.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || null;
+  if (authHeader.length < 7 || authHeader.slice(0, 7).toLowerCase() !== "bearer ") {
+    return null;
+  }
+
+  const token = authHeader.slice(7).trim();
+  return token || null;
 }
 
 export async function getCurrentAppSession(request?: Request): Promise<AppSession | null> {
