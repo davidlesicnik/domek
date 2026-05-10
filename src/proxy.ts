@@ -2,11 +2,11 @@ import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { billingStatusHasAccess } from "@/lib/billing";
+import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
 import { localePrefixPattern, routing, stripLocalePrefix } from "@/i18n/routing";
-import { upsertSupabaseUser } from "@/lib/users";
+import { ensureTrialStartedAt, upsertSupabaseUser } from "@/lib/users";
 
 type CookieUpdate = Readonly<{
   name: string;
@@ -56,6 +56,10 @@ function isOnboardingPath(pathname: string): boolean {
 
 function isPaymentPath(pathname: string): boolean {
   return pathname === "/onboarding/payment" || pathname.startsWith("/onboarding/payment/");
+}
+
+function isTrialEndedPath(pathname: string): boolean {
+  return pathname === "/trial-ended" || pathname.startsWith("/trial-ended/");
 }
 
 function isInvitePath(pathname: string): boolean {
@@ -131,12 +135,14 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
     return redirectWithCookieUpdates(request, `${loginUrl.pathname}${loginUrl.search}`, cookieUpdates, headerUpdates);
   }
 
-  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+  const { deletedAt, ...upsertedUser } = await upsertSupabaseUser(user);
 
   if (deletedAt) {
     if (isPublicPath(pathname)) return response;
     return redirectWithCookieUpdates(request, "/login", cookieUpdates, headerUpdates);
   }
+
+  const appUser = await ensureTrialStartedAt(upsertedUser);
 
   const membership = await prisma.householdMember.findFirst({
     select: {
@@ -156,17 +162,24 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
   });
 
   if (membership) {
-    const hasAccess =
-      !!appUser.developmentAccessGrantedAt ||
-      billingStatusHasAccess(membership.household.billingSubscription?.status);
+    const hasAccessToApp = hasAccess({
+      billingSubscription: membership.household.billingSubscription,
+      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
+      trialStartedAt: appUser.trialStartedAt,
+    });
+    const hasExpiredTrial = Boolean(appUser.trialStartedAt) && !hasAccessToApp;
 
-    if (!hasAccess && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
-      if (!isPaymentPath(pathname)) {
-        return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+    if (!hasAccessToApp && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
+      if (hasExpiredTrial && !isTrialEndedPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
+      }
+
+      if (!hasExpiredTrial && !isOnboardingPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
       }
     }
 
-    if (hasAccess && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
+    if (hasAccessToApp && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
       return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
     }
 
@@ -178,15 +191,23 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
       select: { status: true },
       where: { userId: appUser.id },
     });
-    const hasPreHouseholdAccess =
-      !!appUser.developmentAccessGrantedAt || billingStatusHasAccess(billingSubscription?.status);
+    const hasPreHouseholdAccess = hasAccess({
+      billingSubscription,
+      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
+      trialStartedAt: appUser.trialStartedAt,
+    });
+    const hasExpiredTrial = Boolean(appUser.trialStartedAt) && !hasPreHouseholdAccess;
 
     if (hasPreHouseholdAccess) {
       if (!isOnboardingPath(pathname)) {
         return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
       }
-    } else if (!isPaymentPath(pathname)) {
-      return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+    } else if (hasExpiredTrial) {
+      if (!isTrialEndedPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
+      }
+    } else if (!isOnboardingPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
     }
   }
 

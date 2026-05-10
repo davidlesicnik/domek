@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 
 export type AppUser = Readonly<{
   developmentAccessGrantedAt: Date | null;
+  trialStartedAt: Date | null;
   id: string;
   name: string | null;
   email: string | null;
@@ -14,6 +15,7 @@ export type AppUser = Readonly<{
 
 const userSelect = {
   developmentAccessGrantedAt: true,
+  trialStartedAt: true,
   email: true,
   id: true,
   image: true,
@@ -59,6 +61,29 @@ export async function upsertSupabaseUser(user: SupabaseAuthUser) {
     },
     where: { id: data.id },
   });
+}
+
+export async function ensureTrialStartedAt(user: AppUser): Promise<AppUser> {
+  if (user.trialStartedAt) {
+    return user;
+  }
+
+  const now = new Date();
+  const updateResult = await prisma.user.updateMany({
+    data: { trialStartedAt: now },
+    where: { id: user.id, trialStartedAt: null },
+  });
+
+  if (updateResult.count > 0) {
+    return { ...user, trialStartedAt: now };
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    select: { trialStartedAt: true },
+    where: { id: user.id },
+  });
+
+  return { ...user, trialStartedAt: currentUser?.trialStartedAt ?? null };
 }
 
 export async function getFirstHouseholdMembership(userId: string) {

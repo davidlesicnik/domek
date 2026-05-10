@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 
 import { PaymentSuccessStatus } from "@/components/billing/payment-success-status";
-import { billingStatusHasAccess, getUserBillingSubscription } from "@/lib/billing";
+import { getUserBillingSubscription, hasAccess } from "@/lib/billing";
 import { requireAppSession } from "@/lib/authz";
 import { getFirstHouseholdMembership } from "@/lib/users";
 import { redirect } from "@/i18n/server";
@@ -18,8 +18,11 @@ export default async function PaymentSuccessPage() {
   }
 
   if (
-    session.user.developmentAccessGrantedAt ||
-    billingStatusHasAccess(billingSubscription?.status)
+    hasAccess({
+      billingSubscription,
+      developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
+      trialStartedAt: session.user.trialStartedAt,
+    })
   ) {
     return await redirect("/onboarding/household");
   }
