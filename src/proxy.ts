@@ -2,7 +2,7 @@ import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { billingStatusHasAccess } from "@/lib/billing";
+import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
 import { localePrefixPattern, routing, stripLocalePrefix } from "@/i18n/routing";
@@ -156,17 +156,19 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
   });
 
   if (membership) {
-    const hasAccess =
-      !!appUser.developmentAccessGrantedAt ||
-      billingStatusHasAccess(membership.household.billingSubscription?.status);
+    const hasAccessToApp = hasAccess({
+      billingSubscription: membership.household.billingSubscription,
+      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
+      trialStartedAt: appUser.trialStartedAt,
+    });
 
-    if (!hasAccess && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
+    if (!hasAccessToApp && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
       if (!isPaymentPath(pathname)) {
         return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
       }
     }
 
-    if (hasAccess && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
+    if (hasAccessToApp && (pathname === "/login" || isOnboardingPath(pathname) || isPaymentPath(pathname))) {
       return redirectWithCookieUpdates(request, "/app", cookieUpdates, headerUpdates);
     }
 
@@ -178,8 +180,11 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
       select: { status: true },
       where: { userId: appUser.id },
     });
-    const hasPreHouseholdAccess =
-      !!appUser.developmentAccessGrantedAt || billingStatusHasAccess(billingSubscription?.status);
+    const hasPreHouseholdAccess = hasAccess({
+      billingSubscription,
+      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
+      trialStartedAt: appUser.trialStartedAt,
+    });
 
     if (hasPreHouseholdAccess) {
       if (!isOnboardingPath(pathname)) {
