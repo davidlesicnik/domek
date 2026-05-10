@@ -1,15 +1,26 @@
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@/lib/supabase";
+import { createSupabaseAccessTokenClient, createSupabaseServerClient } from "@/lib/supabase";
 import { ensureTrialStartedAt, hasHouseholdMembership, upsertSupabaseUser, type AppUser } from "@/lib/users";
 
 export type AppSession = Readonly<{
   user: AppUser;
 }>;
 
-export async function getCurrentAppSession(): Promise<AppSession | null> {
-  const supabase = await createSupabaseServerClient();
+function getBearerToken(request: Request): string | null {
+  const authHeader = request.headers.get("authorization")?.trim();
+  if (!authHeader) return null;
+
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+export async function getCurrentAppSession(request?: Request): Promise<AppSession | null> {
+  const bearerToken = request ? getBearerToken(request) : null;
+  const supabase = bearerToken
+    ? createSupabaseAccessTokenClient(bearerToken)
+    : await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
