@@ -58,6 +58,10 @@ function isPaymentPath(pathname: string): boolean {
   return pathname === "/onboarding/payment" || pathname.startsWith("/onboarding/payment/");
 }
 
+function isTrialEndedPath(pathname: string): boolean {
+  return pathname === "/trial-ended" || pathname.startsWith("/trial-ended/");
+}
+
 function isInvitePath(pathname: string): boolean {
   return pathname === "/invite" || pathname.startsWith("/invite/");
 }
@@ -161,9 +165,14 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
       developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
       trialStartedAt: appUser.trialStartedAt,
     });
+    const hasExpiredTrial = Boolean(appUser.trialStartedAt) && !hasAccessToApp;
 
     if (!hasAccessToApp && !isPublicPath(pathname) && !isAuthFlowPath(pathname)) {
-      if (!isPaymentPath(pathname)) {
+      if (hasExpiredTrial && !isTrialEndedPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
+      }
+
+      if (!hasExpiredTrial && !isPaymentPath(pathname)) {
         return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
       }
     }
@@ -185,10 +194,15 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
       developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
       trialStartedAt: appUser.trialStartedAt,
     });
+    const hasExpiredTrial = Boolean(appUser.trialStartedAt) && !hasPreHouseholdAccess;
 
     if (hasPreHouseholdAccess) {
       if (!isOnboardingPath(pathname)) {
         return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
+      }
+    } else if (hasExpiredTrial) {
+      if (!isTrialEndedPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
       }
     } else if (!isPaymentPath(pathname)) {
       return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
