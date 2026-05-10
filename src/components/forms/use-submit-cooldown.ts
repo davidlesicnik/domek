@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function readCooldownUntil(storageKey: string): number {
   if (typeof window === "undefined") {
@@ -14,28 +14,27 @@ function readCooldownUntil(storageKey: string): number {
 }
 
 export function useSubmitCooldown(storageKey: string, cooldownMs: number) {
-  const [remainingMs, setRemainingMs] = useState(0);
-
-  useEffect(() => {
-    const syncRemaining = () => {
-      const until = readCooldownUntil(storageKey);
-      const nextRemaining = Math.max(0, until - Date.now());
-
-      setRemainingMs(nextRemaining);
-    };
-
-    syncRemaining();
-
-    if (remainingMs === 0) {
-      return;
+  const [remainingMs, setRemainingMs] = useState(() => {
+    if (typeof window === "undefined") {
+      return 0;
     }
 
+    const until = readCooldownUntil(storageKey);
+    return Math.max(0, until - Date.now());
+  });
+
+  const syncRemaining = useCallback(() => {
+    const until = readCooldownUntil(storageKey);
+    const nextRemaining = Math.max(0, until - Date.now());
+    setRemainingMs((previous) => (previous === nextRemaining ? previous : nextRemaining));
+  }, [storageKey]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(syncRemaining, 1000);
-
     return () => window.clearInterval(intervalId);
-  }, [remainingMs, storageKey]);
+  }, [syncRemaining]);
 
-  const startCooldown = () => {
+  const startCooldown = useCallback(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -43,11 +42,14 @@ export function useSubmitCooldown(storageKey: string, cooldownMs: number) {
     const until = Date.now() + cooldownMs;
     window.sessionStorage.setItem(storageKey, String(until));
     setRemainingMs(cooldownMs);
-  };
+  }, [cooldownMs, storageKey]);
 
-  return {
-    isCoolingDown: remainingMs > 0,
-    remainingSeconds: Math.max(1, Math.ceil(remainingMs / 1000)),
-    startCooldown,
-  };
+  return useMemo(
+    () => ({
+      isCoolingDown: remainingMs > 0,
+      remainingSeconds: Math.max(1, Math.ceil(remainingMs / 1000)),
+      startCooldown,
+    }),
+    [remainingMs, startCooldown],
+  );
 }

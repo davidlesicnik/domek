@@ -2,7 +2,7 @@ import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase";
-import { hasHouseholdMembership, upsertSupabaseUser, type AppUser } from "@/lib/users";
+import { ensureTrialStartedAt, hasHouseholdMembership, upsertSupabaseUser, type AppUser } from "@/lib/users";
 
 export type AppSession = Readonly<{
   user: AppUser;
@@ -18,12 +18,14 @@ export async function getCurrentAppSession(): Promise<AppSession | null> {
     return null;
   }
 
-  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+  const { deletedAt, ...upsertedUser } = await upsertSupabaseUser(user);
 
   if (deletedAt) {
     await supabase.auth.signOut();
     return null;
   }
+
+  const appUser = await ensureTrialStartedAt(upsertedUser);
 
   return { user: appUser };
 }

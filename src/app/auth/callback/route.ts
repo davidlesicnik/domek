@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { sanitizeAuthCallbackNextPath } from "@/lib/auth-redirect";
 import { resolveAuthOrigin } from "@/lib/origin";
 import { createSupabaseServerClient } from "@/lib/supabase";
-import { upsertSupabaseUser } from "@/lib/users";
+import { ensureTrialStartedAt, upsertSupabaseUser } from "@/lib/users";
 
 const nextCookieName = "domek_next";
 
@@ -40,26 +40,8 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const appUser = await upsertSupabaseUser(user);
-  let trialStartedAt = appUser.trialStartedAt;
-
-  if (!trialStartedAt) {
-    const now = new Date();
-    const updateResult = await prisma.user.updateMany({
-      data: { trialStartedAt: now },
-      where: { id: appUser.id, trialStartedAt: null },
-    });
-
-    if (updateResult.count > 0) {
-      trialStartedAt = now;
-    } else {
-      const currentUser = await prisma.user.findUnique({
-        select: { trialStartedAt: true },
-        where: { id: appUser.id },
-      });
-      trialStartedAt = currentUser?.trialStartedAt ?? null;
-    }
-  }
+  const upsertedUser = await upsertSupabaseUser(user);
+  const appUser = await ensureTrialStartedAt(upsertedUser);
   const membership = await prisma.householdMember.findFirst({
     select: { id: true },
     where: { accountId: appUser.id, household: { deletedAt: null } },
@@ -73,7 +55,7 @@ export async function GET(request: NextRequest) {
   const hasBillingAccess = hasAccess({
     billingSubscription,
     developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
-    trialStartedAt,
+    trialStartedAt: appUser.trialStartedAt,
   });
 
   const isInviteNext = next.startsWith("/invite/");
@@ -83,7 +65,7 @@ export async function GET(request: NextRequest) {
       ? next
       : hasBillingAccess
         ? "/onboarding/household"
-        : "/onboarding/payment";
+        : "/trial-ended";
   const response = NextResponse.redirect(new URL(destination, publicOrigin));
   response.cookies.delete(nextCookieName);
   return response;

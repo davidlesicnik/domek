@@ -6,7 +6,7 @@ import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getSupabaseRuntimeConfig } from "@/lib/env";
 import { localePrefixPattern, routing, stripLocalePrefix } from "@/i18n/routing";
-import { upsertSupabaseUser } from "@/lib/users";
+import { ensureTrialStartedAt, upsertSupabaseUser } from "@/lib/users";
 
 type CookieUpdate = Readonly<{
   name: string;
@@ -135,12 +135,14 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
     return redirectWithCookieUpdates(request, `${loginUrl.pathname}${loginUrl.search}`, cookieUpdates, headerUpdates);
   }
 
-  const { deletedAt, ...appUser } = await upsertSupabaseUser(user);
+  const { deletedAt, ...upsertedUser } = await upsertSupabaseUser(user);
 
   if (deletedAt) {
     if (isPublicPath(pathname)) return response;
     return redirectWithCookieUpdates(request, "/login", cookieUpdates, headerUpdates);
   }
+
+  const appUser = await ensureTrialStartedAt(upsertedUser);
 
   const membership = await prisma.householdMember.findFirst({
     select: {
@@ -172,8 +174,8 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
         return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
       }
 
-      if (!hasExpiredTrial && !isPaymentPath(pathname)) {
-        return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+      if (!hasExpiredTrial && !isOnboardingPath(pathname)) {
+        return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
       }
     }
 
@@ -204,8 +206,8 @@ async function authProxy(request: NextRequest, pathnameOverride?: string) {
       if (!isTrialEndedPath(pathname)) {
         return redirectWithCookieUpdates(request, "/trial-ended", cookieUpdates, headerUpdates);
       }
-    } else if (!isPaymentPath(pathname)) {
-      return redirectWithCookieUpdates(request, "/onboarding/payment", cookieUpdates, headerUpdates);
+    } else if (!isOnboardingPath(pathname)) {
+      return redirectWithCookieUpdates(request, "/onboarding/household", cookieUpdates, headerUpdates);
     }
   }
 

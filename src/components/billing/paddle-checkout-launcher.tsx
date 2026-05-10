@@ -208,7 +208,17 @@ export function PaddleCheckoutLauncher({
         onClick={launchCheckout}
         type="button"
       >
-        {isReady ? t("paymentCheckoutReady") : t("paymentCheckoutLoading")}
+        {isReady ? (
+          t("paymentCheckoutReady")
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <svg aria-hidden className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" d="M4 12a8 8 0 018-8" fill="currentColor" />
+            </svg>
+            {t("paymentCheckoutLoading")}
+          </span>
+        )}
       </button>
       {checkoutError ? (
         <p className="text-sm font-medium text-[#a6543c]">{checkoutError}</p>

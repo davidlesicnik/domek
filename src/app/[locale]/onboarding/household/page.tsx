@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
-import { billingStatusHasAccess } from "@/lib/billing";
+import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
@@ -37,10 +37,13 @@ async function createHouseholdAction(formData: FormData) {
       });
 
   if (
-    !session.user.developmentAccessGrantedAt &&
-    !billingStatusHasAccess(billingSubscription?.status)
+    !hasAccess({
+      billingSubscription,
+      developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
+      trialStartedAt: session.user.trialStartedAt,
+    })
   ) {
-    return await redirect("/onboarding/payment");
+    return await redirect("/trial-ended");
   }
 
   try {
@@ -104,16 +107,18 @@ export default async function HouseholdOnboardingPage({
         select: { status: true, trialEndsAt: true },
         where: { userId: session.user.id },
       });
-  const hasBillingAccess =
-    !!session.user.developmentAccessGrantedAt ||
-    billingStatusHasAccess(billingSubscription?.status);
+  const hasBillingAccess = hasAccess({
+    billingSubscription,
+    developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
+    trialStartedAt: session.user.trialStartedAt,
+  });
 
   if (existingMembership) {
     return await redirect("/app");
   }
 
   if (!hasBillingAccess) {
-    return await redirect("/onboarding/payment");
+    return await redirect("/trial-ended");
   }
 
   const params = (await searchParams) ?? {};

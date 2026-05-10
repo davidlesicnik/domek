@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 
 import { PaddleCheckoutLauncher } from "@/components/billing/paddle-checkout-launcher";
-import { billingStatusHasAccess, getUserBillingSubscription } from "@/lib/billing";
+import { getUserBillingSubscription, hasAccess } from "@/lib/billing";
 import { requireAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import {
@@ -61,7 +61,11 @@ export default async function PaymentOnboardingPage({
   const billingSubscription = await getUserBillingSubscription(session.user.id);
   const membershipHasAccess =
     !!existingMembership &&
-    billingStatusHasAccess(existingMembership.household.billingSubscription?.status);
+    hasAccess({
+      billingSubscription: existingMembership.household.billingSubscription,
+      developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
+      trialStartedAt: session.user.trialStartedAt,
+    });
 
   if (existingMembership && membershipHasAccess) {
     return await redirect("/app");
@@ -69,8 +73,11 @@ export default async function PaymentOnboardingPage({
 
   if (
     !existingMembership &&
-    (session.user.developmentAccessGrantedAt ||
-      billingStatusHasAccess(billingSubscription?.status))
+    hasAccess({
+      billingSubscription,
+      developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
+      trialStartedAt: session.user.trialStartedAt,
+    })
   ) {
     return await redirect("/onboarding/household");
   }

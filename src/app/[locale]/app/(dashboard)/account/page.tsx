@@ -17,6 +17,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { isThemePreference } from "@/lib/theme";
 import { getFirstHouseholdMembership } from "@/lib/users";
+import { TRIAL_DAYS } from "@/lib/billing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("accountPage");
@@ -268,6 +269,15 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     (billingSubscription?.status === BillingSubscriptionStatus.CANCELED
       ? billingSubscription.canceledAt ?? billingSubscription.currentPeriodEndsAt
       : null);
+  const trialEndsAt = session.user.trialStartedAt
+    ? new Date(session.user.trialStartedAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    : null;
+  const currentTime = new Date();
+  const trialMsRemaining = trialEndsAt ? trialEndsAt.getTime() - currentTime.getTime() : null;
+  const hasSelfManagedTrial =
+    !billingSubscription && trialMsRemaining !== null && trialMsRemaining > 0;
+  const selfManagedTrialDaysRemaining =
+    trialMsRemaining !== null ? Math.max(0, Math.ceil(trialMsRemaining / (24 * 60 * 60 * 1000))) : 0;
 
   return (
     <div className="grid gap-6">
@@ -351,6 +361,27 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <p className="mt-4 text-xs leading-5 text-[var(--text-subtle)]">
             {t("cancelNote")}
           </p>
+        </section>
+      ) : null}
+
+      {hasSelfManagedTrial && trialEndsAt ? (
+        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("subscriptionTitle")}</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)]">
+              {t("statusTrialing")}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2 text-xs text-[var(--text-muted)]">
+            <p>
+              {t("trialEndsOn")}{" "}
+              <span className="font-medium text-[var(--text-primary)]">{formatDate(trialEndsAt)}</span>
+            </p>
+            <p>
+              {t("trialDaysRemaining", { count: selfManagedTrialDaysRemaining })}
+            </p>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-[var(--text-subtle)]">{t("selfManagedTrialNote")}</p>
         </section>
       ) : null}
 
