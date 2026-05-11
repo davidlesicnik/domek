@@ -3,12 +3,24 @@ import { ZodError } from "zod";
 import {
   createTodoList,
   getCurrentTodoScope,
+  listAllTodoListsWithItems,
   parseTodoListInput,
 } from "@/lib/todo-lists";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
+export async function GET(request: Request) {
+  const scope = await getCurrentTodoScope(request);
+
+  if (!scope) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const lists = await listAllTodoListsWithItems(scope);
+  return Response.json({ lists });
+}
+
 export async function POST(request: Request) {
-  const scope = await getCurrentTodoScope();
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
