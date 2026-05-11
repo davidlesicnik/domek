@@ -1,10 +1,10 @@
 import { deleteShoppingItem, getCurrentShoppingScope, toggleShoppingItem } from "@/lib/shopping-lists";
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentShoppingScope();
+  const scope = await getCurrentShoppingScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,10 +21,10 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentShoppingScope();
+  const scope = await getCurrentShoppingScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
