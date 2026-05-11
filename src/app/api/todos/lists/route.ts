@@ -8,8 +8,8 @@ import {
 } from "@/lib/todo-lists";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
-export async function GET() {
-  const scope = await getCurrentTodoScope();
+export async function GET(request: Request) {
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const scope = await getCurrentTodoScope();
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
