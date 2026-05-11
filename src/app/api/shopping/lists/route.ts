@@ -3,8 +3,20 @@ import { ZodError } from "zod";
 import {
   createShoppingList,
   getCurrentShoppingScope,
+  listAllShoppingListsWithItems,
   parseShoppingListInput,
 } from "@/lib/shopping-lists";
+
+export async function GET(request: Request) {
+  const scope = await getCurrentShoppingScope(request);
+
+  if (!scope) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const lists = await listAllShoppingListsWithItems(scope);
+  return Response.json({ lists });
+}
 
 export async function POST(request: Request) {
   const scope = await getCurrentShoppingScope();
