@@ -1,10 +1,30 @@
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { ZodError } from "zod";
 
-import { createChore, getCurrentChoreScope, parseCreateChoreInput } from "@/lib/chores";
+import {
+  createChore,
+  getCurrentChoreScope,
+  listChoreCategories,
+  listChoreMembers,
+  listChores,
+  parseCreateChoreInput,
+} from "@/lib/chores";
+
+export async function GET(request: Request) {
+  const scope = await getCurrentChoreScope(request);
+  if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const [chores, members, categories] = await Promise.all([
+    listChores(scope),
+    listChoreMembers(scope),
+    listChoreCategories(scope),
+  ]);
+
+  return Response.json({ chores, members, categories });
+}
 
 export async function POST(request: Request) {
-  const scope = await getCurrentChoreScope();
+  const scope = await getCurrentChoreScope(request);
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {

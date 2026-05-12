@@ -160,8 +160,8 @@ export function parseCreateChoreInput(input: unknown) {
 
 export const parseUpdateChoreInput = parseCreateChoreInput;
 
-export async function getCurrentChoreScope(): Promise<ChoreScope | null> {
-  const session = await getCurrentAppSession();
+export async function getCurrentChoreScope(request?: Request): Promise<ChoreScope | null> {
+  const session = await getCurrentAppSession(request);
   if (!session) return null;
 
   const membership = await getFirstHouseholdMembership(session.user.id);
