@@ -8,7 +8,6 @@ import {
 } from "@/lib/todo-lists";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
-<<<<<<< HEAD
 export async function GET(request: Request) {
   const scope = await getCurrentTodoScope(request);
 
