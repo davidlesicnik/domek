@@ -4,10 +4,10 @@ import { ZodError } from "zod";
 import { completeChore, getCurrentChoreScope, parseChoreId } from "@/lib/chores";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ choreId: string }> },
 ) {
-  const scope = await getCurrentChoreScope();
+  const scope = await getCurrentChoreScope(request);
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {

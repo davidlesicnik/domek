@@ -28,6 +28,7 @@ const PUBLIC_PATHS = [
   "/manifest.webmanifest",
   "/terms",
   "/api/notify/send",
+  "/api/chores",
   "/api/notes",
   "/api/shopping",
   "/api/todos",
