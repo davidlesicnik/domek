@@ -30,6 +30,7 @@ const PUBLIC_PATHS = [
   "/api/notify/send",
   "/api/notes",
   "/api/shopping",
+  "/api/todos",
   "/api/paddle/webhook",
   "/auth/callback",
   "/auth/email",
