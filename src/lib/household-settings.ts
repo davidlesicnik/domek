@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
@@ -73,8 +74,54 @@ export function parseConfirmInput(input: unknown) {
   return confirmInputSchema.parse(input);
 }
 
+type ActiveMembership = NonNullable<Awaited<ReturnType<typeof getFirstHouseholdMembership>>>;
+
+async function getMembership(userId: string): Promise<ActiveMembership | null> {
+  return getFirstHouseholdMembership(userId);
+}
+
+async function getOwnerMembership(userId: string) {
+  const membership = await getMembership(userId);
+  if (!membership || membership.role !== "OWNER") {
+    return null;
+  }
+
+  return membership;
+}
+
+function normalizeOptionalEmoji(rawEmoji: string) {
+  const emoji = rawEmoji === "" ? null : normalizeMemberEmoji(rawEmoji);
+  if (rawEmoji !== "" && !emoji) {
+    return { ok: false as const, reason: "emoji" };
+  }
+
+  return { ok: true as const, emoji };
+}
+
+async function countAssignedChores(householdId: string, memberId: string) {
+  return prisma.chore.count({
+    where: {
+      householdId,
+      OR: [{ assignedHouseholdMemberId: memberId }, { rotationMemberIds: { has: memberId } }],
+    },
+  });
+}
+
+async function removeMemberFromCalendarEvents(
+  tx: Prisma.TransactionClient,
+  householdId: string,
+  memberId: string,
+) {
+  await tx.$executeRaw`
+    UPDATE "CalendarEvent"
+    SET "householdMemberIds" = array_remove("householdMemberIds", ${memberId})
+    WHERE "householdId" = ${householdId}
+      AND ${memberId} = ANY("householdMemberIds")
+  `;
+}
+
 export async function getCurrentHouseholdSettings(user: AppUser) {
-  const membership = await getFirstHouseholdMembership(user.id);
+  const membership = await getMembership(user.id);
   if (!membership) {
     return null;
   }
@@ -124,8 +171,8 @@ export async function getCurrentHouseholdSettings(user: AppUser) {
 }
 
 export async function renameHousehold(user: AppUser, input: { name: string }) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -142,21 +189,19 @@ export async function createPassiveHouseholdMember(
   user: AppUser,
   input: { color: string; emoji: string; name: string },
 ) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
-  const emoji = input.emoji === "" ? null : normalizeMemberEmoji(input.emoji);
-  if (input.emoji !== "" && !emoji) {
-    return { ok: false as const, reason: "emoji" };
-  }
+  const emojiResult = normalizeOptionalEmoji(input.emoji);
+  if (!emojiResult.ok) return emojiResult;
 
   const member = await prisma.householdMember.create({
     data: {
       color: input.color,
       createdByUserId: user.id,
-      emoji,
+      emoji: emojiResult.emoji,
       householdId: membership.householdId,
       name: input.name,
       role: "MEMBER",
@@ -179,8 +224,8 @@ export async function sendHouseholdInvite(
   user: AppUser,
   input: { email: string; locale?: "en" | "sl"; memberId?: string | null },
 ) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -251,8 +296,8 @@ export async function sendHouseholdInvite(
 }
 
 export async function revokeHouseholdInvite(user: AppUser, inviteId: string) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -265,7 +310,7 @@ export async function updateHouseholdMember(
   memberId: string,
   input: { color?: string; emoji?: string; name?: string },
 ) {
-  const membership = await getFirstHouseholdMembership(user.id);
+  const membership = await getMembership(user.id);
   if (!membership) {
     return { ok: false as const, reason: "join_household_first" };
   }
@@ -285,12 +330,9 @@ export async function updateHouseholdMember(
   }
 
   if (input.emoji !== undefined) {
-    const emoji = input.emoji === "" ? null : normalizeMemberEmoji(input.emoji);
-    if (input.emoji !== "" && !emoji) {
-      return { ok: false as const, reason: "emoji" };
-    }
-
-    data.emoji = emoji;
+    const emojiResult = normalizeOptionalEmoji(input.emoji);
+    if (!emojiResult.ok) return emojiResult;
+    data.emoji = emojiResult.emoji;
   }
 
   const member = await prisma.householdMember.updateMany({
@@ -309,8 +351,8 @@ export async function updateHouseholdMember(
 }
 
 export async function removeHouseholdMember(user: AppUser, memberId: string) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -318,12 +360,7 @@ export async function removeHouseholdMember(user: AppUser, memberId: string) {
     return { ok: false as const, reason: "invalid_member" };
   }
 
-  const assignedChoreCount = await prisma.chore.count({
-    where: {
-      householdId: membership.householdId,
-      OR: [{ assignedHouseholdMemberId: memberId }, { rotationMemberIds: { has: memberId } }],
-    },
-  });
+  const assignedChoreCount = await countAssignedChores(membership.householdId, memberId);
 
   if (assignedChoreCount > 0) {
     return { ok: false as const, reason: "assigned_chores" };
@@ -339,12 +376,7 @@ export async function removeHouseholdMember(user: AppUser, memberId: string) {
       data: { status: "REVOKED" },
     });
 
-    await tx.$executeRaw`
-      UPDATE "CalendarEvent"
-      SET "householdMemberIds" = array_remove("householdMemberIds", ${memberId})
-      WHERE "householdId" = ${membership.householdId}
-        AND ${memberId} = ANY("householdMemberIds")
-    `;
+    await removeMemberFromCalendarEvents(tx, membership.householdId, memberId);
 
     await tx.householdMember.deleteMany({
       where: {
@@ -359,8 +391,8 @@ export async function removeHouseholdMember(user: AppUser, memberId: string) {
 }
 
 export async function transferHouseholdOwnership(user: AppUser, memberId: string) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -409,8 +441,8 @@ export async function transferHouseholdOwnership(user: AppUser, memberId: string
 }
 
 export async function deleteHousehold(user: AppUser) {
-  const membership = await getFirstHouseholdMembership(user.id);
-  if (!membership || membership.role !== "OWNER") {
+  const membership = await getOwnerMembership(user.id);
+  if (!membership) {
     return { ok: false as const, reason: "forbidden" };
   }
 
@@ -426,7 +458,7 @@ export async function deleteHousehold(user: AppUser) {
 }
 
 export async function leaveHousehold(user: AppUser) {
-  const membership = await getFirstHouseholdMembership(user.id);
+  const membership = await getMembership(user.id);
   if (!membership) {
     return { ok: false as const, reason: "not_found" };
   }
@@ -435,27 +467,17 @@ export async function leaveHousehold(user: AppUser) {
     return { ok: false as const, reason: "owner_cannot_leave" };
   }
 
-  const assignedChoreCount = await prisma.chore.count({
-    where: {
-      householdId: membership.householdId,
-      OR: [
-        { assignedHouseholdMemberId: membership.id },
-        { rotationMemberIds: { has: membership.id } },
-      ],
-    },
-  });
+  const assignedChoreCount = await countAssignedChores(
+    membership.householdId,
+    membership.id,
+  );
 
   if (assignedChoreCount > 0) {
     return { ok: false as const, reason: "assigned_chores" };
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`
-      UPDATE "CalendarEvent"
-      SET "householdMemberIds" = array_remove("householdMemberIds", ${membership.id})
-      WHERE "householdId" = ${membership.householdId}
-        AND ${membership.id} = ANY("householdMemberIds")
-    `;
+    await removeMemberFromCalendarEvents(tx, membership.householdId, membership.id);
 
     await tx.householdMember.delete({ where: { id: membership.id } });
   });
