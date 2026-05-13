@@ -7,8 +7,8 @@ import {
   parseCategoryInput,
 } from "@/lib/expenses";
 
-export async function GET() {
-  const scope = await getCurrentExpenseScope();
+export async function GET(request: Request) {
+  const scope = await getCurrentExpenseScope(request);
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const categories = await listCategories(scope);
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const scope = await getCurrentExpenseScope();
+  const scope = await getCurrentExpenseScope(request);
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
