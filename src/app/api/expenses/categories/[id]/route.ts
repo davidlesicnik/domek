@@ -10,7 +10,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const scope = await getCurrentExpenseScope();
+  const scope = await getCurrentExpenseScope(request);
   if (!scope) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;

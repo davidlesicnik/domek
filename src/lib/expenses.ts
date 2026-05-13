@@ -78,8 +78,8 @@ function pickCategoryColor(existingColors: string[]): string {
   );
 }
 
-export async function getCurrentExpenseScope(): Promise<ExpenseScope | null> {
-  const session = await getCurrentAppSession();
+export async function getCurrentExpenseScope(request?: Request): Promise<ExpenseScope | null> {
+  const session = await getCurrentAppSession(request);
   if (!session) return null;
 
   const membership = await getFirstHouseholdMembership(session.user.id);
