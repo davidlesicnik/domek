@@ -191,6 +191,29 @@ export async function createTodoList(name: string, scope: TodoScope): Promise<To
   return toTodoListView(list);
 }
 
+export async function updateTodoList(
+  listId: string,
+  name: string,
+  scope: TodoScope,
+): Promise<TodoListView | null> {
+  const list = await prisma.todoList.findFirst({
+    select: { id: true },
+    where: { id: listId, ...scope.where },
+  });
+
+  if (!list) {
+    return null;
+  }
+
+  const updated = await prisma.todoList.update({
+    data: { name },
+    select: todoListWithItemsSelect,
+    where: { id: listId },
+  });
+
+  return toTodoListView(updated);
+}
+
 export async function createTodoItem(
   listId: string,
   input: TodoItemInput,
