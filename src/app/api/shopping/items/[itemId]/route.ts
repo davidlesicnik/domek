@@ -1,41 +1,71 @@
-import { deleteShoppingItem, getCurrentShoppingScope, toggleShoppingItem } from "@/lib/shopping-lists";
+import {
+  deleteShoppingItem,
+  getCurrentShoppingScope,
+  parseShoppingItemInput,
+  toggleShoppingItem,
+  updateShoppingItem,
+} from "@/lib/shopping-lists";
+import { handleRouteError, jsonError } from "@/lib/api-route";
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentShoppingScope(request);
-
-  if (!scope) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  const scope = await requireShoppingScope(request);
+  if (scope instanceof Response) return scope;
   const { itemId } = await params;
-  const item = await toggleShoppingItem(itemId, scope);
 
-  if (!item) {
-    return Response.json({ error: "Not found." }, { status: 404 });
+  try {
+    const rawBody = await request.text();
+
+    if (!rawBody.trim()) {
+      const item = await toggleShoppingItem(itemId, scope);
+
+      if (!item) {
+        return jsonError("Not found.", 404);
+      }
+
+      revalidateDashboard();
+      return Response.json({ item });
+    }
+
+    const input = parseShoppingItemInput(JSON.parse(rawBody));
+    const item = await updateShoppingItem(itemId, input.text, scope);
+
+    if (!item) {
+      return jsonError("Not found.", 404);
+    }
+
+    revalidateDashboard();
+    return Response.json({ item });
+  } catch (error) {
+    return handleRouteError(error, {
+      invalidMessage: "Invalid shopping item.",
+      logLabel: "[PATCH /api/shopping/items/[itemId]]",
+    });
   }
-
-  return Response.json({ item });
 }
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentShoppingScope(request);
-
-  if (!scope) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const scope = await requireShoppingScope(request);
+  if (scope instanceof Response) return scope;
 
   const { itemId } = await params;
   const deleted = await deleteShoppingItem(itemId, scope);
 
   if (!deleted) {
-    return Response.json({ error: "Not found." }, { status: 404 });
+    return jsonError("Not found.", 404);
   }
 
+  revalidateDashboard();
   return Response.json({ ok: true });
+}
+
+async function requireShoppingScope(request: Request) {
+  const scope = await getCurrentShoppingScope(request);
+  return scope ?? jsonError("Unauthorized", 401);
 }
