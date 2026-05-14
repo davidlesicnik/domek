@@ -20,6 +20,7 @@ type OwnedListRecord = Readonly<{
 type OwnedListDelegate = {
   findMany(args: { orderBy: { createdAt: "asc" }; select: unknown; where: object }): Promise<OwnedListRecord[]>;
   create(args: { data: object; select: unknown }): Promise<OwnedListRecord>;
+  update(args: { data: { name: string }; select: unknown; where: { id: string } }): Promise<OwnedListRecord>;
   deleteMany(args: { where: object }): Promise<{ count: number }>;
   findFirst(args: { select: { id: true }; where: object }): Promise<{ id: string } | null>;
 };
@@ -134,6 +135,25 @@ export function createOwnedListOperations<Create extends object, Where extends o
       });
 
       return wasDeleted(result);
+    },
+
+    async updateList(id: string, name: string, scope: Scope): Promise<OwnedListView | null> {
+      const list = await listDelegate.findFirst({
+        select: { id: true },
+        where: { id, ...scope.where },
+      });
+
+      if (!list) {
+        return null;
+      }
+
+      const updated = await listDelegate.update({
+        data: { name },
+        select: listWithItemsSelect,
+        where: { id },
+      });
+
+      return toOwnedListView(updated);
     },
 
     async listAll(scope: Scope): Promise<OwnedListView[]> {

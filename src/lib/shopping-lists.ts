@@ -50,6 +50,8 @@ export const listAllShoppingListsWithItems: (scope: ShoppingScope) => Promise<Sh
   shoppingLists.listAll;
 export const createShoppingList: (name: string, scope: ShoppingScope) => Promise<ShoppingListView> =
   shoppingLists.createList;
+export const updateShoppingList: (id: string, name: string, scope: ShoppingScope) => Promise<ShoppingListView | null> =
+  shoppingLists.updateList;
 export const deleteShoppingList: (id: string, scope: ShoppingScope) => Promise<boolean> = shoppingLists.deleteList;
 export const createShoppingItem: (
   listId: string,
