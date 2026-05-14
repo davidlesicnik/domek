@@ -58,6 +58,11 @@ export const createShoppingItem: (
   text: string,
   scope: ShoppingScope,
 ) => Promise<ShoppingItemView | null> = shoppingLists.createItem;
+export const updateShoppingItem: (
+  itemId: string,
+  text: string,
+  scope: ShoppingScope,
+) => Promise<ShoppingItemView | null> = shoppingLists.updateItem;
 export const toggleShoppingItem: (itemId: string, scope: ShoppingScope) => Promise<ShoppingItemView | null> =
   shoppingLists.toggleItem;
 export const deleteShoppingItem: (itemId: string, scope: ShoppingScope) => Promise<boolean> =

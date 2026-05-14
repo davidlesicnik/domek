@@ -28,7 +28,7 @@ type OwnedListDelegate = {
 type OwnedItemDelegate = {
   create(args: { data: object; select: typeof ownedItemSelect }): Promise<OwnedItemView>;
   findFirst(args: { select: { id: true; done: true }; where: object }): Promise<{ id: string; done: boolean } | null>;
-  update(args: { data: { done: boolean }; select: typeof ownedItemSelect; where: { id: string } }): Promise<OwnedItemView>;
+  update(args: { data: { done?: boolean; text?: string }; select: typeof ownedItemSelect; where: { id: string } }): Promise<OwnedItemView>;
   deleteMany(args: { where: object }): Promise<{ count: number }>;
 };
 
@@ -164,6 +164,23 @@ export function createOwnedListOperations<Create extends object, Where extends o
       });
 
       return ownedLists.map(toOwnedListView);
+    },
+
+    async updateItem(itemId: string, text: string, scope: Scope): Promise<OwnedItemView | null> {
+      const item = await itemDelegate.findFirst({
+        select: { id: true, done: true },
+        where: { id: itemId, list: scope.where },
+      });
+
+      if (!item) {
+        return null;
+      }
+
+      return itemDelegate.update({
+        data: { text },
+        select: ownedItemSelect,
+        where: { id: itemId },
+      });
     },
 
     async toggleItem(itemId: string, scope: Scope): Promise<OwnedItemView | null> {
