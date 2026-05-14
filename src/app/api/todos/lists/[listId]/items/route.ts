@@ -11,7 +11,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ listId: string }> },
 ) {
-  const scope = await getCurrentTodoScope();
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

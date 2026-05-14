@@ -13,7 +13,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentTodoScope();
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,10 +55,10 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ itemId: string }> },
 ) {
-  const scope = await getCurrentTodoScope();
+  const scope = await getCurrentTodoScope(request);
 
   if (!scope) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
