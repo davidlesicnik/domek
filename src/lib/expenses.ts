@@ -168,7 +168,26 @@ type RawExpense = {
   }[];
 };
 
-function toExpenseView(e: RawExpense): ExpenseView {
+type RawHouseholdMember = {
+  id: string;
+  color: string;
+  emoji: string | null;
+  name: string;
+  account: { email: string | null } | null;
+};
+
+function toExpenseView(
+  e: RawExpense,
+  householdMembers: RawHouseholdMember[] = [],
+): ExpenseView {
+  const payerName = e.householdMember
+    ? getHouseholdMemberName({
+        accountEmail: e.householdMember.account?.email,
+        name: e.householdMember.name,
+      })
+    : e.memberName;
+  const resolvedSplits = resolveExpenseSplits(e, householdMembers);
+
   return {
     id: e.id,
     name: e.name,
@@ -181,27 +200,70 @@ function toExpenseView(e: RawExpense): ExpenseView {
     categoryColor: e.category?.color ?? null,
     categoryName: e.category?.name ?? null,
     householdMemberId: e.householdMemberId,
-    householdMemberName: e.householdMember
-      ? getHouseholdMemberName({
-          accountEmail: e.householdMember.account?.email,
-          name: e.householdMember.name,
-        })
-      : e.memberName,
+    householdMemberName: payerName,
     householdMemberColor: e.householdMember?.color ?? null,
     householdMemberEmoji: e.householdMember?.emoji ?? null,
-    splits: e.splits.map((split) => ({
-      id: split.id,
-      householdMemberId: split.householdMemberId,
-      householdMemberName: split.householdMember
-        ? getHouseholdMemberName({
-            accountEmail: split.householdMember.account?.email,
-            name: split.householdMember.name,
-          })
-        : null,
-      householdMemberColor: split.householdMember?.color ?? null,
-      householdMemberEmoji: split.householdMember?.emoji ?? null,
-    })),
+    splits: resolvedSplits,
   };
+}
+
+function resolveExpenseSplits(
+  expense: RawExpense,
+  householdMembers: RawHouseholdMember[],
+): ExpenseSplitView[] {
+  const explicitSplitMemberIds = new Set(
+    expense.splits
+      .map((split) => split.householdMemberId)
+      .filter((memberId): memberId is string => Boolean(memberId)),
+  );
+
+  const inferredCandidates = householdMembers.filter(
+    (member) =>
+      member.id !== expense.householdMemberId &&
+      !explicitSplitMemberIds.has(member.id),
+  );
+
+  let inferredIndex = 0;
+
+  return expense.splits.map((split) => {
+    if (split.householdMemberId || split.householdMember) {
+      return {
+        id: split.id,
+        householdMemberId: split.householdMemberId,
+        householdMemberName: split.householdMember
+          ? getHouseholdMemberName({
+              accountEmail: split.householdMember.account?.email,
+              name: split.householdMember.name,
+            })
+          : null,
+        householdMemberColor: split.householdMember?.color ?? null,
+        householdMemberEmoji: split.householdMember?.emoji ?? null,
+      };
+    }
+
+    const inferredMember = inferredCandidates[inferredIndex];
+    if (!inferredMember) {
+      return {
+        id: split.id,
+        householdMemberId: null,
+        householdMemberName: null,
+        householdMemberColor: null,
+        householdMemberEmoji: null,
+      };
+    }
+
+    inferredIndex += 1;
+    return {
+      id: split.id,
+      householdMemberId: inferredMember.id,
+      householdMemberName: getHouseholdMemberName({
+        accountEmail: inferredMember.account?.email,
+        name: inferredMember.name,
+      }),
+      householdMemberColor: inferredMember.color,
+      householdMemberEmoji: inferredMember.emoji,
+    };
+  });
 }
 
 export async function listExpenses(
@@ -209,12 +271,26 @@ export async function listExpenses(
   year: number,
   month: number,
 ): Promise<ExpenseView[]> {
-  const rows = await prisma.expense.findMany({
-    orderBy: { date: "desc" },
-    select: expenseSelect,
-    where: { ...buildExpenseWhere(scope), date: monthBounds(year, month) },
-  });
-  return rows.map(toExpenseView);
+  const [rows, householdMembers] = await Promise.all([
+    prisma.expense.findMany({
+      orderBy: { date: "desc" },
+      select: expenseSelect,
+      where: { ...buildExpenseWhere(scope), date: monthBounds(year, month) },
+    }),
+    prisma.householdMember.findMany({
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        color: true,
+        emoji: true,
+        name: true,
+        account: { select: { email: true } },
+      },
+      where: { householdId: scope.householdId },
+    }),
+  ]);
+
+  return rows.map((row) => toExpenseView(row, householdMembers));
 }
 
 export async function getMonthStats(
