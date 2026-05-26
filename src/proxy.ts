@@ -16,6 +16,7 @@ type CookieUpdate = Readonly<{
 
 const PUBLIC_PATHS = [
   "/",
+  "/account-deletion",
   "/blog",
   "/contact",
   "/cookies",
