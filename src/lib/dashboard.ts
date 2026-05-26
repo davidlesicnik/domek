@@ -64,6 +64,7 @@ export type DashboardExpenseSnapshot = Readonly<{
   entries: DashboardExpenseEntry[];
   monthLabel: string;
   stats: MonthStats;
+  totalEntries: number;
 }>;
 
 export type DashboardData = Readonly<{
@@ -513,6 +514,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData | 
       entries: monthlyExpenses.slice(0, 3).map(toExpenseEntry),
       monthLabel: currentMonthLabel(currentDayKey),
       stats: expenseStats,
+      totalEntries: monthlyExpenses.length,
     },
     members: dashboardMembers,
     monthItemCountsByDate,
