@@ -4,13 +4,18 @@ import { getTranslations } from "next-intl/server";
 import { useTranslations } from "next-intl";
 
 import { SignInOptions } from "@/components/auth/sign-in-options";
+import { InviteAppOpenBridge } from "@/components/invite/invite-app-open-bridge";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { getCurrentAppSession } from "@/lib/authz";
 import { getInvitePreview, redeemInvite } from "@/lib/invites";
 import { hasHouseholdMembership } from "@/lib/users";
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "invite" });
   return { title: t("metaTitle") };
@@ -36,7 +41,10 @@ async function acceptInviteAction(token: string) {
   try {
     result = await redeemInvite({ token, userId: session.user.id });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
       return await redirect(`/invite/${token}?error=already_member`);
     }
     throw error;
@@ -49,7 +57,10 @@ async function acceptInviteAction(token: string) {
   return await redirect("/app");
 }
 
-export default async function InvitePage({ params, searchParams }: InvitePageProps) {
+export default async function InvitePage({
+  params,
+  searchParams,
+}: InvitePageProps) {
   const { locale, token } = await params;
   const sp = (await searchParams) ?? {};
   const [session, preview] = await Promise.all([
@@ -58,6 +69,7 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
   ]);
 
   const errorParam = stringParam(sp.error);
+  const shouldOpenApp = stringParam(sp.openApp) === "1";
 
   if (!preview || preview.status === "REVOKED" || preview.household.deletedAt) {
     return <InviteErrorPage reason="not_found" />;
@@ -80,6 +92,7 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
         householdName={householdName}
         inviterName={inviterName}
         locale={locale}
+        shouldOpenApp={shouldOpenApp}
         token={token}
       />
     );
@@ -98,6 +111,9 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
       inviterName={inviterName}
       acceptAction={boundAction}
       errorReason={errorParam}
+      locale={locale}
+      shouldOpenApp={shouldOpenApp}
+      token={token}
     />
   );
 }
@@ -118,11 +134,13 @@ function InviteSignInPage({
   householdName,
   inviterName,
   locale,
+  shouldOpenApp,
   token,
 }: {
   householdName: string;
   inviterName: string;
   locale: string;
+  shouldOpenApp: boolean;
   token: string;
 }) {
   const t = useTranslations("invite");
@@ -137,6 +155,9 @@ function InviteSignInPage({
       <p className="mt-3 text-sm leading-6 text-[#686e6a]">
         {t("signInDescription", { inviterName })}
       </p>
+      {shouldOpenApp ? (
+        <InviteAppOpenBridge locale={locale} token={token} />
+      ) : null}
       <div className="mt-6">
         <SignInOptions locale={locale} nextPath={`/invite/${token}`} />
       </div>
@@ -149,11 +170,17 @@ function InviteAcceptPage({
   inviterName,
   acceptAction,
   errorReason,
+  locale,
+  shouldOpenApp,
+  token,
 }: {
   householdName: string;
   inviterName: string;
   acceptAction: () => Promise<void>;
   errorReason: string | null;
+  locale: string;
+  shouldOpenApp: boolean;
+  token: string;
 }) {
   const t = useTranslations("invite");
   return (
@@ -167,6 +194,9 @@ function InviteAcceptPage({
       <p className="mt-3 text-sm leading-6 text-[#686e6a]">
         {t("acceptDescription", { inviterName })}
       </p>
+      {shouldOpenApp ? (
+        <InviteAppOpenBridge locale={locale} token={token} />
+      ) : null}
       {errorReason && errorReason !== "already_member" ? (
         <p className="mt-4 text-sm font-medium text-[#a6543c]">
           {errorReason === "expired"
@@ -191,7 +221,12 @@ function InviteAcceptPage({
 function InviteErrorPage({
   reason,
 }: {
-  reason: "not_found" | "expired" | "already_used" | "already_member" | "email_mismatch";
+  reason:
+    | "not_found"
+    | "expired"
+    | "already_used"
+    | "already_member"
+    | "email_mismatch";
 }) {
   const t = useTranslations("invite");
 
@@ -219,7 +254,9 @@ function InviteErrorPage({
       <h1 className="mt-3 font-serif text-3xl font-semibold tracking-normal text-[#171a18]">
         {t(headingKey[reason])}
       </h1>
-      <p className="mt-3 text-sm leading-6 text-[#686e6a]">{t(bodyKey[reason])}</p>
+      <p className="mt-3 text-sm leading-6 text-[#686e6a]">
+        {t(bodyKey[reason])}
+      </p>
       {reason === "already_member" ? (
         <div className="mt-6">
           <Link

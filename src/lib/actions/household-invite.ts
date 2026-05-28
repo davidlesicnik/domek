@@ -19,7 +19,10 @@ export async function sendTopBarInviteAction(
   _prevState: InviteActionState,
   formData: FormData,
 ): Promise<InviteActionState> {
-  const [locale, t] = await Promise.all([getLocale(), getTranslations("householdPage")]);
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("householdPage"),
+  ]);
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
@@ -28,7 +31,9 @@ export async function sendTopBarInviteAction(
   }
 
   const raw = formData.get("email");
-  const parsed = inviteEmailSchema.safeParse(typeof raw === "string" ? raw : "");
+  const parsed = inviteEmailSchema.safeParse(
+    typeof raw === "string" ? raw : "",
+  );
 
   if (!parsed.success) {
     return { success: false, error: t("errorValidEmail") };
@@ -76,7 +81,7 @@ export async function sendTopBarInviteAction(
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}?openApp=1`,
       locale,
     });
   } catch (error) {
@@ -92,7 +97,9 @@ export async function sendTopBarInviteAction(
   return { success: true, error: null };
 }
 
-export async function revokeTopBarInviteAction(formData: FormData): Promise<void> {
+export async function revokeTopBarInviteAction(
+  formData: FormData,
+): Promise<void> {
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 

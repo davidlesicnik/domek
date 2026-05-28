@@ -12,7 +12,9 @@ import { logger } from "@/lib/logger";
 
 const inviteEmailSchema = z.string().trim().email().max(320);
 const memberNameSchema = z.string().trim().min(1).max(120);
-const memberColorSchema = z.string().refine(isMemberColorKey, "Choose one of the household colors.");
+const memberColorSchema = z
+  .string()
+  .refine(isMemberColorKey, "Choose one of the household colors.");
 const localeSchema = z.enum(["en", "sl"]).default("en");
 
 export const renameHouseholdInputSchema = z
@@ -74,7 +76,9 @@ export function parseConfirmInput(input: unknown) {
   return confirmInputSchema.parse(input);
 }
 
-type ActiveMembership = NonNullable<Awaited<ReturnType<typeof getFirstHouseholdMembership>>>;
+type ActiveMembership = NonNullable<
+  Awaited<ReturnType<typeof getFirstHouseholdMembership>>
+>;
 
 async function getMembership(userId: string): Promise<ActiveMembership | null> {
   return getFirstHouseholdMembership(userId);
@@ -102,7 +106,10 @@ async function countAssignedChores(householdId: string, memberId: string) {
   return prisma.chore.count({
     where: {
       householdId,
-      OR: [{ assignedHouseholdMemberId: memberId }, { rotationMemberIds: { has: memberId } }],
+      OR: [
+        { assignedHouseholdMemberId: memberId },
+        { rotationMemberIds: { has: memberId } },
+      ],
     },
   });
 }
@@ -145,7 +152,9 @@ export async function getCurrentHouseholdSettings(user: AppUser) {
       },
       orderBy: { createdAt: "asc" },
     }),
-    membership.role === "OWNER" ? listPendingInvites(membership.householdId) : Promise.resolve([]),
+    membership.role === "OWNER"
+      ? listPendingInvites(membership.householdId)
+      : Promise.resolve([]),
   ]);
 
   if (!household) {
@@ -282,7 +291,7 @@ export async function sendHouseholdInvite(
   try {
     await sendInviteEmail({
       householdName: household.name,
-      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}?openApp=1`,
       inviterName: user.name,
       locale,
       toEmail: invite.email,
@@ -360,7 +369,10 @@ export async function removeHouseholdMember(user: AppUser, memberId: string) {
     return { ok: false as const, reason: "invalid_member" };
   }
 
-  const assignedChoreCount = await countAssignedChores(membership.householdId, memberId);
+  const assignedChoreCount = await countAssignedChores(
+    membership.householdId,
+    memberId,
+  );
 
   if (assignedChoreCount > 0) {
     return { ok: false as const, reason: "assigned_chores" };
@@ -390,7 +402,10 @@ export async function removeHouseholdMember(user: AppUser, memberId: string) {
   return { ok: true as const };
 }
 
-export async function transferHouseholdOwnership(user: AppUser, memberId: string) {
+export async function transferHouseholdOwnership(
+  user: AppUser,
+  memberId: string,
+) {
   const membership = await getOwnerMembership(user.id);
   if (!membership) {
     return { ok: false as const, reason: "forbidden" };
@@ -447,7 +462,9 @@ export async function deleteHousehold(user: AppUser) {
   }
 
   await prisma.$transaction([
-    prisma.householdMember.deleteMany({ where: { householdId: membership.householdId } }),
+    prisma.householdMember.deleteMany({
+      where: { householdId: membership.householdId },
+    }),
     prisma.household.update({
       where: { id: membership.householdId },
       data: { deletedAt: new Date() },
@@ -477,7 +494,11 @@ export async function leaveHousehold(user: AppUser) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await removeMemberFromCalendarEvents(tx, membership.householdId, membership.id);
+    await removeMemberFromCalendarEvents(
+      tx,
+      membership.householdId,
+      membership.id,
+    );
 
     await tx.householdMember.delete({ where: { id: membership.id } });
   });
