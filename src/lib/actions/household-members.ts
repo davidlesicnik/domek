@@ -16,7 +16,9 @@ import { logger } from "@/lib/logger";
 
 const inviteEmailSchema = z.string().trim().email().max(320);
 const memberNameSchema = z.string().trim().min(1).max(120);
-const memberColorSchema = z.string().refine(isMemberColorKey, "Choose one of the household colors.");
+const memberColorSchema = z
+  .string()
+  .refine(isMemberColorKey, "Choose one of the household colors.");
 
 export type HouseholdActionState = Readonly<{
   error: string | null;
@@ -38,7 +40,10 @@ export async function sendHouseholdMemberInviteAction(
   _prevState: HouseholdActionState,
   formData: FormData,
 ): Promise<HouseholdActionState> {
-  const [locale, t] = await Promise.all([getLocale(), getTranslations("householdPage")]);
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("householdPage"),
+  ]);
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 
@@ -52,7 +57,8 @@ export async function sendHouseholdMemberInviteAction(
   }
 
   const rawMemberId = formData.get("memberId");
-  const targetMemberId = typeof rawMemberId === "string" && rawMemberId ? rawMemberId : null;
+  const targetMemberId =
+    typeof rawMemberId === "string" && rawMemberId ? rawMemberId : null;
 
   const household = await prisma.household.findUnique({
     where: { id: membership.householdId },
@@ -111,7 +117,7 @@ export async function sendHouseholdMemberInviteAction(
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}?openApp=1`,
       locale,
     });
   } catch (error) {
@@ -173,7 +179,9 @@ export async function createPassiveHouseholdMemberAction(
   return { success: true, error: null };
 }
 
-export async function revokeHouseholdMemberInviteAction(formData: FormData): Promise<void> {
+export async function revokeHouseholdMemberInviteAction(
+  formData: FormData,
+): Promise<void> {
   const session = await requireHouseholdMemberSession();
   const membership = await getFirstHouseholdMembership(session.user.id);
 

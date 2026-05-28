@@ -13,7 +13,10 @@ import { getFirstHouseholdMembership } from "@/lib/users";
 
 const inviteEmailSchema = z.string().trim().email().max(320);
 
-export type SendInviteState = { ok: true } | { ok: false; error: "email" | "forbidden" | "failed" | "already_member" } | null;
+export type SendInviteState =
+  | { ok: true }
+  | { ok: false; error: "email" | "forbidden" | "failed" | "already_member" }
+  | null;
 
 export async function sendHouseholdInvite(
   _prev: SendInviteState,
@@ -27,7 +30,9 @@ export async function sendHouseholdInvite(
   }
 
   const raw = formData.get("email");
-  const parsed = inviteEmailSchema.safeParse(typeof raw === "string" ? raw : "");
+  const parsed = inviteEmailSchema.safeParse(
+    typeof raw === "string" ? raw : "",
+  );
 
   if (!parsed.success) {
     return { ok: false, error: "email" };
@@ -74,7 +79,7 @@ export async function sendHouseholdInvite(
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/${locale}/invite/${invite.token}`,
+      inviteUrl: `${origin}/${locale}/invite/${invite.token}?openApp=1`,
       locale,
     });
   } catch (err) {
