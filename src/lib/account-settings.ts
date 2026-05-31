@@ -1,6 +1,7 @@
 import { BillingSubscriptionStatus, ThemePreference } from "@prisma/client";
 import { z } from "zod";
 
+import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getOptionalPaddleServerConfig } from "@/lib/env";
 import {
@@ -45,6 +46,12 @@ export async function getAccountSettings(user: AppUser) {
     },
     where: { userId: user.id },
   });
+  const householdBillingSubscription = membership
+    ? await prisma.billingSubscription.findUnique({
+        select: { status: true },
+        where: { householdId: membership.householdId },
+      })
+    : null;
 
   const isOwnerWithMembers =
     membership?.role === "OWNER"
@@ -55,6 +62,11 @@ export async function getAccountSettings(user: AppUser) {
 
   return {
     billingSubscription,
+    hasAppAccess: hasAccess({
+      billingSubscription: householdBillingSubscription ?? billingSubscription,
+      developmentAccessGrantedAt: user.developmentAccessGrantedAt,
+      trialStartedAt: user.trialStartedAt,
+    }),
     isOwnerWithMembers,
     membership,
     user: {
