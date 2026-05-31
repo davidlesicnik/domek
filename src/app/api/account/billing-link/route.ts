@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
+
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { handleRouteError, jsonError, requireApiSession } from "@/lib/api-route";
+import { jsonError, requireApiSession } from "@/lib/api-route";
 import { resolveAuthOrigin } from "@/lib/origin";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 
@@ -16,13 +18,14 @@ function trialEndedPath(locale: "en" | "sl"): string {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = randomUUID();
   const session = await requireApiSession(request);
   if (session instanceof Response) return session;
 
   try {
     const input = billingLinkInputSchema.parse(await request.json());
     if (!session.user.email) {
-      return jsonError("email_required", 400);
+      return jsonError("email_required", 400, { requestId });
     }
 
     const publicOrigin = resolveAuthOrigin(request);
@@ -39,17 +42,27 @@ export async function POST(request: NextRequest) {
     });
 
     if (error || !data.properties.action_link) {
-      console.error("[POST /api/account/billing-link]", error);
-      return jsonError("billing_link_failed", 500);
+      console.error("[POST /api/account/billing-link]", {
+        requestId,
+        message: error?.message ?? "Missing action_link in Supabase response.",
+        name: error?.name ?? null,
+        status: error?.status ?? null,
+      });
+      return jsonError("billing_link_failed", 500, { requestId });
     }
 
     return NextResponse.json({
       url: data.properties.action_link,
     });
   } catch (error) {
-    return handleRouteError(error, {
-      invalidMessage: "Invalid billing link request.",
-      logLabel: "[POST /api/account/billing-link]",
+    if (error instanceof SyntaxError || error instanceof z.ZodError) {
+      return jsonError("Invalid billing link request.", 400, { requestId });
+    }
+
+    console.error("[POST /api/account/billing-link]", {
+      requestId,
+      error,
     });
+    return jsonError("Internal server error", 500, { requestId });
   }
 }

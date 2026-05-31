@@ -2,8 +2,12 @@ import { ZodError } from "zod";
 
 import { getCurrentAppSession, type AppSession } from "@/lib/authz";
 
-export function jsonError(error: string, status: number) {
-  return Response.json({ error }, { status });
+export function jsonError(
+  error: string,
+  status: number,
+  extras?: Record<string, unknown>,
+) {
+  return Response.json({ error, ...extras }, { status });
 }
 
 export async function requireApiSession(request: Request): Promise<AppSession | Response> {
