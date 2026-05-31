@@ -46,7 +46,6 @@ const PUBLIC_PATHS = [
   "/api/paddle/webhook",
   "/auth/callback",
   "/auth/email",
-  "/auth/mobile",
   "/auth/start",
   "/api/auth/signout",
 ];
@@ -98,8 +97,6 @@ function isAuthFlowPath(pathname: string): boolean {
     pathname.startsWith("/auth/callback/") ||
     pathname === "/auth/email" ||
     pathname.startsWith("/auth/email/") ||
-    pathname === "/auth/mobile" ||
-    pathname.startsWith("/auth/mobile/") ||
     pathname === "/api/auth/signout" ||
     pathname === "/auth/start" ||
     pathname.startsWith("/auth/start/")

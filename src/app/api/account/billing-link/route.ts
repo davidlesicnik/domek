@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     const publicOrigin = resolveAuthOrigin(request);
-    const redirectTo = new URL("/auth/mobile", publicOrigin);
+    const redirectTo = new URL("/auth/callback", publicOrigin);
     redirectTo.searchParams.set("next", trialEndedPath(input.locale));
 
     const supabaseAdmin = createSupabaseAdminClient();
