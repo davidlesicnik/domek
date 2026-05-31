@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const tokenType = requestUrl.searchParams.get("type");
-  const next = sanitizeAuthCallbackNextPath(request.cookies.get(nextCookieName)?.value);
+  const next = sanitizeAuthCallbackNextPath(
+    request.cookies.get(nextCookieName)?.value ??
+      requestUrl.searchParams.get("next"),
+  );
   const supabase = await createSupabaseServerClient();
   const authResult = code
     ? await supabase.auth.exchangeCodeForSession(code)
