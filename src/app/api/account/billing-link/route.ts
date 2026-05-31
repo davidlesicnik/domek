@@ -29,30 +29,36 @@ export async function POST(request: NextRequest) {
     }
 
     const publicOrigin = resolveAuthOrigin(request);
-    const redirectTo = new URL("/auth/callback", publicOrigin);
-    redirectTo.searchParams.set("next", trialEndedPath(input.locale));
+    const callbackUrl = new URL("/auth/callback", publicOrigin);
+    callbackUrl.searchParams.set("next", trialEndedPath(input.locale));
 
     const supabaseAdmin = createSupabaseAdminClient();
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: session.user.email,
-      options: {
-        redirectTo: redirectTo.toString(),
-      },
     });
 
-    if (error || !data.properties.action_link) {
+    if (
+      error ||
+      !data.properties.hashed_token ||
+      !data.properties.verification_type
+    ) {
       console.error("[POST /api/account/billing-link]", {
         requestId,
-        message: error?.message ?? "Missing action_link in Supabase response.",
+        message:
+          error?.message ??
+          "Missing hashed_token or verification_type in Supabase response.",
         name: error?.name ?? null,
         status: error?.status ?? null,
       });
       return jsonError("billing_link_failed", 500, { requestId });
     }
 
+    callbackUrl.searchParams.set("token_hash", data.properties.hashed_token);
+    callbackUrl.searchParams.set("type", data.properties.verification_type);
+
     return NextResponse.json({
-      url: data.properties.action_link,
+      url: callbackUrl.toString(),
     });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof z.ZodError) {
