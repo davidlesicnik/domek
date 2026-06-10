@@ -283,20 +283,6 @@ Optional direct connection for migrations and backups:
 # DIRECT_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 ```
 
-### Auth migration scripts
-
-Prepare existing users for local auth migration:
-
-```bash
-npx tsx scripts/auth-migrate-existing-users.ts
-```
-
-Send password setup links for migrated users when SMTP is configured:
-
-```bash
-npx tsx scripts/auth-migrate-existing-users.ts --send-emails
-```
-
 ### Database commands
 
 ```bash

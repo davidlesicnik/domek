@@ -50,7 +50,7 @@ function run() {
 
   assert.equal(
     resolveAuthOriginFromRequest(
-      new URL("http://localhost:3000/auth/start/google"),
+      new URL("http://localhost:3000/api/auth/forgot-password"),
       new SimpleHeaders({
         "x-forwarded-proto": "http",
         "x-forwarded-host": "localhost:3000",
@@ -70,7 +70,7 @@ function run() {
 
   assert.equal(
     resolveAuthOriginFromRequest(
-      new URL("http://localhost:3000/auth/start/google"),
+      new URL("http://localhost:3000/api/auth/forgot-password"),
       new SimpleHeaders({
         "x-forwarded-proto": "HTTPS",
         "x-forwarded-host": "evil.example",
@@ -86,7 +86,7 @@ function run() {
 
   assertThrows("non-allowlisted development host should fail", () =>
     resolveAuthOriginFromRequest(
-      new URL("http://localhost:3000/auth/start/google"),
+      new URL("http://localhost:3000/api/auth/forgot-password"),
       new SimpleHeaders({
         "x-forwarded-proto": "https",
         "x-forwarded-host": "evil.example",
@@ -100,7 +100,7 @@ function run() {
 
   assertThrows("production should require APP_URL", () =>
     resolveAuthOriginFromRequest(
-      new URL("http://localhost:3000/auth/start/google"),
+      new URL("http://localhost:3000/api/auth/forgot-password"),
       new SimpleHeaders({}),
       {
         allowedDevHosts: new Set(["localhost"]),

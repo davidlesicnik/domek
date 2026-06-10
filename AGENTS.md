@@ -19,7 +19,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 
 - Next.js App Router with TypeScript
 - Tailwind CSS
-- Supabase Auth with OAuth provider configuration
+- Self-hosted email/password auth
 - Prisma with PostgreSQL
 - Docker Compose
 - npm
@@ -30,7 +30,7 @@ This project uses current Next.js App Router conventions. Before changing framew
 - Put reusable UI in `src/components`.
 - Put shared server helpers in `src/lib`.
 - Keep Prisma schema changes in `prisma/schema.prisma`.
-- Do not hardcode provider-specific OAuth secrets or household-specific domains in application code.
+- Do not hardcode auth secrets, external service credentials, or household-specific domains in application code.
 - Reuse shared UI primitives when they already exist. For onboarding/callout bubbles, prefer `src/components/ui/onboarding-tooltip.tsx` over custom tooltip markup.
 
 ## Product And Visual Direction
@@ -59,9 +59,9 @@ docker compose config
 docker compose build
 ```
 
-## Production Migrations (Railway)
+## Production Migrations
 
-- Run production migrations via Railway Pre-deploy Command so schema changes are applied before app startup.
+- Run production migrations before app startup so schema changes are applied before the container begins serving traffic.
 - Use this command for production deploy checks:
 
 ```bash
@@ -75,12 +75,12 @@ npm run db:deploy:verify
 - `DIRECT_URL` must be set for migrations; `db:deploy:verify` fails fast when it is missing/invalid.
 - Use `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to cap migration step runtime and surface stuck-lock troubleshooting.
 - Keep the runtime start command app-only (`node server.js` or `npm run start`), without migration commands.
-- The production Docker image ships Prisma CLI plus `scripts/db-deploy-verify.mjs` and `scripts/db-healthcheck.mjs`; keep those files available for Railway Pre-deploy execution.
+- The production Docker image ships Prisma CLI plus `scripts/db-deploy-verify.mjs` and `scripts/db-healthcheck.mjs`; keep those files available for your deploy pipeline or pre-start migration step.
 - Never use `prisma migrate dev` or `prisma db push` in production.
 
 ## Routing and Auth Middleware
 
-All requests pass through `src/proxy.ts` before reaching any page. It checks the Supabase session and redirects unauthenticated users to `/login?next=<path>` for any path not in `PUBLIC_PATHS`.
+All requests pass through `src/proxy.ts` before reaching any page. It checks the current app session and redirects unauthenticated users to `/login?next=<path>` for any path not in `PUBLIC_PATHS`.
 
 **Any new public page (marketing, legal, etc.) must be added to `PUBLIC_PATHS` in `src/proxy.ts` or it will redirect unauthenticated visitors to login.**
 

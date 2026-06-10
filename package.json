@@ -14,7 +14,6 @@
     "db:migrate": "prisma migrate dev",
     "env:check": "tsx scripts/check-env.ts",
     "auth:set-password": "tsx scripts/auth-set-password.ts",
-    "auth:migrate-users": "tsx scripts/auth-migrate-existing-users.ts",
     "check:auth-redirects": "tsx scripts/check-auth-redirects.ts",
     "check:security-hardening": "tsx scripts/check-security-hardening.ts",
     "db:migrate:deploy": "./node_modules/.bin/prisma migrate deploy",
