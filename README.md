@@ -1,8 +1,16 @@
+<p align="center">
+  <img src="public/logo.png" alt="Domek logo" width="160">
+</p>
+
 # Domek
 
 Domek is a self-hosted household planner for shared calendars, chores, shopping lists, notes, and expenses.
 
 Use it as a private home board for your household. You run it yourself with Docker Compose and PostgreSQL.
+
+## Preview
+
+![Domek dashboard screenshot](docs/images/dashboard-screenshot.png)
 
 ## What Domek does
 
