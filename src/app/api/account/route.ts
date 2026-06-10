@@ -7,16 +7,6 @@ import {
 } from "@/lib/account-settings";
 import { handleRouteError, jsonError, requireApiSession } from "@/lib/api-route";
 
-function bearerToken(request: Request) {
-  const authHeader = request.headers.get("authorization")?.trim();
-  if (!authHeader?.toLowerCase().startsWith("bearer ")) {
-    return null;
-  }
-
-  const token = authHeader.slice(7).trim();
-  return token || null;
-}
-
 export async function GET(request: Request) {
   const session = await requireApiSession(request);
   if (session instanceof Response) return session;
@@ -46,7 +36,7 @@ export async function DELETE(request: Request) {
 
   try {
     parseDeleteAccountInput(await request.json());
-    const result = await deleteAccount(session.user, bearerToken(request));
+    const result = await deleteAccount(session.user);
 
     if (!result.ok) {
       const status = result.reason === "owner_with_members" ? 409 : 400;

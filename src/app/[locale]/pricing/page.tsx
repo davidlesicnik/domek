@@ -95,17 +95,8 @@ function PricingContent() {
             >
               {tc("startHousehold")}
             </Link>
-            <p className="mt-3 text-xs text-[#7f857f] sm:text-right">
-              {t("trialNote")}
-            </p>
-            <p className="mt-1 text-xs text-[#9ea49f] sm:text-right">
-              {t("cancelNoteStart")}
-              <Link className="underline underline-offset-2 hover:text-[#686e6a]" href="/refund-policy">
-                {t("reviewFairly")}
-              </Link>
-              {t("cancelNoteEnd")}
-            </p>
-            <p className="mt-1 text-xs text-[#9ea49f] sm:text-right">{t("paddleNote")}</p>
+            <p className="mt-3 text-xs text-[#7f857f] sm:text-right">{t("trialNote")}</p>
+            <p className="mt-1 text-xs text-[#9ea49f] sm:text-right">{t("cancelNote")}</p>
           </div>
         </div>
 

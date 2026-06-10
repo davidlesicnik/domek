@@ -8,13 +8,19 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: ${CONTAINER_DATABASE_URL:-postgresql://domek:domek@postgres:5432/domek?schema=public}
-      SUPABASE_URL: ${SUPABASE_URL:-${NEXT_PUBLIC_SUPABASE_URL:-}}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}}
       APP_URL: ${APP_URL:-}
-      PADDLE_CLIENT_TOKEN: ${PADDLE_CLIENT_TOKEN:-}
-      PADDLE_PRICE_ID: ${PADDLE_PRICE_ID:-}
-      PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
-      PADDLE_API_KEY: ${PADDLE_API_KEY:-}
+      AUTH_SECRET: ${AUTH_SECRET:-change-me}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      NOTIFY_SECRET: ${NOTIFY_SECRET:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_MAILTO: ${VAPID_MAILTO:-}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
     ports:
       - "3000:3000"
 
@@ -34,6 +40,25 @@ services:
       retries: 5
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
+  scheduler:
+    image: curlimages/curl:8.14.1
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+    environment:
+      NOTIFY_INTERVAL_SECONDS: ${NOTIFY_INTERVAL_SECONDS:-86400}
+      NOTIFY_SECRET: ${NOTIFY_SECRET:-}
+    command:
+      - sh
+      - -c
+      - |
+        sleep 15
+        while true; do
+          curl -fsS -X POST http://web:3000/api/notify/send -H "Authorization: Bearer $$NOTIFY_SECRET" || true
+          sleep "$$NOTIFY_INTERVAL_SECONDS"
+        done
 
 volumes:
   postgres-data:

@@ -1,15 +1,15 @@
-import { Link } from "@/i18n/navigation";
 import { Footer } from "@/components/layout/footer";
+import { Link } from "@/i18n/navigation";
 
 export const metadata = {
   title: "Refund policy — Domek",
 };
 
-const effectiveDate = "23 April 2026";
+const effectiveDate = "10 June 2026";
 
 export default function RefundPolicyPage() {
   return (
-    <div className="min-h-dvh border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321] flex flex-col">
+    <div className="flex min-h-dvh flex-col border-t-4 border-[#232323] bg-[#f8f6f1] text-[#202321]">
       <header className="border-b border-[#dfddd6] bg-[#fdfcf8]">
         <div className="mx-auto flex w-full max-w-[1280px] items-center px-4 py-4 sm:px-6">
           <Link
@@ -33,56 +33,43 @@ export default function RefundPolicyPage() {
           <section className="rounded-md border border-[#d9ded7] bg-[#f8fbf7] px-4 py-4 text-[#47534a]">
             <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Summary</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5">
-              <li>Domek includes a 30-day free trial before any paid charge is made.</li>
-              <li>After trial, Domek is billed as a yearly subscription.</li>
-              <li>You can cancel at any time. Access continues until the current paid year ends.</li>
-              <li>We typically do not offer prorated refunds but review edge cases fairly.</li>
+              <li>The self-hosted Domek core does not charge end users.</li>
+              <li>There is no built-in checkout, subscription, or trial flow in the app.</li>
+              <li>If you buy hosting, email, or infrastructure from another provider, that provider sets its own refund terms.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">30-day free trial</h2>
+            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Core app</h2>
             <p className="mt-3">
-              New paid households start with a 30-day free trial. Cancel during trial and you will not be charged.
+              Domek itself does not process payments in the self-hosted release. Because the app is free to run, there
+              is no in-app refund process for core access.
             </p>
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Yearly subscription billing</h2>
+            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Third-party services</h2>
             <p className="mt-3">
-              Once the trial ends, Domek bills annually. Your subscription renews each year until canceled.
+              If you choose paid hosting, managed PostgreSQL, SMTP, domains, or other infrastructure, those purchases
+              are separate from Domek and follow the refund policies of the vendors you choose.
             </p>
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Refunds</h2>
+            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">Questions</h2>
             <p className="mt-3">
-              If you were charged after your free trial, you can request a refund within 14 days of the first yearly
-              charge if usage has been minimal. We review these requests in good faith.
-            </p>
-            <p className="mt-3">
-              After that period, yearly subscription charges are typically non-refundable to the extent permitted by
-              applicable consumer protection laws.
-            </p>
-            <p className="mt-3">
-              If your payment is processed by Paddle, refunds may be handled directly through that provider.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="font-serif text-xl font-semibold tracking-normal text-[#171a18]">How to request a refund</h2>
-            <p className="mt-3">
-              Email{" "}
+              If you have a question about the open-source release or need help understanding what Domek does and does
+              not handle, email{" "}
               <a className="font-semibold underline underline-offset-2" href="mailto:support@domekapp.com">
                 support@domekapp.com
-              </a>{" "}
-              with the account email, charge date, and reason for the request. We aim to respond within a few business
-              days. If something feels off, reach out — we&apos;d rather fix it than have you leave unhappy.
+              </a>
+              .
             </p>
           </section>
 
           <p className="text-xs text-[#8a908b]">
-            This refund policy does not limit any mandatory consumer rights that apply in your country.
+            This page does not limit any mandatory consumer rights that apply to services you buy from third-party
+            providers.
           </p>
         </div>
       </main>

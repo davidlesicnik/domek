@@ -1,13 +1,7 @@
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
 
-import { getDevelopmentAccessBypassConfig } from "../src/lib/env";
 import { PUBLIC_FORM_HONEYPOT_FIELD } from "../src/lib/public-form";
 import { validatePublicRouteRequest } from "../src/lib/public-request-guard";
-import {
-  PADDLE_WEBHOOK_SIGNATURE_TOLERANCE_MS,
-  verifyPaddleWebhookSignature,
-} from "../src/lib/paddle";
 
 const rateLimitStoreOwner = globalThis as typeof globalThis & {
   domekPublicMutationRateLimits?: Map<string, { count: number; resetAt: number }>;
@@ -17,10 +11,7 @@ function resetRateLimitStore() {
   rateLimitStoreOwner.domekPublicMutationRateLimits = new Map();
 }
 
-function withEnv<T>(
-  nextEnv: Record<string, string | undefined>,
-  fn: () => T,
-): T {
+function withEnv<T>(nextEnv: Record<string, string | undefined>, fn: () => T): T {
   const previousEnv = new Map<string, string | undefined>();
 
   for (const [key, value] of Object.entries(nextEnv)) {
@@ -46,7 +37,7 @@ function withEnv<T>(
   }
 }
 
-function buildRequest(origin: string, url = "https://app.example.com/auth/email") {
+function buildRequest(origin: string, url = "https://app.example.com/auth/login") {
   return new Request(url, {
     method: "POST",
     headers: {
@@ -56,28 +47,14 @@ function buildRequest(origin: string, url = "https://app.example.com/auth/email"
   });
 }
 
-function buildSignedPaddleHeader(body: string, secret: string, timestampSeconds: number) {
-  const signature = createHmac("sha256", secret)
-    .update(`${timestampSeconds}:${body}`)
-    .digest("hex");
-
-  return `ts=${timestampSeconds};h1=${signature}`;
-}
-
 function run() {
   withEnv(
     {
       APP_URL: "https://app.example.com",
+      AUTH_SECRET: "12345678901234567890123456789012",
       NODE_ENV: "production",
-      ENABLE_DEVELOPMENT_ACCESS_BYPASS: undefined,
-      DEVELOPMENT_ACCESS_CODE: undefined,
     },
     () => {
-      assert.deepEqual(getDevelopmentAccessBypassConfig(), {
-        accessCode: null,
-        enabled: false,
-      });
-
       const formData = new FormData();
       formData.set("email", "home@example.com");
 
@@ -112,21 +89,21 @@ function run() {
       resetRateLimitStore();
 
       assert.deepEqual(
-        validatePublicRouteRequest(buildRequest("https://app.example.com"), "contact", {
+        validatePublicRouteRequest(buildRequest("https://app.example.com", "https://app.example.com/en-US/contact"), "contact", {
           formData,
           identifiers: ["home@example.com"],
         }),
         { ok: true },
       );
       assert.deepEqual(
-        validatePublicRouteRequest(buildRequest("https://app.example.com"), "contact", {
+        validatePublicRouteRequest(buildRequest("https://app.example.com", "https://app.example.com/en-US/contact"), "contact", {
           formData,
           identifiers: ["home@example.com"],
         }),
         { ok: true },
       );
       assert.deepEqual(
-        validatePublicRouteRequest(buildRequest("https://app.example.com"), "contact", {
+        validatePublicRouteRequest(buildRequest("https://app.example.com", "https://app.example.com/en-US/contact"), "contact", {
           formData,
           identifiers: ["home@example.com"],
         }),
@@ -155,68 +132,7 @@ function run() {
         }),
         { ok: false, reason: "rate_limited" },
       );
-      assert.deepEqual(
-        validatePublicRouteRequest(signoutRequest, "signout", {
-          identifiers: ["user-b"],
-        }),
-        { ok: true },
-      );
     },
-  );
-
-  withEnv(
-    {
-      NODE_ENV: "development",
-      ENABLE_DEVELOPMENT_ACCESS_BYPASS: "true",
-      DEVELOPMENT_ACCESS_CODE: "letmein",
-    },
-    () => {
-      assert.deepEqual(getDevelopmentAccessBypassConfig(), {
-        accessCode: "letmein",
-        enabled: true,
-      });
-    },
-  );
-
-  withEnv(
-    {
-      APP_URL: "https://app.example.com",
-      NODE_ENV: "production",
-      ENABLE_DEVELOPMENT_ACCESS_BYPASS: "true",
-      DEVELOPMENT_ACCESS_CODE: "letmein",
-    },
-    () => {
-      assert.throws(() => getDevelopmentAccessBypassConfig());
-    },
-  );
-
-  const body = JSON.stringify({
-    data: { id: "sub_123" },
-    event_type: "subscription.created",
-  });
-  const secret = "pdl_secret";
-  const nowMs = Date.now();
-  const nowSeconds = Math.floor(nowMs / 1000);
-  const validHeader = buildSignedPaddleHeader(body, secret, nowSeconds);
-
-  assert.equal(
-    verifyPaddleWebhookSignature(body, validHeader, secret, { nowMs }),
-    true,
-  );
-  assert.equal(
-    verifyPaddleWebhookSignature(body, validHeader, secret, {
-      nowMs: nowMs + PADDLE_WEBHOOK_SIGNATURE_TOLERANCE_MS + 1_000,
-    }),
-    false,
-  );
-  assert.equal(
-    verifyPaddleWebhookSignature(
-      body,
-      buildSignedPaddleHeader(body, "wrong-secret", nowSeconds),
-      secret,
-      { nowMs },
-    ),
-    false,
   );
 
   console.log("Security hardening checks passed.");

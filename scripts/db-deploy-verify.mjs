@@ -27,15 +27,17 @@ function assertMigrationEnvironment() {
     throw new Error("DATABASE_URL must be set and valid before running deploy verification.");
   }
 
-  if (!directUrl) {
-    throw new Error(
-      "DIRECT_URL must be set and valid for migration deploys. Without DIRECT_URL Prisma may use pooled DATABASE_URL and stall/fail during migrations.",
+  if (directUrl) {
+    console.log(
+      `Migration DB targets: DATABASE_URL=${databaseUrl.hostname}:${databaseUrl.port || "default"}, DIRECT_URL=${directUrl.hostname}:${directUrl.port || "default"}`,
     );
+    return;
   }
 
   console.log(
-    `Migration DB targets: DATABASE_URL=${databaseUrl.hostname}:${databaseUrl.port || "default"}, DIRECT_URL=${directUrl.hostname}:${directUrl.port || "default"}`,
+    `Migration DB target: DATABASE_URL=${databaseUrl.hostname}:${databaseUrl.port || "default"}`,
   );
+  console.log("DIRECT_URL is not set; Prisma will use DATABASE_URL for migrations.");
 }
 
 function printP1001Hints() {
@@ -43,9 +45,9 @@ function printP1001Hints() {
   const directUrl = getUrlDetails(process.env.DIRECT_URL);
 
   console.error("\nP1001 troubleshooting:");
-  console.error("- Confirm the DB host is reachable from Railway.");
-  console.error("- For Supabase, include `sslmode=require` on direct (5432) URLs.");
-  console.error("- Keep app runtime on pooler (6543) in DATABASE_URL.");
+  console.error("- Confirm the DB host is reachable from the environment running this check.");
+  console.error("- If your provider requires TLS, include the needed SSL parameters in the connection URL.");
+  console.error("- If DATABASE_URL uses a transaction pooler, set DIRECT_URL to a direct or session connection.");
 
   if (databaseUrl) {
     console.error(
@@ -58,7 +60,7 @@ function printP1001Hints() {
       `- DIRECT_URL host: ${directUrl.hostname}:${directUrl.port || "default"} (sslmode=${directUrl.sslmode ?? "missing"})`,
     );
   } else {
-    console.error("- DIRECT_URL is missing; Prisma migrate deploy may be using DATABASE_URL.");
+    console.error("- DIRECT_URL is missing; Prisma migrate deploy is using DATABASE_URL.");
   }
 }
 
@@ -105,7 +107,7 @@ function runCommand(label, command, args, timeoutMs = 300000) {
 
       if (didTimeout) {
         const error = new Error(
-          `${label} timed out after ${Math.floor(timeoutMs / 1000)}s. This can happen if migrations are waiting on a lock or if DIRECT_URL cannot be reached.`,
+          `${label} timed out after ${Math.floor(timeoutMs / 1000)}s. This can happen if migrations are waiting on a lock or if the database endpoint cannot be reached.`,
         );
         error.commandOutput = output;
         reject(error);
@@ -150,7 +152,7 @@ runDeployVerification().catch((error) => {
   if (error instanceof Error && error.message.includes("timed out")) {
     console.error("\nTimeout troubleshooting:");
     console.error("- Confirm no second deploy is running migrations concurrently.");
-    console.error("- Confirm DIRECT_URL points to a reachable non-pooled/session endpoint.");
+    console.error("- Confirm the migration connection points to a reachable non-pooled or session endpoint.");
     console.error("- Increase MIGRATION_DEPLOY_TIMEOUT_MS for large migrations.");
   }
 

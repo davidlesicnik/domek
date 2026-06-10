@@ -3,22 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum HouseholdRole {
   OWNER
   MEMBER
-}
-
-enum BillingSubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  PAUSED
-  CANCELED
 }
 
 enum ThemePreference {
@@ -58,39 +49,37 @@ enum ChoreRecurrenceType {
 }
 
 model User {
-  id                         String            @id
-  name                       String?
-  email                      String?           @unique
-  image                      String?
-  themePreference            ThemePreference   @default(SYSTEM)
-  deletedAt                  DateTime?
-  developmentAccessGrantedAt DateTime?
-  trialStartedAt             DateTime?
-  billingSubscription        BillingSubscription?
-  memberships                HouseholdMember[] @relation("HouseholdMemberAccount")
-  createdHouseholdMembers    HouseholdMember[] @relation("HouseholdMemberCreatedBy")
-  invitesSent                HouseholdInvite[] @relation("InvitesSent")
-  calendarEvents             CalendarEvent[]
-  calendarGroups             CalendarGroup[]
-  todoLists                  TodoList[]
-  shoppingLists              ShoppingList[]
-  notes                      Note[]
-  expenseCategories          ExpenseCategory[]
-  choreCategories            ChoreCategory[]
-  expenses                   Expense[]
-  choresCreated              Chore[]
-  choreCompletions           ChoreCompletion[]
-  pushSubscriptions          PushSubscription[]
-  createdAt                  DateTime          @default(now())
-  updatedAt                  DateTime          @updatedAt
+  id                     String               @id
+  name                   String?
+  email                  String?              @unique
+  image                  String?
+  themePreference        ThemePreference      @default(SYSTEM)
+  deletedAt              DateTime?
+  passwordCredential     PasswordCredential?
+  sessions               UserSession[]
+  passwordResetTokens    PasswordResetToken[]
+  memberships            HouseholdMember[]    @relation("HouseholdMemberAccount")
+  createdHouseholdMembers HouseholdMember[]   @relation("HouseholdMemberCreatedBy")
+  invitesSent            HouseholdInvite[]    @relation("InvitesSent")
+  calendarEvents         CalendarEvent[]
+  calendarGroups         CalendarGroup[]
+  todoLists              TodoList[]
+  shoppingLists          ShoppingList[]
+  notes                  Note[]
+  expenseCategories      ExpenseCategory[]
+  choreCategories        ChoreCategory[]
+  expenses               Expense[]
+  choresCreated          Chore[]
+  choreCompletions       ChoreCompletion[]
+  pushSubscriptions      PushSubscription[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
 }
 
 model Household {
   id                String            @id @default(cuid())
   name              String
-  paidAt            DateTime?
   deletedAt         DateTime?
-  billingSubscription BillingSubscription?
   members           HouseholdMember[]
   invites           HouseholdInvite[]
   calendarEvents    CalendarEvent[]
@@ -107,28 +96,39 @@ model Household {
   updatedAt         DateTime          @updatedAt
 }
 
-model BillingSubscription {
-  id                   String                    @id @default(cuid())
-  status               BillingSubscriptionStatus
-  paddleCustomerId     String?                   @unique
-  paddleSubscriptionId String                    @unique
-  priceId              String?                   @db.VarChar(64)
-  userId               String                    @unique
-  householdId          String?                   @unique
-  startedAt            DateTime?
-  trialEndsAt          DateTime?
-  currentPeriodStartsAt DateTime?
-  currentPeriodEndsAt  DateTime?
-  scheduledCancellationAt DateTime?
-  canceledAt           DateTime?
-  lastEventOccurredAt  DateTime?
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
-  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  household            Household?                @relation(fields: [householdId], references: [id], onDelete: SetNull)
+model PasswordCredential {
+  userId        String   @id
+  passwordHash  String   @db.VarChar(255)
+  passwordSetAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
-  @@index([householdId])
-  @@index([status])
+model UserSession {
+  id               String   @id @default(cuid())
+  userId           String
+  sessionTokenHash String   @unique @db.VarChar(64)
+  expiresAt        DateTime
+  lastUsedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model HouseholdMember {

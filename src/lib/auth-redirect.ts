@@ -30,7 +30,7 @@ function sanitizeNextPath(value: string | null | undefined, options: SanitizeNex
 
 export function sanitizeAuthStartNextPath(value: string | null | undefined): string {
   return sanitizeNextPath(value, {
-    blockedPrefixes: ["/login", "/auth/callback", "/auth/start"],
+    blockedPrefixes: ["/login", "/register", "/forgot-password", "/reset-password"],
     fallback: "/",
     rejectOAuthCodeParam: true,
   });
@@ -38,7 +38,7 @@ export function sanitizeAuthStartNextPath(value: string | null | undefined): str
 
 export function sanitizeAuthCallbackNextPath(value: string | null | undefined): string {
   return sanitizeNextPath(value, {
-    blockedPrefixes: ["/login", "/auth/callback", "/auth/start"],
+    blockedPrefixes: ["/login", "/register", "/forgot-password", "/reset-password"],
     fallback: "/app",
     rejectOAuthCodeParam: true,
   });
