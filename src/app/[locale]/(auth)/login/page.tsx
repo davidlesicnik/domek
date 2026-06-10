@@ -3,39 +3,20 @@ import { getLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
-import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
+import { AuthNotice, AuthPageShell, authTextLinkClassName } from "../auth-page-shell";
+import { safeNextPath, stringParam } from "../auth-page-helpers";
 import { LoginForm } from "./login-form";
 
 type LoginPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
 
-function stringParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
-function safeNextPath(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
-  }
-
-  const stripped = stripLocalePrefix(value);
-  if (
-    stripped.startsWith("/login") ||
-    stripped.startsWith("/register") ||
-    stripped.startsWith("/forgot-password") ||
-    stripped.startsWith("/reset-password")
-  ) {
-    return "/app";
-  }
-
-  return value;
-}
-
-function statusMessage(status: string | null, t: ReturnType<typeof useTranslations>) {
+function statusMessage(
+  status: string | null,
+  t: ReturnType<typeof useTranslations>,
+): LoginStatusMessage {
   switch (status) {
     case "registered":
       return { kind: "success", text: t("registered") };
@@ -68,14 +49,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const status = stringParam(params.status);
 
   return (
-    <main className="min-h-dvh border-t-4 border-[var(--surface-strong)] bg-[var(--page-background)] px-4 py-8 text-[var(--text-primary)] sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[980px] items-center">
-        <section className="grid w-full gap-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-float)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
-          <LoginLeft />
-          <LoginRight locale={locale} nextPath={nextPath} status={status} />
-        </section>
-      </div>
-    </main>
+    <AuthPageShell
+      className="grid w-full gap-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-float)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8"
+      maxWidthClassName="max-w-[980px]"
+    >
+      <LoginLeft />
+      <LoginRight locale={locale} nextPath={nextPath} status={status} />
+    </AuthPageShell>
   );
 }
 
@@ -118,26 +98,22 @@ function LoginRight({
       <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
         {t("subtitle")}
       </p>
-      {message ? (
-        <p
-          className={`mt-4 rounded-md px-3 py-2 text-sm font-medium ${
-            message.kind === "success"
-              ? "border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] text-[var(--accent-sage-text)]"
-              : "border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] text-[var(--accent-rose-text)]"
-          }`}
-        >
-          {message.text}
-        </p>
-      ) : null}
+      {message ? <AuthNotice kind={message.kind} text={message.text} /> : null}
       <LoginForm locale={locale} nextPath={nextPath} />
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--text-muted)]">
-        <Link className="underline-offset-2 transition hover:text-[var(--text-strong)] hover:underline" href={{ pathname: "/register", query: { next: nextPath } }}>
+        <Link className={authTextLinkClassName} href={{ pathname: "/register", query: { next: nextPath } }}>
           {t("createAccount")}
         </Link>
-        <Link className="underline-offset-2 transition hover:text-[var(--text-strong)] hover:underline" href={{ pathname: "/forgot-password", query: { next: nextPath } }}>
+        <Link className={authTextLinkClassName} href={{ pathname: "/forgot-password", query: { next: nextPath } }}>
           {t("forgotPassword")}
         </Link>
       </div>
     </div>
   );
 }
+type LoginStatusMessage =
+  | {
+      kind: "error" | "success";
+      text: string;
+    }
+  | null;
