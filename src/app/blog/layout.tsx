@@ -1,15 +1,8 @@
-import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 
-import { BlogShell } from "@/components/blog/blog-shell";
+import { routing } from "@/i18n/routing";
+import { getLocalizedAppEntryPath } from "@/lib/app-entry";
 
-import "../globals.css";
-
-export default function BlogLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full">
-        <BlogShell>{children}</BlogShell>
-      </body>
-    </html>
-  );
+export default async function BlogLayout() {
+  redirect(await getLocalizedAppEntryPath(routing.defaultLocale));
 }

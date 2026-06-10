@@ -6,22 +6,15 @@ import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
 
 const PUBLIC_PATHS = [
-  "/",
   "/account-deletion",
-  "/blog",
-  "/contact",
-  "/cookies",
   "/forgot-password",
   "/login",
   "/manifest.webmanifest",
-  "/pricing",
-  "/privacy",
-  "/refund-policy",
   "/register",
   "/reset-password",
+  "/robots.txt",
   "/sitemap.xml",
   "/sw.js",
-  "/terms",
   "/api/account",
   "/api/chores",
   "/api/dashboard",
@@ -39,6 +32,7 @@ const PUBLIC_PATHS = [
 const NON_LOCALIZED_PATHS = [
   "/blog",
   "/manifest.webmanifest",
+  "/robots.txt",
   "/sitemap.xml",
   "/sw.js",
 ];
