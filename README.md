@@ -2,6 +2,8 @@
 
 Domek is a self-hosted household planner for shared calendars, chores, shopping lists, notes, and expenses.
 
+Use it as a private home board for your household. You run it yourself with Docker Compose and PostgreSQL.
+
 ## What Domek does
 
 - Shared home board for the whole household
@@ -17,22 +19,31 @@ The easiest way to run Domek is with Docker Compose.
 ### What you need
 
 - Docker and Docker Compose
+- Git
 - A domain or local URL where you want to open Domek
 
-### 1. Copy the environment file
+### 1. Get the code
+
+```bash
+git clone https://github.com/davidlesicnik/domek.git
+cd domek
+```
+
+### 2. Copy the environment file
 
 ```bash
 cp .env.example .env
 ```
 
-### 2. Edit the important values in `.env`
+### 3. Edit the important values in `.env`
+
+For the simplest setup, keep the default PostgreSQL values from `.env.example` unchanged.
 
 At minimum, set these:
 
 ```bash
 APP_URL="https://your-domek-url.example.com"
 AUTH_SECRET="replace-with-a-long-random-secret"
-POSTGRES_PASSWORD="replace-with-a-strong-password"
 NOTIFY_SECRET="replace-with-a-random-secret"
 ```
 
@@ -40,10 +51,20 @@ Notes:
 
 - `AUTH_SECRET` should be long and random.
 - `APP_URL` should be the full public URL you will use to open Domek.
+- For local-only use, `APP_URL="http://localhost:3000"` is fine.
 - `NOTIFY_SECRET` is used by the built-in reminder scheduler.
-- The default PostgreSQL username and database name are fine for most home setups.
+- The default PostgreSQL username, password, and database name are fine for most home setups.
 
-### 3. Start Domek
+If you want to change the PostgreSQL username or password, update all related values together:
+
+```bash
+POSTGRES_USER="your-user"
+POSTGRES_PASSWORD="your-password"
+DATABASE_URL="postgresql://your-user:your-password@localhost:5432/domek?schema=public"
+CONTAINER_DATABASE_URL="postgresql://your-user:your-password@postgres:5432/domek?schema=public"
+```
+
+### 4. Start Domek
 
 ```bash
 docker compose up -d --build
@@ -55,7 +76,7 @@ This starts:
 - `postgres` for the database
 - `scheduler` for daily reminder delivery
 
-### 4. Run the database migration
+### 5. Run the database migration
 
 On first install, create the database tables:
 
@@ -63,7 +84,16 @@ On first install, create the database tables:
 docker compose exec web npx prisma migrate deploy
 ```
 
-### 5. Open the app
+### 6. Check that everything is running
+
+```bash
+docker compose ps
+docker compose logs -f web
+```
+
+You should see the `web` service running and the app starting without errors.
+
+### 7. Open the app
 
 Visit the URL from `APP_URL`.
 
@@ -78,6 +108,8 @@ On first run:
 - create your account
 - create your household
 - invite other household members
+
+If sign-up or sign-in fails, check the troubleshooting section below first.
 
 ## Optional email setup
 
@@ -171,10 +203,29 @@ docker compose logs -f
 
 ### I forgot a password and SMTP is not configured
 
-Set a password manually:
+Set a password manually from the checked-out repo on the host machine:
 
 ```bash
-npx tsx scripts/auth-set-password.ts --email user@example.com --password 'new-password'
+npm run auth:set-password -- --email user@example.com --password 'new-password'
+```
+
+This command uses your local `.env` and is meant to be run where the repo is checked out.
+
+### I changed the database username or password and login broke
+
+Make sure these values still match each other:
+
+```bash
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+DATABASE_URL=
+CONTAINER_DATABASE_URL=
+```
+
+Then restart the stack:
+
+```bash
+docker compose up -d --build
 ```
 
 ### I changed `.env` but nothing happened
@@ -273,7 +324,3 @@ npm run test:e2e
 ```
 
 Playwright global setup creates or updates the QA user, ensures it has a household, and logs in through the real password flow.
-
-## Project notes
-
-- Public-readiness audit: [docs/oss-public-readiness-audit.md](/Users/david/git/domek/docs/oss-public-readiness-audit.md)
