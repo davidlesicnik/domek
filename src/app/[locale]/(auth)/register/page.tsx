@@ -5,6 +5,7 @@ import { redirect } from "@/i18n/server";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
+import { RegisterForm } from "./register-form";
 
 type RegisterPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -60,30 +61,20 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
               {t("accountExists")}
             </p>
+          ) : status === "password_not_set" ? (
+            <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
+              {t("passwordNotSet")}
+            </p>
+          ) : status === "setup_error" ? (
+            <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
+              {t("setupError")}
+            </p>
           ) : status === "register_error" ? (
             <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
               {t("registerError")}
             </p>
           ) : null}
-          <form action="/auth/register" className="mt-6 grid gap-3" method="post">
-            <input name="locale" type="hidden" value={locale} />
-            <input name="next" type="hidden" value={nextPath} />
-            <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-              {t("nameLabel")}
-              <input autoComplete="name" className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none" maxLength={120} name="name" required type="text" />
-            </label>
-            <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-              {t("emailLabel")}
-              <input autoComplete="email" className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none" maxLength={320} name="email" required type="email" />
-            </label>
-            <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-              {t("passwordLabel")}
-              <input autoComplete="new-password" className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none" maxLength={200} minLength={8} name="password" required type="password" />
-            </label>
-            <button className="inline-flex h-11 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)]" type="submit">
-              {t("submit")}
-            </button>
-          </form>
+          <RegisterForm locale={locale} nextPath={nextPath} />
           <p className="mt-4 text-sm text-[var(--text-muted)]">
             {t("loginPrompt")}{" "}
             <Link className="underline-offset-2 transition hover:text-[var(--text-strong)] hover:underline" href={{ pathname: "/login", query: { next: nextPath, status: status === "registered" ? "registered" : undefined } }}>

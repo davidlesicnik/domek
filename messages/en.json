@@ -242,7 +242,9 @@
     "createAccount": "Create an account",
     "forgotPassword": "Forgot password?",
     "registered": "Account created. You can sign in now.",
-    "resetSuccess": "Password updated. You can sign in with your new password."
+    "resetSuccess": "Password updated. You can sign in with your new password.",
+    "passwordNotSet": "This account exists, but it does not have a local password yet. Use password reset or set one manually on the server.",
+    "setupError": "This Domek server is not fully set up yet. Run the latest database migration and try again."
   },
   "register": {
     "label": "Account",
@@ -253,7 +255,9 @@
     "passwordLabel": "Password",
     "submit": "Create account",
     "accountExists": "An account already exists for that email. Try signing in or resetting the password.",
+    "passwordNotSet": "An account already exists for that email, but it does not have a local password yet. Reset the password or set one manually on the server.",
     "registerError": "We couldn't create that account right now.",
+    "setupError": "This Domek server is not fully set up yet. Run the latest database migration and try again.",
     "loginPrompt": "Already have an account?",
     "loginLink": "Sign in"
   },

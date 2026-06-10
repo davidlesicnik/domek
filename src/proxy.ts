@@ -7,6 +7,10 @@ import { hasHouseholdMembership } from "@/lib/users";
 
 const PUBLIC_PATHS = [
   "/account-deletion",
+  "/api/auth/forgot-password",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/reset-password",
   "/forgot-password",
   "/login",
   "/manifest.webmanifest",

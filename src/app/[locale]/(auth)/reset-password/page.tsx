@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { stripLocalePrefix } from "@/i18n/routing";
+import { ResetPasswordForm } from "./reset-password-form";
 
 type ResetPasswordPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -50,18 +51,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
               {t("tokenError")}
             </p>
           ) : null}
-          <form action="/auth/reset-password" className="mt-6 grid gap-3" method="post">
-            <input name="locale" type="hidden" value={locale} />
-            <input name="next" type="hidden" value={nextPath} />
-            <input name="token" type="hidden" value={token} />
-            <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-              {t("passwordLabel")}
-              <input autoComplete="new-password" className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none" maxLength={200} minLength={8} name="password" required type="password" />
-            </label>
-            <button className="inline-flex h-11 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)]" type="submit">
-              {t("submit")}
-            </button>
-          </form>
+          <ResetPasswordForm locale={locale} nextPath={nextPath} token={token} />
           <p className="mt-4 text-sm text-[var(--text-muted)]">
             <Link className="underline-offset-2 transition hover:text-[var(--text-strong)] hover:underline" href={{ pathname: "/login", query: { next: nextPath } }}>
               {t("backToLogin")}

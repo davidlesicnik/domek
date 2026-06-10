@@ -242,7 +242,9 @@
     "createAccount": "Ustvari račun",
     "forgotPassword": "Ste pozabili geslo?",
     "registered": "Račun je ustvarjen. Zdaj se lahko prijavite.",
-    "resetSuccess": "Geslo je posodobljeno. Zdaj se lahko prijavite."
+    "resetSuccess": "Geslo je posodobljeno. Zdaj se lahko prijavite.",
+    "passwordNotSet": "Ta račun obstaja, vendar še nima lokalnega gesla. Uporabite ponastavitev gesla ali ga nastavite ročno na strežniku.",
+    "setupError": "Ta strežnik Domek še ni v celoti nastavljen. Zaženite zadnjo migracijo baze in poskusite znova."
   },
   "register": {
     "label": "Račun",
@@ -253,7 +255,9 @@
     "passwordLabel": "Geslo",
     "submit": "Ustvari račun",
     "accountExists": "Za ta e-poštni naslov račun že obstaja. Poskusite s prijavo ali ponastavitvijo gesla.",
+    "passwordNotSet": "Za ta e-poštni naslov račun že obstaja, vendar še nima lokalnega gesla. Ponastavite geslo ali ga nastavite ročno na strežniku.",
     "registerError": "Računa trenutno ni bilo mogoče ustvariti.",
+    "setupError": "Ta strežnik Domek še ni v celoti nastavljen. Zaženite zadnjo migracijo baze in poskusite znova.",
     "loginPrompt": "Že imate račun?",
     "loginLink": "Prijavite se"
   },

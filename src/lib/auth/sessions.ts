@@ -68,6 +68,36 @@ export async function clearSessionCookie() {
   cookieStore.set(SESSION_COOKIE_NAME, "", cookieOptions(new Date(0)));
 }
 
+export function setSessionCookieOnResponse(
+  response: Response,
+  token: string,
+  expiresAt: Date,
+): void {
+  const opts = cookieOptions(expiresAt);
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${token}`,
+    `Path=${opts.path}`,
+    `Expires=${opts.expires!.toUTCString()}`,
+    "HttpOnly",
+    `SameSite=${opts.sameSite}`,
+    ...(opts.secure ? ["Secure"] : []),
+  ];
+  response.headers.append("Set-Cookie", parts.join("; "));
+}
+
+export function clearSessionCookieOnResponse(response: Response): void {
+  const opts = cookieOptions(new Date(0));
+  const parts = [
+    `${SESSION_COOKIE_NAME}=`,
+    `Path=${opts.path}`,
+    `Expires=${opts.expires!.toUTCString()}`,
+    "HttpOnly",
+    `SameSite=${opts.sameSite}`,
+    ...(opts.secure ? ["Secure"] : []),
+  ];
+  response.headers.append("Set-Cookie", parts.join("; "));
+}
+
 export async function readSessionToken(request?: Request): Promise<string | null> {
   if (request) {
     return parseCookieHeader(request.headers.get("cookie")).get(SESSION_COOKIE_NAME) ?? null;
@@ -77,16 +107,21 @@ export async function readSessionToken(request?: Request): Promise<string | null
   return cookieStore.get(SESSION_COOKIE_NAME)?.value ?? null;
 }
 
-export async function invalidateSession(token: string | null | undefined) {
-  if (!token) {
-    await clearSessionCookie();
-    return;
+export async function invalidateSession(
+  token: string | null | undefined,
+  response?: Response,
+) {
+  if (token) {
+    await prisma.userSession.deleteMany({
+      where: { sessionTokenHash: hashToken(token) },
+    });
   }
 
-  await prisma.userSession.deleteMany({
-    where: { sessionTokenHash: hashToken(token) },
-  });
-  await clearSessionCookie();
+  if (response) {
+    clearSessionCookieOnResponse(response);
+  } else {
+    await clearSessionCookie();
+  }
 }
 
 export async function getSessionRecord(token: string | null | undefined) {

@@ -6,6 +6,7 @@ import { redirect } from "@/i18n/server";
 import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
+import { LoginForm } from "./login-form";
 
 type LoginPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -40,6 +41,10 @@ function statusMessage(status: string | null, t: ReturnType<typeof useTranslatio
       return { kind: "success", text: t("registered") };
     case "reset_success":
       return { kind: "success", text: t("resetSuccess") };
+    case "password_not_set":
+      return { kind: "error", text: t("passwordNotSet") };
+    case "setup_error":
+      return { kind: "error", text: t("setupError") };
     case "auth_error":
       return { kind: "error", text: t("authError") };
     default:
@@ -124,40 +129,7 @@ function LoginRight({
           {message.text}
         </p>
       ) : null}
-      <form action="/auth/login" className="mt-5 grid gap-3 rounded-md border border-[var(--border-default)] bg-[var(--surface-muted)] p-4" method="post">
-        <input name="locale" type="hidden" value={locale} />
-        <input name="next" type="hidden" value={nextPath} />
-        <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-          {t("emailLabel")}
-          <input
-            autoComplete="email"
-            className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--input-placeholder)]"
-            maxLength={320}
-            name="email"
-            placeholder={t("emailPlaceholder")}
-            required
-            type="email"
-          />
-        </label>
-        <label className="grid gap-2 text-sm font-semibold text-[var(--text-strong)]">
-          {t("passwordLabel")}
-          <input
-            autoComplete="current-password"
-            className="h-11 rounded-md border border-[var(--input-border)] bg-[var(--input-background)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--input-placeholder)]"
-            maxLength={200}
-            name="password"
-            placeholder={t("passwordPlaceholder")}
-            required
-            type="password"
-          />
-        </label>
-        <button
-          className="inline-flex h-11 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)]"
-          type="submit"
-        >
-          {t("submit")}
-        </button>
-      </form>
+      <LoginForm locale={locale} nextPath={nextPath} />
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--text-muted)]">
         <Link className="underline-offset-2 transition hover:text-[var(--text-strong)] hover:underline" href={{ pathname: "/register", query: { next: nextPath } }}>
           {t("createAccount")}
