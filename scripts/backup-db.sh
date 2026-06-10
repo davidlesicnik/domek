@@ -48,7 +48,7 @@ if [[ -n "${BACKUP_ENV_FILE:-}" ]]; then
   source "${BACKUP_ENV_FILE}"
 fi
 
-: "${BACKUP_DATABASE_URL:?Set BACKUP_DATABASE_URL to the direct Supabase Postgres URL on port 5432.}"
+: "${BACKUP_DATABASE_URL:?Set BACKUP_DATABASE_URL to a PostgreSQL connection URL on port 5432.}"
 : "${BACKUP_DEST_DIR:?Set BACKUP_DEST_DIR to the local backup working directory.}"
 : "${RESTIC_REPOSITORY:?Set RESTIC_REPOSITORY to the restic repository path or URL.}"
 
@@ -78,11 +78,11 @@ if [[ -n "${RESTIC_PASSWORD_FILE}" && -n "${RESTIC_PASSWORD}" ]]; then
 fi
 
 if [[ "${BACKUP_DATABASE_URL}" == *"pgbouncer=true"* ]]; then
-  fail "BACKUP_DATABASE_URL appears to be a transaction pooler URL. Use the direct connection or the Supavisor session pooler on port 5432 instead."
+  fail "BACKUP_DATABASE_URL appears to be a transaction pooler URL. Use a direct PostgreSQL connection or a session pooler on port 5432 instead."
 fi
 
 if [[ "${BACKUP_DATABASE_URL}" != *":5432/"* ]]; then
-  fail "BACKUP_DATABASE_URL must target a Supabase direct connection or Supavisor session pooler on port 5432."
+  fail "BACKUP_DATABASE_URL must target a PostgreSQL host on port 5432."
 fi
 
 if [[ "${COMPRESSOR}" != "zstd" && "${COMPRESSOR}" != "gzip" ]]; then

@@ -1,5 +1,5 @@
+import nodemailer from "nodemailer";
 import { getTranslations } from "next-intl/server";
-import { Resend } from "resend";
 
 import { getEmailConfig } from "@/lib/env";
 
@@ -17,20 +17,35 @@ type InviteEmailCopy = Readonly<{
   someone: string;
 }>;
 
-function getResend() {
-  const config = getEmailConfig();
-  return { resend: new Resend(config.resendApiKey), from: config.fromEmail };
-}
+type ResetEmailCopy = Readonly<{
+  resetBody: string;
+  resetButton: string;
+  resetExpiry: string;
+  resetHeading: string;
+  resetSubject: string;
+  resetTextBody: string;
+}>;
 
 function normalizeEmailLocale(locale: string | null | undefined): EmailLocale {
   return locale === "sl" ? "sl" : "en";
 }
 
-function formatMessage(
-  template: string,
-  values: Record<string, string>,
-): string {
+function formatMessage(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
+}
+
+function getTransport() {
+  const config = getEmailConfig();
+
+  return {
+    from: config.from,
+    transport: nodemailer.createTransport({
+      auth: config.user ? { pass: config.password, user: config.user } : undefined,
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+    }),
+  };
 }
 
 export async function sendInviteEmail({
@@ -46,7 +61,7 @@ export async function sendInviteEmail({
   inviteUrl: string;
   locale?: string | null;
 }): Promise<void> {
-  const { resend, from } = getResend();
+  const { from, transport } = getTransport();
   const emailLocale = normalizeEmailLocale(locale);
   const t = await getTranslations({ locale: emailLocale, namespace: "emails" });
   const copy: InviteEmailCopy = {
@@ -63,17 +78,44 @@ export async function sendInviteEmail({
   const sender = inviterName ?? copy.someone;
   const values = { householdName, inviteUrl, sender };
 
-  const { error } = await resend.emails.send({
+  await transport.sendMail({
     from,
-    to: toEmail,
-    subject: formatMessage(copy.inviteSubject, values),
     html: buildInviteHtml({ copy, householdName, inviteUrl, locale: emailLocale, sender }),
+    subject: formatMessage(copy.inviteSubject, values),
     text: buildInviteText({ copy, householdName, inviteUrl, sender }),
+    to: toEmail,
   });
+}
 
-  if (error) {
-    throw new Error(`Failed to send invite email: ${error.message}`);
-  }
+export async function sendPasswordResetEmail({
+  locale,
+  resetUrl,
+  toEmail,
+}: {
+  locale?: string | null;
+  resetUrl: string;
+  toEmail: string;
+}) {
+  const { from, transport } = getTransport();
+  const emailLocale = normalizeEmailLocale(locale);
+  const t = await getTranslations({ locale: emailLocale, namespace: "emails" });
+  const copy: ResetEmailCopy = {
+    resetBody: t("resetBody"),
+    resetButton: t("resetButton"),
+    resetExpiry: t("resetExpiry"),
+    resetHeading: t("resetHeading"),
+    resetSubject: t("resetSubject"),
+    resetTextBody: t("resetTextBody"),
+  };
+  const values = { resetUrl };
+
+  await transport.sendMail({
+    from,
+    html: buildResetHtml({ copy, locale: emailLocale, resetUrl }),
+    subject: formatMessage(copy.resetSubject, values),
+    text: formatMessage(copy.resetTextBody, values),
+    to: toEmail,
+  });
 }
 
 export async function sendContactMessageEmail({
@@ -85,21 +127,17 @@ export async function sendContactMessageEmail({
   message: string;
   name?: string | null;
 }): Promise<void> {
-  const { resend, from } = getResend();
+  const { from, transport } = getTransport();
   const senderName = name?.trim() || "Someone";
 
-  const { error } = await resend.emails.send({
+  await transport.sendMail({
     from,
-    to: "contact@domekapp.com",
+    html: buildContactHtml({ email, message, name: senderName }),
     replyTo: email,
     subject: `New Domek contact message from ${senderName}`,
-    html: buildContactHtml({ email, message, name: senderName }),
     text: buildContactText({ email, message, name: senderName }),
+    to: "contact@domekapp.com",
   });
-
-  if (error) {
-    throw new Error(`Failed to send contact email: ${error.message}`);
-  }
 }
 
 function buildInviteHtml(opts: {
@@ -129,6 +167,36 @@ function buildInviteHtml(opts: {
           </p>
           <a href="${opts.inviteUrl}" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">${opts.copy.acceptInvite}</a>
           <p style="margin:28px 0 0;font-size:12px;color:#9a9e9b;">${opts.copy.inviteExpiry}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildResetHtml(opts: {
+  copy: ResetEmailCopy;
+  locale: EmailLocale;
+  resetUrl: string;
+}) {
+  const values = { resetUrl: opts.resetUrl };
+
+  return `<!DOCTYPE html>
+<html lang="${opts.locale}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f1ea;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#fdfcf8;border:1px solid #dfddd6;border-radius:8px;padding:40px 36px;">
+        <tr><td>
+          <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#526c56;">Domek</p>
+          <h1 style="margin:0 0 20px;font-size:22px;font-weight:600;color:#171a18;">${opts.copy.resetHeading}</h1>
+          <p style="margin:0 0 28px;font-size:14px;line-height:1.6;color:#4d5451;">
+            ${formatMessage(opts.copy.resetBody, values)}
+          </p>
+          <a href="${opts.resetUrl}" style="display:inline-block;padding:12px 24px;background:#232323;color:#fdfcf8;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;font-family:Georgia,serif;">${opts.copy.resetButton}</a>
+          <p style="margin:28px 0 0;font-size:12px;color:#9a9e9b;">${opts.copy.resetExpiry}</p>
         </td></tr>
       </table>
     </td></tr>
@@ -168,10 +236,10 @@ function buildContactText(opts: {
   name: string;
 }): string {
   return [
-    `New Domek contact message`,
+    "New Domek contact message",
     `Name: ${opts.name}`,
     `Email: ${opts.email}`,
-    `Message:`,
+    "Message:",
     opts.message,
   ].join("\n\n");
 }

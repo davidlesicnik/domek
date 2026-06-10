@@ -1,6 +1,0 @@
-ALTER TABLE "Chore"
-  ADD COLUMN "startsAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-
-UPDATE "Chore"
-SET "startsAt" = "createdAt"
-WHERE "startsAt" IS NULL;

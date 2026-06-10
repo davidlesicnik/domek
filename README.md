@@ -1,31 +1,254 @@
 # Domek
 
-Domek is a container-first household planner for shared household coordination.
+Domek is a self-hosted household planner for shared calendars, chores, shopping lists, notes, and expenses.
 
-## Features
+Use it as a private home board for your household. You run it yourself with Docker Compose and PostgreSQL.
 
-- **Dashboard** — home board with feature navigation
-- **Blog** — English-only SEO content published from repo-managed MDX with a standalone `/blog` surface, RSS feed, `robots.txt`, and sitemap support
-- **Household management** — invite members by email, assign roles (owner/member), set member colors, transfer ownership, leave or delete a household
-- **Calendar** — shared household calendar with per-event member assignment
-- **To-do lists** — shared task lists with item completion tracking
-- **Shopping lists** — shared shopping lists with item check-off
-- **Notes** — shared freeform notes
-- **Expenses** — basic expense tracker with categories
-- **Push notifications** — opt-in daily reminders for upcoming calendar events, due todos, and chores via VAPID Web Push
-- **Authentication** — Supabase Auth with Google and email magic links
-- **Email invites** — invite links sent via Resend
+## What Domek does
 
-## Stack
+- Shared home board for the whole household
+- Calendar, chores, to-dos, shopping, notes, and expenses in one place
+- Email/password accounts owned by the app
+- Invite links, with optional email delivery if SMTP is configured
+- Optional web push reminders
 
-- Next.js App Router, React, and TypeScript
-- Tailwind CSS for responsive styling
-- Supabase Auth with OAuth providers
-- Prisma with PostgreSQL
-- Docker Compose for local and container deployment
-- Resend for transactional email
+## Fast setup
 
-## Local Development
+The easiest way to run Domek is with Docker Compose.
+
+### What you need
+
+- Docker and Docker Compose
+- Git
+- A domain or local URL where you want to open Domek
+
+### 1. Get the code
+
+```bash
+git clone https://github.com/davidlesicnik/domek.git
+cd domek
+```
+
+### 2. Copy the environment file
+
+```bash
+cp .env.example .env
+```
+
+### 3. Edit the important values in `.env`
+
+For the simplest setup, keep the default PostgreSQL values from `.env.example` unchanged.
+
+At minimum, set these:
+
+```bash
+APP_URL="https://your-domek-url.example.com"
+AUTH_SECRET="replace-with-a-long-random-secret"
+NOTIFY_SECRET="replace-with-a-random-secret"
+```
+
+Notes:
+
+- `AUTH_SECRET` should be long and random.
+- `APP_URL` should be the full public URL you will use to open Domek.
+- For local-only use, `APP_URL="http://localhost:3000"` is fine.
+- `NOTIFY_SECRET` is used by the built-in reminder scheduler.
+- The default PostgreSQL username, password, and database name are fine for most home setups.
+
+If you want to change the PostgreSQL username or password, update all related values together:
+
+```bash
+POSTGRES_USER="your-user"
+POSTGRES_PASSWORD="your-password"
+DATABASE_URL="postgresql://your-user:your-password@localhost:5432/domek?schema=public"
+CONTAINER_DATABASE_URL="postgresql://your-user:your-password@postgres:5432/domek?schema=public"
+```
+
+### 4. Start Domek
+
+```bash
+docker compose up -d --build
+```
+
+This starts:
+
+- `web` for the app
+- `postgres` for the database
+- `scheduler` for daily reminder delivery
+
+### 5. Run the database migration
+
+On first install, create the database tables:
+
+```bash
+docker compose exec web npx prisma migrate deploy
+```
+
+### 6. Check that everything is running
+
+```bash
+docker compose ps
+docker compose logs -f web
+```
+
+You should see the `web` service running and the app starting without errors.
+
+### 7. Open the app
+
+Visit the URL from `APP_URL`.
+
+If you are only using Domek on your own machine, that is usually:
+
+```text
+http://localhost:3000
+```
+
+On first run:
+
+- create your account
+- create your household
+- invite other household members
+
+If sign-up or sign-in fails, check the troubleshooting section below first.
+
+## Optional email setup
+
+Domek works without SMTP.
+
+Without SMTP:
+
+- sign up still works
+- sign in still works
+- invites fall back to copyable links
+- password reset needs operator help
+
+If you want email invites and password reset emails, set:
+
+```bash
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASSWORD=""
+SMTP_FROM="Domek <noreply@example.com>"
+SMTP_SECURE="false"
+```
+
+After updating `.env`, restart the app:
+
+```bash
+docker compose up -d
+```
+
+## Updating Domek
+
+When you pull a newer version:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+If the release includes database changes, run migrations:
+
+```bash
+docker compose exec web npx prisma migrate deploy
+```
+
+## Backups
+
+Your data lives in PostgreSQL.
+
+For a simple setup, make sure you back up:
+
+- your `.env`
+- your PostgreSQL data volume
+
+This repo also includes PostgreSQL backup scripts in `scripts/` for more advanced setups.
+
+## Optional push notifications
+
+Web push reminders are optional.
+
+To enable them, generate VAPID keys:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Then set:
+
+```bash
+VAPID_PUBLIC_KEY=""
+VAPID_PRIVATE_KEY=""
+VAPID_MAILTO="mailto:admin@example.com"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
+```
+
+The included `scheduler` service will call:
+
+```bash
+POST /api/notify/send
+Authorization: Bearer <NOTIFY_SECRET>
+```
+
+## Troubleshooting
+
+### Domek does not start
+
+Check the logs:
+
+```bash
+docker compose logs -f
+```
+
+### I forgot a password and SMTP is not configured
+
+Set a password manually from the checked-out repo on the host machine:
+
+```bash
+npm run auth:set-password -- --email user@example.com --password 'new-password'
+```
+
+This command uses your local `.env` and is meant to be run where the repo is checked out.
+
+### I changed the database username or password and login broke
+
+Make sure these values still match each other:
+
+```bash
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+DATABASE_URL=
+CONTAINER_DATABASE_URL=
+```
+
+Then restart the stack:
+
+```bash
+docker compose up -d --build
+```
+
+### I changed `.env` but nothing happened
+
+Restart the services:
+
+```bash
+docker compose up -d --build
+```
+
+## Developer notes
+
+Everything below is for local development, maintenance, or repo work.
+
+### Stack
+
+- Next.js App Router
+- TypeScript
+- Prisma + PostgreSQL
+- Tailwind CSS
+- Docker Compose
+
+### Local development
 
 ```bash
 npm install
@@ -36,606 +259,54 @@ npm run db:migrate
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000).
 
-Configure a Supabase project and enable the Google provider plus email auth before using sign-in. Add the local callback URL (`http://localhost:3000/auth/callback`) and deployed callback URL to the Supabase redirect allow list.
+### Important environment values
 
-If you want auth emails to match Domek's invite emails, configure Resend as Supabase's custom SMTP provider and paste the branded templates from:
-
-- `docs/supabase-confirm-signup-template.html`
-- `docs/supabase-magic-link-template.html`
-
-Setup notes live in `docs/supabase-auth-email-setup.md`.
-
-For local `npm run dev`, `DATABASE_URL` points at Postgres on `localhost:5432`. The Docker web service uses `CONTAINER_DATABASE_URL` so it can reach the same database through the Compose-internal `postgres` hostname.
-
-## Blog and SEO
-
-The marketing blog is a standalone, English-only surface at:
-
-- `/blog`
-- `/blog/[slug]`
-- `/blog/rss.xml`
-
-Blog content lives in `content/blog/*.mdx` and is loaded by `src/lib/blog.tsx`.
-
-### Blog frontmatter
-
-Each article should include:
-
-- `title`
-- `description`
-- `publishedAt`
-- `slug`
-- `topic`
-- `authorName`
-- `seoTitle` optional
-- `seoDescription` optional
-- `canonicalPath` optional
-- `draft` optional
-- `ctaTitle` optional
-- `ctaBody` optional
-- `ctaLabel` optional
-- `ctaHref` optional
-
-Draft posts are excluded from the blog index, sitemap, RSS, and public routes.
-
-### Routing notes
-
-The blog is intentionally **not** locale-prefixed. It bypasses `next-intl` and must stay in the standalone route space rather than `src/app/[locale]/`.
-
-Any route that should be reachable without authentication must be added to `PUBLIC_PATHS` in `src/proxy.ts` as part of the same change. If you skip that update, unauthenticated users and crawlers will be redirected to `/login`.
-
-If you add more standalone public SEO routes, update `src/proxy.ts` in both places:
-
-- `PUBLIC_PATHS` so unauthenticated visitors and crawlers are not redirected to `/login`
-- `NON_LOCALIZED_PATHS` so the route bypasses locale prefixing
-
-### Sitemap and robots
-
-- `src/app/sitemap.ts` generates the blog sitemap entries
-- `src/app/robots.ts` serves a standard `robots.txt`
-- Canonical sitemap and metadata URLs are built from `src/lib/site.ts`
-
-When `APP_URL` is unset, the site URL helper falls back to `https://domekapp.com` so generated metadata, `robots.txt`, and `sitemap.xml` do not point at localhost.
-
-## Environment
-
-Required for local development (see `.env.example`):
+Required core values:
 
 ```bash
+# Required. Set to the URL you use to open the app.
+APP_URL="http://localhost:3000"
+AUTH_SECRET="replace-with-a-long-random-secret"
 DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
 POSTGRES_DB="domek"
 POSTGRES_USER="domek"
 POSTGRES_PASSWORD="domek"
 POSTGRES_PORT="5432"
-SUPABASE_URL=""
-SUPABASE_ANON_KEY=""
-NEXT_PUBLIC_UMAMI_WEBSITE_ID=""
-RESEND_API_KEY=""
-FROM_EMAIL="Domek <noreply@yourdomain.com>"
-ENABLE_DEVELOPMENT_ACCESS_BYPASS="false"
-DEVELOPMENT_ACCESS_CODE=""
-VAPID_PUBLIC_KEY=""
-VAPID_PRIVATE_KEY=""
-VAPID_MAILTO="mailto:admin@domekapp.com"
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
-NOTIFY_SECRET=""
 ```
 
-`APP_URL` is optional locally. When it is unset, auth and invite flows still rely on request origin in development, while blog metadata, `robots.txt`, and `sitemap.xml` fall back to `https://domekapp.com`. Set `APP_URL` in production so invite links and metadata resolve to the canonical origin.
-
-`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_MAILTO`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, and `NOTIFY_SECRET` are required for push notifications. Generate a VAPID key pair with:
+Optional direct connection for migrations and backups:
 
 ```bash
-npx web-push generate-vapid-keys
+# DIRECT_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 ```
 
-Set `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same value (the public key). The public key is safe to expose to the browser; the private key is a server secret.
-
-## Push Notifications
-
-Domek supports opt-in Web Push notifications that fire daily and remind household members about:
-
-- Calendar events scheduled for tomorrow (or today with a specific time)
-- Todo items due today or overdue
-- Chores due within the next 24 hours
-
-Users subscribe from the account settings page. The toggle is only rendered when the browser supports `PushManager`.
-
-### Setup
-
-Generate a VAPID key pair:
-
-```bash
-npx web-push generate-vapid-keys
-```
-
-Set these environment variables:
-
-```bash
-VAPID_PUBLIC_KEY="..."          # from generate-vapid-keys
-VAPID_PRIVATE_KEY="..."         # from generate-vapid-keys — server secret
-VAPID_MAILTO="mailto:admin@domekapp.com"
-NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."  # same value as VAPID_PUBLIC_KEY
-NOTIFY_SECRET="..."             # any strong random string
-```
-
-### Sending notifications
-
-Schedule a daily HTTP call to the cron endpoint. Example with `curl`:
-
-```bash
-curl -X POST https://your-domain/api/notify/send \
-  -H "Authorization: Bearer $NOTIFY_SECRET"
-```
-
-The endpoint returns `{ "sent": N, "errors": N }`. Dead push subscriptions (push service returns 404 or 410) are pruned automatically.
-
-`/api/notify/send` is excluded from session auth and uses its own `NOTIFY_SECRET` bearer token.
-
-`ENABLE_DEVELOPMENT_ACCESS_BYPASS` and `DEVELOPMENT_ACCESS_CODE` are local-development-only escape hatches for onboarding. The bypass is disabled by default and the app rejects it when `NODE_ENV=production`.
-
-`NEXT_PUBLIC_UMAMI_WEBSITE_ID` is optional. When set, Domek loads Umami analytics in the browser.
-
-Validate deployment configuration with:
-
-```bash
-npm run env:check
-npm run check:security-hardening
-```
-
-Do not commit `.env` files or paste server secrets into public tools, tickets, or chat logs. `SUPABASE_ANON_KEY` / Supabase publishable keys are designed to be browser-visible, but `RESEND_API_KEY`, Supabase service-role keys, and database passwords are server secrets. Rotate any server secret that has been exposed.
-
-## Railway Deployment
-
-Domek is deployed on Railway from the GitHub repository. Railway hosts the containerized Next.js app, while Supabase provides Postgres and Auth.
-
-This repo has a `Dockerfile`, so Railway should deploy it as a Docker-backed service. The production image uses Next.js standalone output and starts with:
-
-```bash
-node server.js
-```
-
-Use these Railway service settings:
-
-```bash
-PORT=3000
-HOSTNAME=0.0.0.0
-```
-
-Set the public Railway domain target port to:
-
-```text
-3000
-```
-
-If Railway injects or suggests `PORT=8080`, the app may start on `8080` while the Dockerfile/domain routing still expects `3000`, causing 502 responses. Keep `PORT`, `HOSTNAME`, and the domain target port aligned.
-
-Railway variables should be raw values, not quoted `.env` syntax. Use `PORT=3000`, not `PORT="3000"`.
-
-Recommended Railway variables:
-
-```bash
-PORT=3000
-HOSTNAME=0.0.0.0
-DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
-DIRECT_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require"
-SUPABASE_URL="https://PROJECT_REF.supabase.co"
-SUPABASE_ANON_KEY="sb_publishable_or_anon_key"
-RESEND_API_KEY="re_your_server_secret"
-FROM_EMAIL="Domek <noreply@yourdomain.com>"
-NEXT_PUBLIC_UMAMI_WEBSITE_ID="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-APP_URL="https://your-service.up.railway.app"
-VAPID_PUBLIC_KEY="..."
-VAPID_PRIVATE_KEY="..."
-VAPID_MAILTO="mailto:admin@domekapp.com"
-NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."
-NOTIFY_SECRET="..."
-```
-
-`connection_limit=1` is very conservative and can bottleneck traffic. Start around `5` per app instance, then tune based on replica count and Supabase connection budget.
-
-Do not use the local database URL in Railway:
-
-```bash
-DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
-```
-
-Inside a Railway container, `localhost` means the app container itself, not Supabase and not a separate Postgres service.
-
-Local Docker/Compose-only variables are not needed in Railway when Supabase hosts Postgres:
-
-```bash
-CONTAINER_DATABASE_URL
-POSTGRES_DB
-POSTGRES_PASSWORD
-POSTGRES_PORT
-POSTGRES_USER
-```
-
-### Railway Migration Command (Production)
-
-Use a Railway **Pre-deploy Command** so migrations run before the app process starts:
-
-```bash
-npm run db:deploy:verify
-```
-
-This command runs a production-safe verification pipeline in order (apply migrations, verify migration status, then run a lightweight database healthcheck):
-
-```bash
-npm run db:migrate:deploy
-npm run db:migrate:status
-npm run db:healthcheck
-```
-
-`DIRECT_URL` is required for migration deploys. If it is missing/invalid, deploy verification now fails fast before migration starts.
-
-If pre-deploy appears stuck on migrations, set `MIGRATION_DEPLOY_TIMEOUT_MS` (default `300000`) to enforce a hard timeout and get lock/reachability troubleshooting output. The verifier sends `SIGTERM` and escalates to `SIGKILL` after 5 seconds so hanging migration processes do not block deploy forever.
-
-Keep the Railway start command app-only (`node server.js`). Do not run `prisma migrate dev` or `prisma db push` in production. The Docker runtime image includes the Prisma CLI and deploy scripts so this pre-deploy command works in containerized Railway deployments.
-
-### Railway 502 Checklist
-
-If the Railway app shows 502s:
-
-- Confirm the service is using the Dockerfile and the start command is `node server.js`, or leave the start command blank so Docker's `CMD` is used.
-- Confirm `PORT=3000`.
-- Confirm `HOSTNAME=0.0.0.0`.
-- Confirm the Railway public domain target port is `3000`.
-- Check logs for the Next.js startup line and verify it reports port `3000`.
-- Confirm `DATABASE_URL` points to Supabase Postgres, not `localhost`.
-- URL-encode special characters in the database password, especially `@`, `#`, `%`, `/`, `:`, `?`, and `&`.
-
-## Billing and Access
-
-Domek now uses a Paddle-first onboarding flow.
-
-1. A user logs in.
-2. If they do not already belong to a household, or if their household subscription is unpaid, paused, or canceled, Domek sends them to `/onboarding/payment`.
-3. Paddle Checkout starts the yearly household subscription with a 30-day trial.
-4. Paddle sends subscription lifecycle webhooks to `/api/paddle/webhook`.
-5. Domek stores the subscription status in `BillingSubscription`.
-6. Once the status is `TRIALING` or `ACTIVE`, the user can continue to `/onboarding/household` and create the household.
-
-Household creation is blocked until billing access exists, unless the user has already been granted development access.
-
-**Billing-backed access states:**
-
-| State | Effect |
-|---|---|
-| `TRIALING` | User can create a household and access the app |
-| `ACTIVE` | User can create a household and access the app |
-| `PAST_DUE`, `PAUSED`, `CANCELED` | User is redirected back to `/onboarding/payment` |
-
-### Paddle Environment Variables
-
-Domek expects four Paddle values:
-
-- `PADDLE_CLIENT_TOKEN`
-- `PADDLE_PRICE_ID`
-- `PADDLE_WEBHOOK_SECRET`
-- `PADDLE_API_KEY`
-
-Keep all four in the same Paddle environment:
-
-- sandbox for local testing
-- live for production
-
-Do not mix a sandbox client token with a live price, webhook secret, or API key.
-
-### Development Access Bypass
-
-The payment-page access-code bypass is no longer hardcoded in the app.
-
-- It is disabled by default.
-- It only works when `ENABLE_DEVELOPMENT_ACCESS_BYPASS=true`.
-- It requires `DEVELOPMENT_ACCESS_CODE` to be set.
-- It is rejected when `NODE_ENV=production`.
-
-This keeps local onboarding unblocked when you need it, without leaving a production-capable bypass in source code.
-
-### How To Get The Paddle Variables
-
-#### `PADDLE_CLIENT_TOKEN`
-
-Used by the browser checkout loader in `src/components/billing/paddle-checkout-launcher.tsx`.
-
-Where to get it in Paddle:
-
-- `Developer tools -> Authentication -> Client-side tokens`
-
-Create a client-side token and copy the token value.
-
-Expected format:
-
-- sandbox: starts with `test_`
-- live: starts with `live_`
-
-#### `PADDLE_PRICE_ID`
-
-Used by checkout to open the yearly subscription plan.
-
-Where to get it in Paddle:
-
-- `Catalog -> Products`
-- open the Domek product
-- create or open the recurring yearly price
-- copy the price ID
-
-Expected format:
-
-- starts with `pri_`
-
-Recommended setup for Domek:
-
-- recurring yearly billing
-- 30-day trial
-- one household plan
-
-#### `PADDLE_WEBHOOK_SECRET`
-
-Used to verify signed webhook requests in `src/app/api/paddle/webhook/route.ts`.
-
-Where to get it in Paddle:
-
-- `Developer tools -> Notifications`
-- create or open a notification destination
-- copy the destination endpoint secret key
-
-Expected format:
-
-- starts with `pdl_ntfset_`
-
-Webhook destination URL:
-
-- local/ngrok example:
-  `https://YOUR-NGROK-DOMAIN/api/paddle/webhook`
-- production example:
-  `https://YOUR-PRODUCTION-DOMAIN/api/paddle/webhook`
-
-Minimum events Domek should receive:
-
-- `subscription.created`
-- `subscription.updated`
-
-Recommended events for the current integration:
-
-- `subscription.created`
-- `subscription.updated`
-- `subscription.trialing`
-- `subscription.activated`
-- `subscription.canceled`
-- `subscription.past_due`
-- `subscription.paused`
-- `subscription.resumed`
-
-#### `PADDLE_API_KEY`
-
-Used server-side for billing actions in account settings, such as:
-
-- cancel subscription immediately when deleting an account
-- cancel subscription at the end of the billing cycle from account settings
-
-Where to get it in Paddle:
-
-- `Developer tools -> Authentication -> API keys`
-
-Create a server-side API key and copy the value.
-
-Expected format:
-
-- starts with `pdl_`
-- newer sandbox keys commonly include `_sdbx`
-
-Minimum permission:
-
-- `Subscriptions (Write)`
-
-Recommended permissions:
-
-- `Subscriptions (Write)`
-- `Subscriptions (Read)`
-
-### Local Sandbox Setup
-
-For local testing with ngrok:
-
-1. Start the app on port `3000`.
-2. Start ngrok:
-
-```bash
-ngrok http 3000
-```
-
-3. Set `APP_URL` to the exact HTTPS forwarding URL from ngrok.
-4. In Supabase Auth URL configuration, allow your ngrok callback host. Wildcards are supported, for example:
-
-```text
-https://*.ngrok-free.dev/auth/callback
-https://*.ngrok-free.app/auth/callback
-```
-
-5. In Paddle sandbox, set the notification destination to:
-
-```text
-https://YOUR-NGROK-DOMAIN/api/paddle/webhook
-```
-
-6. Use sandbox versions of:
-
-- `PADDLE_CLIENT_TOKEN`
-- `PADDLE_PRICE_ID`
-- `PADDLE_WEBHOOK_SECRET`
-- `PADDLE_API_KEY`
-
-If your ngrok URL changes, update:
-
-- `APP_URL`
-- the Paddle notification destination URL
-- any Supabase redirect URL entries that are not covered by your wildcard pattern
-
-### Example
-
-```bash
-APP_URL="https://your-ngrok-domain.ngrok-free.dev"
-PADDLE_CLIENT_TOKEN="test_..."
-PADDLE_PRICE_ID="pri_..."
-PADDLE_WEBHOOK_SECRET="pdl_ntfset_..."
-PADDLE_API_KEY="pdl_sdbx_..."
-```
-
-**Development access code** (entered on the payment onboarding screen):
-
-- `domekappdevelopment` — grants permanent dev access (`User.developmentAccessGrantedAt`) and bypasses Paddle entirely
-
-## Database
-
-Generate the Prisma client:
+### Database commands
 
 ```bash
 npm run db:generate
-```
-
-Create and apply a development migration after the database is reachable:
-
-```bash
 npm run db:migrate
+npm run db:migrate:deploy
+npm run db:migrate:status
+npm run db:healthcheck
+npm run db:deploy:verify
 ```
 
-The schema includes users, households, household membership, and feature-specific tables for calendar events, to-do lists, notes, shopping lists, expenses, and push subscriptions. Supabase Auth owns identity; Prisma keeps a slim `User` row keyed by the Supabase auth UUID for application foreign keys.
+### E2E / QA
 
-### Database Backups
-
-For production on Supabase without PITR, use [`scripts/backup-db.sh`](scripts/backup-db.sh) inside the dedicated backup container defined by [`Dockerfile.backup`](Dockerfile.backup) and [`docker-compose.backup.yaml`](docker-compose.backup.yaml). The script:
-
-- pulls a live `pg_dump` from a Supabase connection on port `5432`
-- compresses the dump with `zstd` or `gzip`
-- snapshots the latest successful dump directory into a `restic` repository
-- prunes snapshots with `--keep-last 96 --keep-daily 35`
-- keeps a local copy of the latest successful artifact in `BACKUP_DEST_DIR/latest`
-
-The backup image is based on `postgres:17-bookworm` so `pg_dump` stays aligned with the Postgres 17 server family used by this project and supported by Supabase. It installs a pinned upstream `restic 0.18.1` release binary with SHA256 verification during the image build.
-
-Use one of these Supabase connection types for `BACKUP_DATABASE_URL`:
-
-- direct connection on `:5432` if the backup runner has IPv6
-- Supavisor session pooler on `:5432` if the backup runner is IPv4-only
-
-Do not use the transaction pooler on `:6543` for this backup job.
-
-Create a runner-specific config from [`scripts/backup-db.env.example`](scripts/backup-db.env.example) and keep it off-repo. The minimum required settings are:
+Set:
 
 ```bash
-BACKUP_DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-YOUR-REGION.pooler.supabase.com:5432/postgres"
-BACKUP_DEST_DIR="/backup"
-BACKUP_DESTINATION_SENTINEL="/backup/.domek-backup-target"
-RESTIC_REPOSITORY="/backup/restic"
-RESTIC_PASSWORD_FILE="/etc/domek/restic-password"
-ALLOW_RESTIC_INIT="false"
+QA_TEST_EMAIL="qa@example.com"
+QA_TEST_PASSWORD="replace-with-a-test-password"
 ```
 
-Leave `ALLOW_RESTIC_INIT` as `false` for normal runs. Set it to `true` only for the very first run when you intentionally want the script to create a brand-new restic repository.
-Create the sentinel file on the mounted NAS path before the first run, for example `touch /mnt/nas/domek-backups/.domek-backup-target`. The script refuses to write backups if that file is missing so it does not silently write to the host filesystem when the NAS mount is absent.
-
-Create a small host-side compose env file from [`scripts/backup-compose.env.example`](scripts/backup-compose.env.example) and keep it off-repo. It tells Compose where the runtime env file lives and which NAS directory to mount:
+Then run:
 
 ```bash
-BACKUP_ENV_FILE=/etc/domek/backup-db.env
-BACKUP_DESTINATION_DIR=/mnt/nas/domek-backups
-RESTIC_PASSWORD_FILE_PATH=/etc/domek/restic-password
+npm run test:e2e
 ```
 
-The backup image defaults to the non-root `postgres` user, but [`docker-compose.backup.yaml`](docker-compose.backup.yaml) runs the one-shot backup job as `root` (`user: "0:0"`). This is intentional for NAS environments like Synology where bind-mounted shares often deny access to non-root container users.
-
-First run or after changing the backup image:
-
-```bash
-docker compose \
-  --env-file /etc/domek/backup-compose.env \
-  -f docker-compose.backup.yaml \
-  run --rm --build db-backup
-```
-
-Recurring run after the image has already been built:
-
-```bash
-docker compose \
-  --env-file /etc/domek/backup-compose.env \
-  -f docker-compose.backup.yaml \
-  run --rm db-backup
-```
-
-Example `cron` entry for every 30 minutes:
-
-```cron
-*/30 * * * * cd /path/to/domek && docker compose --env-file /etc/domek/backup-compose.env -f docker-compose.backup.yaml run --rm db-backup >> /var/log/domek-backup.log 2>&1
-```
-
-Restore flow:
-
-```bash
-restic restore latest --target /tmp/domek-restore
-find /tmp/domek-restore -name 'domek-prod-*.dump.zst' -o -name 'domek-prod-*.dump.gz'
-```
-
-If you use the default `zstd` compression, decompress before running `pg_restore`:
-
-```bash
-zstd -d /tmp/domek-restore/path/to/domek-prod-YYYYMMDDTHHMMSSZ.dump.zst -o /tmp/domek-prod.dump
-pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$RESTORE_DATABASE_URL" /tmp/domek-prod.dump
-```
-
-The backup script is designed for live operation. `pg_dump` takes a consistent snapshot, so you do not need to stop the app or turn off the database first.
-
-## Containers
-
-Validate the Compose file:
-
-```bash
-docker compose config
-```
-
-Build the production image:
-
-```bash
-docker compose build
-```
-
-Run the app and Postgres:
-
-```bash
-docker compose up
-```
-
-The web image is built with a multi-stage Dockerfile and runs as a non-root user in the final stage.
-
-## Internationalization
-
-Domek supports English (`en`) and Slovenian (`sl`). The active locale is embedded in the URL path:
-
-- `/en/...` — English
-- `/sl/...` — Slovenian
-
-Visiting `/` redirects to `/en/` by default.
-
-Translation files live at `messages/en.json` and `messages/sl.json`, organized by feature namespace. The library is **next-intl** (`src/i18n/`).
-
-To add a new language:
-
-1. Add the locale code to `src/i18n/routing.ts` (`locales` array).
-2. Create `messages/<locale>.json` with all keys from `messages/en.json`.
-3. Add the same locale to `generateStaticParams` in `src/app/[locale]/layout.tsx` (already covered by the `routing.locales` map).
-
-Legal pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only and do not require translation.
-
-## Quality And Security
-
-- Keep strict TypeScript enabled.
-- Keep secrets out of Git; commit only `.env.example`.
-- Add database constraints and indexes with the data model, not as a cleanup step later.
-- Keep route-level auth checks server-side for protected areas.
-- Prefer small, typed modules over large route files.
-- Run `npm run lint`, `npm run build`, `docker compose config`, and `docker compose build` before handing off changes.
+Playwright global setup creates or updates the QA user, ensures it has a household, and logs in through the real password flow.

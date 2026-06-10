@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
-import { hasAccess } from "@/lib/billing";
 import { prisma } from "@/lib/db";
 import { getFirstHouseholdMembership } from "@/lib/users";
 
@@ -29,22 +28,6 @@ async function createHouseholdAction(formData: FormData) {
   if (!parsedName.success) {
     return await redirect("/onboarding/household?error=name");
   }
-  const billingSubscription = session.user.developmentAccessGrantedAt
-    ? null
-    : await prisma.billingSubscription.findUnique({
-        select: { id: true, status: true },
-        where: { userId: session.user.id },
-      });
-
-  if (
-    !hasAccess({
-      billingSubscription,
-      developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
-      trialStartedAt: session.user.trialStartedAt,
-    })
-  ) {
-    return await redirect("/trial-ended");
-  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -67,13 +50,6 @@ async function createHouseholdAction(formData: FormData) {
         data: { name: parsedName.data },
         select: { id: true },
       });
-
-      if (billingSubscription?.id) {
-        await tx.billingSubscription.update({
-          data: { householdId: household.id },
-          where: { id: billingSubscription.id },
-        });
-      }
 
       await tx.householdMember.create({
         data: {
@@ -101,24 +77,9 @@ export default async function HouseholdOnboardingPage({
 }: HouseholdOnboardingPageProps) {
   const session = await requireAppSession();
   const existingMembership = await getFirstHouseholdMembership(session.user.id);
-  const billingSubscription = session.user.developmentAccessGrantedAt
-    ? null
-    : await prisma.billingSubscription.findUnique({
-        select: { status: true, trialEndsAt: true },
-        where: { userId: session.user.id },
-      });
-  const hasBillingAccess = hasAccess({
-    billingSubscription,
-    developmentAccessGrantedAt: session.user.developmentAccessGrantedAt,
-    trialStartedAt: session.user.trialStartedAt,
-  });
 
   if (existingMembership) {
     return await redirect("/app");
-  }
-
-  if (!hasBillingAccess) {
-    return await redirect("/trial-ended");
   }
 
   const params = (await searchParams) ?? {};
@@ -168,9 +129,6 @@ function HouseholdOnboardingView({ hasNameError }: { hasNameError: boolean }) {
               >
                 {t("householdCreateButton")}
               </button>
-              <p className="text-center text-xs text-[#9ea49f]">
-                {t("householdTrialNote")}
-              </p>
             </form>
           </div>
         </section>

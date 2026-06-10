@@ -9,21 +9,11 @@ export type AnalyticsEventName =
 
 export type AnalyticsEventParams = Record<string, boolean | number | string | null | undefined>;
 
-declare global {
-  interface Window {
-    umami?: {
-      track: (eventName: string, eventParams?: AnalyticsEventParams) => void;
-    };
-  }
-}
-
 export function trackAnalyticsEvent(
-  eventName: AnalyticsEventName,
-  eventParams: AnalyticsEventParams = {},
+  _eventName: AnalyticsEventName,
+  _eventParams: AnalyticsEventParams = {},
 ) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.umami?.track(eventName, eventParams);
+  void _eventName;
+  void _eventParams;
+  return;
 }

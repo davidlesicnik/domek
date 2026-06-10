@@ -59,10 +59,12 @@ export function AddHouseholdMemberDialog({
   const [memberFormKey, setMemberFormKey] = useState(0);
   const [inviteState, setInviteState] = useState<HouseholdActionState>({
     error: null,
+    inviteUrl: null,
     success: false,
   });
   const [memberState, setMemberState] = useState<HouseholdActionState>({
     error: null,
+    inviteUrl: null,
     success: false,
   });
   const [currentTime, setCurrentTime] = useState(() => Date.now());
@@ -102,8 +104,8 @@ export function AddHouseholdMemberDialog({
     setMode(null);
     setInviteFormKey((current) => current + 1);
     setMemberFormKey((current) => current + 1);
-    setInviteState({ error: null, success: false });
-    setMemberState({ error: null, success: false });
+    setInviteState({ error: null, inviteUrl: null, success: false });
+    setMemberState({ error: null, inviteUrl: null, success: false });
     setMemberName("");
     setSelectedColor("green");
     setSelectedEmoji("");
@@ -133,7 +135,7 @@ export function AddHouseholdMemberDialog({
     startInviteTransition(async () => {
       const result = await sendInviteAction(inviteState, formData);
       setInviteState(result);
-      if (result.success) {
+      if (result.success && !result.inviteUrl) {
         resetAfterSuccess();
       }
     });
@@ -252,6 +254,27 @@ export function AddHouseholdMemberDialog({
                   </p>
                   {inviteState.error ? (
                     <p className="text-sm font-medium text-[var(--accent-rose-text)]">{inviteState.error}</p>
+                  ) : null}
+                  {inviteState.inviteUrl ? (
+                    <div className="grid gap-2 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] p-3">
+                      <p className="text-sm font-medium text-[var(--accent-sage-text)]">
+                        {t("inviteLinkReady")}
+                      </p>
+                      <input
+                        className="h-10 rounded-md border border-[var(--input-border)] bg-white px-3 text-sm text-[var(--text-primary)]"
+                        readOnly
+                        value={inviteState.inviteUrl}
+                      />
+                      <button
+                        className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)]"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(inviteState.inviteUrl ?? "");
+                        }}
+                        type="button"
+                      >
+                        {t("copyInviteLink")}
+                      </button>
+                    </div>
                   ) : null}
                   <div className="pt-1 flex justify-end">
                     <button

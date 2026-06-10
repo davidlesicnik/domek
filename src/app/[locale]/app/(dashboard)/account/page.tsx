@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { BillingSubscriptionStatus } from "@prisma/client";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 
 import { ThemeSettings, type ThemePreferenceActionState } from "@/components/account/theme-settings";
 import { NotificationToggle } from "@/components/pwa/notification-toggle";
@@ -8,75 +7,12 @@ import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
 import { requireAppSession } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { getOptionalPaddleServerConfig } from "@/lib/env";
-import {
-  cancelPaddleSubscriptionAtPeriodEnd,
-  cancelPaddleSubscriptionImmediately,
-  PaddleSubscriptionCancelError,
-} from "@/lib/paddle-server";
-import { createSupabaseServerClient } from "@/lib/supabase";
 import { isThemePreference } from "@/lib/theme";
 import { getFirstHouseholdMembership } from "@/lib/users";
-import { TRIAL_DAYS } from "@/lib/billing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("accountPage");
   return { title: t("metaTitle") };
-}
-
-async function cancelSubscriptionAction() {
-  "use server";
-
-  const session = await requireAppSession();
-  const billingSubscription = await prisma.billingSubscription.findUnique({
-    select: {
-      id: true,
-      paddleSubscriptionId: true,
-      status: true,
-      scheduledCancellationAt: true,
-    },
-    where: { userId: session.user.id },
-  });
-
-  if (
-    !billingSubscription?.paddleSubscriptionId ||
-    billingSubscription.status === BillingSubscriptionStatus.CANCELED ||
-    billingSubscription.scheduledCancellationAt
-  ) {
-    return await redirect("/app/account");
-  }
-
-  const paddleServer = getOptionalPaddleServerConfig();
-
-  if (!paddleServer) {
-    return await redirect("/app/account?error=billing_not_configured");
-  }
-
-  try {
-    const updatedSubscription = await cancelPaddleSubscriptionAtPeriodEnd({
-      apiKey: paddleServer.apiKey,
-      clientToken: paddleServer.clientToken,
-      subscriptionId: billingSubscription.paddleSubscriptionId,
-    });
-
-    await prisma.billingSubscription.update({
-      data: {
-        canceledAt: updatedSubscription.canceledAt,
-        currentPeriodEndsAt: updatedSubscription.currentPeriodEndsAt,
-        scheduledCancellationAt: updatedSubscription.scheduledCancellationAt,
-        status: updatedSubscription.status,
-      },
-      where: { id: billingSubscription.id },
-    });
-  } catch (error) {
-    if (error instanceof PaddleSubscriptionCancelError) {
-      return await redirect("/app/account?error=subscription_cancel_failed");
-    }
-
-    throw error;
-  }
-
-  return await redirect("/app/account");
 }
 
 async function deleteAccountAction(formData: FormData) {
@@ -94,50 +30,6 @@ async function deleteAccountAction(formData: FormData) {
     if (memberCount > 1) return await redirect("/app/account?error=owner_with_members");
   }
 
-  const billingSubscription = await prisma.billingSubscription.findUnique({
-    select: {
-      id: true,
-      paddleSubscriptionId: true,
-      status: true,
-    },
-    where: { userId: session.user.id },
-  });
-
-  if (
-    billingSubscription?.paddleSubscriptionId &&
-    billingSubscription.status !== BillingSubscriptionStatus.CANCELED
-  ) {
-    const paddleServer = getOptionalPaddleServerConfig();
-
-    if (!paddleServer) {
-      return await redirect("/app/account?error=billing_not_configured");
-    }
-
-    try {
-      const canceledSubscription = await cancelPaddleSubscriptionImmediately({
-        apiKey: paddleServer.apiKey,
-        clientToken: paddleServer.clientToken,
-        subscriptionId: billingSubscription.paddleSubscriptionId,
-      });
-
-      await prisma.billingSubscription.update({
-        data: {
-          canceledAt: canceledSubscription.canceledAt ?? new Date(),
-          currentPeriodEndsAt: canceledSubscription.currentPeriodEndsAt,
-          scheduledCancellationAt: canceledSubscription.scheduledCancellationAt,
-          status: canceledSubscription.status,
-        },
-        where: { id: billingSubscription.id },
-      });
-    } catch (error) {
-      if (error instanceof PaddleSubscriptionCancelError) {
-        return await redirect("/app/account?error=billing_cancel_failed");
-      }
-
-      throw error;
-    }
-  }
-
   if (membership?.role === "OWNER") {
     await prisma.$transaction([
       prisma.householdMember.deleteMany({ where: { householdId: membership.householdId } }),
@@ -148,21 +40,19 @@ async function deleteAccountAction(formData: FormData) {
     ]);
   }
 
-  await prisma.householdMember.updateMany({
-    where: { accountId: session.user.id },
-    data: { accountId: null },
-  });
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      deletedAt: new Date(),
-      developmentAccessGrantedAt: null,
-    },
-  });
-
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  await prisma.$transaction([
+    prisma.householdMember.updateMany({
+      where: { accountId: session.user.id },
+      data: { accountId: null },
+    }),
+    prisma.userSession.deleteMany({
+      where: { userId: session.user.id },
+    }),
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: { deletedAt: new Date() },
+    }),
+  ]);
 
   return await redirect("/login");
 }
@@ -201,235 +91,129 @@ type AccountPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
 
-const statusKeys: Record<BillingSubscriptionStatus, string> = {
-  [BillingSubscriptionStatus.TRIALING]: "statusTrialing",
-  [BillingSubscriptionStatus.ACTIVE]: "statusActive",
-  [BillingSubscriptionStatus.PAST_DUE]: "statusPastDue",
-  [BillingSubscriptionStatus.PAUSED]: "statusPaused",
-  [BillingSubscriptionStatus.CANCELED]: "statusCanceled",
-};
+function firstString(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
-  const [session, t, tNotif, locale] = await Promise.all([
+  const [session, t, tNotif] = await Promise.all([
     requireAppSession(),
     getTranslations("accountPage"),
     getTranslations("notifications"),
-    getLocale(),
   ]);
-  const dateFormatter = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  const formatDate = (date: Date | null | undefined) =>
-    date ? dateFormatter.format(date) : null;
-
   const membership = await getFirstHouseholdMembership(session.user.id);
-  const billingSubscription = await prisma.billingSubscription.findUnique({
-    select: {
-      canceledAt: true,
-      currentPeriodEndsAt: true,
-      scheduledCancellationAt: true,
-      startedAt: true,
-      status: true,
-      trialEndsAt: true,
-    },
-    where: { userId: session.user.id },
-  });
-
   const params = (await searchParams) ?? {};
-  const errorParam = Array.isArray(params.error) ? params.error[0] : params.error;
-
-  const isOwnerWithMembers =
-    membership?.role === "OWNER"
-      ? (await prisma.householdMember.count({
-          where: { householdId: membership.householdId },
-        })) > 1
-      : false;
-
+  const errorParam = firstString(params.error);
   const errorMessage =
     errorParam === "confirm"
       ? t("errorConfirm")
-      : errorParam === "billing_not_configured"
-        ? t("errorBillingNotConfigured")
-        : errorParam === "billing_cancel_failed"
-          ? t("errorBillingCancelFailed")
-          : errorParam === "subscription_cancel_failed"
-            ? t("errorSubscriptionCancelFailed")
-            : errorParam === "owner_with_members"
-              ? t("errorOwnerWithMembers")
-              : null;
-
-  const nextPaymentDate =
-    billingSubscription?.status === BillingSubscriptionStatus.TRIALING
-      ? billingSubscription.trialEndsAt
-      : billingSubscription?.currentPeriodEndsAt;
-  const accessEndsDate =
-    billingSubscription?.scheduledCancellationAt ??
-    (billingSubscription?.status === BillingSubscriptionStatus.CANCELED
-      ? billingSubscription.canceledAt ?? billingSubscription.currentPeriodEndsAt
-      : null);
-  const trialEndsAt = session.user.trialStartedAt
-    ? new Date(session.user.trialStartedAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
-    : null;
-  const currentTime = new Date();
-  const trialMsRemaining = trialEndsAt ? trialEndsAt.getTime() - currentTime.getTime() : null;
-  const hasSelfManagedTrial =
-    !billingSubscription && trialMsRemaining !== null && trialMsRemaining > 0;
-  const selfManagedTrialDaysRemaining =
-    trialMsRemaining !== null ? Math.max(0, Math.ceil(trialMsRemaining / (24 * 60 * 60 * 1000))) : 0;
+      : errorParam === "owner_with_members"
+        ? t("errorOwnerWithMembers")
+        : null;
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="font-serif text-xs font-semibold uppercase tracking-normal text-[var(--accent-rose-text)]">
-          {t("settingsLabel")}
-        </p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold tracking-normal text-[var(--text-strong)]">
-          {t("title")}
-        </h1>
-      </div>
-
-      <ThemeSettings
-        action={updateThemePreferenceAction}
-        currentThemePreference={session.user.themePreference}
-      />
-
-      <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-        <h2 className="text-sm font-semibold text-[var(--text-strong)]">{tNotif("sectionTitle")}</h2>
-        <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{tNotif("sectionDescription")}</p>
-        <div className="mt-3">
-          <NotificationToggle />
-        </div>
-      </section>
-
-      <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-        <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("signedInAs")}</h2>
-        <p className="mt-2 text-sm font-semibold text-[var(--text-primary)]">
-          {session.user.name ?? session.user.email ?? t("unknownUser")}
-        </p>
-        {session.user.name && session.user.email ? (
-          <p className="mt-0.5 text-xs text-[var(--text-muted)]">{session.user.email}</p>
-        ) : null}
-      </section>
-
-      {billingSubscription ? (
-        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("subscriptionTitle")}</h2>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)]">
-                  {t(statusKeys[billingSubscription.status] as Parameters<typeof t>[0])}
-                </span>
-                {billingSubscription.scheduledCancellationAt ? (
-                  <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sun-border)] bg-[var(--accent-sun-surface)] px-3 text-xs font-semibold text-[var(--accent-sun-text)]">
-                    {t("endsDate", { date: formatDate(billingSubscription.scheduledCancellationAt) ?? "" })}
-                  </span>
-                ) : null}
-              </div>
-              <div className="mt-4 grid gap-2 text-xs text-[var(--text-muted)]">
-                <p>
-                  {t("nextPayment")}{" "}
-                  <span className="font-medium text-[var(--text-primary)]">
-                    {billingSubscription.scheduledCancellationAt
-                      ? t("noFurtherPayment")
-                      : formatDate(nextPaymentDate) ?? t("notAvailable")}
-                  </span>
-                </p>
-                {accessEndsDate ? (
-                  <p>
-                    {t("accessUntil")}{" "}
-                    <span className="font-medium text-[var(--text-primary)]">{formatDate(accessEndsDate)}</span>
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            {billingSubscription.status !== BillingSubscriptionStatus.CANCELED &&
-            !billingSubscription.scheduledCancellationAt ? (
-              <form action={cancelSubscriptionAction}>
-                <button
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-surface)] sm:h-9 sm:w-auto"
-                  type="submit"
-                >
-                  {t("cancelAfterBilling")}
-                </button>
-              </form>
-            ) : null}
-          </div>
-          <p className="mt-4 text-xs leading-5 text-[var(--text-subtle)]">
-            {t("cancelNote")}
+    <main className="mx-auto w-full max-w-[820px] px-4 py-8 sm:px-6">
+      <div className="space-y-5">
+        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)]">
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-subtle)]">
+            {t("settingsLabel")}
           </p>
-        </section>
-      ) : null}
-
-      {hasSelfManagedTrial && trialEndsAt ? (
-        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-          <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("subscriptionTitle")}</h2>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-7 items-center rounded-full border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 text-xs font-semibold text-[var(--accent-sage-text)]">
-              {t("statusTrialing")}
+          <h1 className="mt-2 font-serif text-3xl font-semibold text-[var(--text-strong)]">
+            {t("title")}
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+            {t("signedInAs")}{" "}
+            <span className="font-semibold text-[var(--text-strong)]">
+              {session.user.email ?? t("unknownUser")}
             </span>
-          </div>
-          <div className="mt-4 grid gap-2 text-xs text-[var(--text-muted)]">
-            <p>
-              {t("trialEndsOn")}{" "}
-              <span className="font-medium text-[var(--text-primary)]">{formatDate(trialEndsAt)}</span>
+          </p>
+          {membership ? (
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+              {t("householdStatus", { household: membership.household.name })}
             </p>
-            <p>
-              {t("trialDaysRemaining", { count: selfManagedTrialDaysRemaining })}
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+              {t("noHouseholdYet")}
             </p>
-          </div>
-          <p className="mt-4 text-xs leading-5 text-[var(--text-subtle)]">{t("selfManagedTrialNote")}</p>
-        </section>
-      ) : null}
-
-      <section className="rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
-        <h2 className="text-sm font-semibold text-[var(--accent-rose-text)]">{t("deleteTitle")}</h2>
-        {isOwnerWithMembers ? (
-          <>
-            <p className="mt-1 text-xs leading-5 text-[var(--accent-rose-text)]">
-              {t("ownerWithMembersNote")}
-            </p>
-            <Link
-              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--accent-rose-strong)] bg-[var(--accent-rose-surface)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-soft)] sm:h-9 sm:w-auto"
-              href="/app/household"
-            >
-              {t("goToHouseholdSettings")}
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="mt-1 text-xs leading-5 text-[var(--accent-rose-text)]">
-              {membership?.role === "OWNER" ? t("deleteOwnerNote") : t("deleteMemberNote")}
-            </p>
-            {errorMessage ? (
-              <p className="mt-3 text-xs font-medium text-[var(--accent-rose-text)]">{errorMessage}</p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            {!membership ? (
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 text-sm font-semibold text-[var(--button-primary-text)] transition hover:bg-[var(--button-primary-hover)]"
+                href="/onboarding/household"
+              >
+                {t("finishSetup")}
+              </Link>
             ) : null}
-            <form action={deleteAccountAction} className="mt-4 grid gap-3">
-              <label className="flex cursor-pointer items-start gap-2 text-xs text-[var(--accent-rose-text)]">
-                <input
-                  className="mt-0.5 shrink-0 accent-[var(--accent-rose-strong)]"
-                  name="confirm"
-                  required
-                  type="checkbox"
-                  value="yes"
-                />
-                {t("confirmCheckbox")}
-              </label>
-              <div>
-                <button
-                  className="h-11 w-full rounded-md border border-[var(--accent-rose-strong)] bg-[var(--accent-rose-surface)] px-4 text-xs font-semibold text-[var(--accent-rose-text)] transition hover:bg-[var(--accent-rose-soft)] sm:h-9 sm:w-auto"
-                  type="submit"
-                >
-                  {t("deleteButton")}
-                </button>
-              </div>
+            <form action="/api/auth/signout" method="post">
+              <button
+                className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--input-border)] bg-[var(--surface-secondary)] px-4 text-sm font-semibold text-[var(--text-strong)] transition hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]"
+                type="submit"
+              >
+                {t("signOut")}
+              </button>
             </form>
-          </>
-        )}
-      </section>
-    </div>
+          </div>
+        </section>
+
+        <ThemeSettings
+          action={updateThemePreferenceAction}
+          currentThemePreference={session.user.themePreference}
+        />
+
+        <section className="rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-strong)]">{tNotif("sectionTitle")}</h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+            {tNotif("sectionDescription")}
+          </p>
+          <div className="mt-4">
+            <NotificationToggle />
+          </div>
+        </section>
+
+        <section className="rounded-md border border-[var(--accent-rose-border)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("deleteTitle")}</h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+            {membership?.role === "OWNER" ? t("deleteOwnerNote") : t("deleteMemberNote")}
+          </p>
+          {errorMessage ? (
+            <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
+              {errorMessage}
+            </p>
+          ) : null}
+          {membership?.role === "OWNER" ? (
+            <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">
+              {t("ownerWithMembersNote")}{" "}
+              <Link
+                className="font-semibold underline underline-offset-2 transition hover:text-[var(--text-strong)]"
+                href="/app/household"
+              >
+                {t("goToHouseholdSettings")}
+              </Link>
+            </p>
+          ) : null}
+          <form action={deleteAccountAction} className="mt-4 grid gap-4">
+            <label className="flex items-start gap-3 text-sm leading-6 text-[var(--text-muted)]">
+              <input
+                className="mt-1 h-4 w-4 rounded border-[var(--input-border)]"
+                name="confirm"
+                type="checkbox"
+                value="yes"
+              />
+              <span>{t("confirmCheckbox")}</span>
+            </label>
+            <div>
+              <button
+                className="inline-flex h-10 items-center justify-center rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-4 text-sm font-semibold text-[var(--accent-rose-text)] transition hover:opacity-90"
+                type="submit"
+              >
+                {t("deleteButton")}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
   );
 }

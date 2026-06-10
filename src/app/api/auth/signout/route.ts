@@ -1,24 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { resolveAuthOrigin } from "@/lib/origin";
+export const dynamic = "force-dynamic";
+
+import { invalidateSession, readSessionToken } from "@/lib/auth/sessions";
+import { resolveAuthOriginSafely } from "@/lib/auth/route-utils";
 import { validatePublicRouteRequest } from "@/lib/public-request-guard";
-import { createSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const token = await readSessionToken(request);
   const requestGuard = validatePublicRouteRequest(request, "signout", {
-    identifiers: user ? [user.id] : [],
+    identifiers: token ? [token] : [],
   });
 
   if (!requestGuard.ok) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  await supabase.auth.signOut();
-
-  const publicOrigin = resolveAuthOrigin(request);
-  return NextResponse.redirect(new URL("/login", publicOrigin), { status: 303 });
+  const publicOrigin = resolveAuthOriginSafely(request);
+  const response = NextResponse.redirect(new URL("/login", publicOrigin), { status: 303 });
+  await invalidateSession(token, response);
+  return response;
 }

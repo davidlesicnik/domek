@@ -1,315 +1,110 @@
 import createIntlMiddleware from "next-intl/middleware";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { hasAccess } from "@/lib/billing";
-import { prisma } from "@/lib/db";
-import { getSupabaseRuntimeConfig } from "@/lib/env";
-import {
-  localePrefixPattern,
-  routing,
-  stripLocalePrefix,
-} from "@/i18n/routing";
-import { ensureTrialStartedAt, upsertSupabaseUser } from "@/lib/users";
-
-type CookieUpdate = Readonly<{
-  name: string;
-  value: string;
-  options: CookieOptions;
-}>;
+import { routing, localePrefixPattern, stripLocalePrefix } from "@/i18n/routing";
+import { getCurrentAppSession } from "@/lib/authz";
+import { hasHouseholdMembership } from "@/lib/users";
 
 const PUBLIC_PATHS = [
-  "/",
   "/account-deletion",
-  "/blog",
-  "/contact",
-  "/cookies",
+  "/api/auth/forgot-password",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/reset-password",
+  "/forgot-password",
   "/login",
-  "/pricing",
-  "/privacy",
-  "/refund-policy",
+  "/manifest.webmanifest",
+  "/register",
+  "/reset-password",
+  "/robots.txt",
   "/sitemap.xml",
   "/sw.js",
-  "/manifest.webmanifest",
-  "/terms",
   "/api/account",
-  "/api/invite",
-  "/api/notify/send",
   "/api/chores",
   "/api/dashboard",
   "/api/calendar",
   "/api/expenses",
   "/api/household",
+  "/api/invite",
   "/api/notes",
+  "/api/notify/send",
   "/api/shopping",
   "/api/todos",
-  "/api/paddle/webhook",
-  "/auth/callback",
-  "/auth/email",
-  "/auth/start",
   "/api/auth/signout",
 ];
 
 const NON_LOCALIZED_PATHS = [
   "/blog",
+  "/manifest.webmanifest",
+  "/robots.txt",
   "/sitemap.xml",
   "/sw.js",
-  "/manifest.webmanifest",
 ];
 
-function isPublicPath(pathname: string): boolean {
+function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
 }
 
-function isNonLocalizedPath(pathname: string): boolean {
+function isNonLocalizedPath(pathname: string) {
   return NON_LOCALIZED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
 }
 
-function isOnboardingPath(pathname: string): boolean {
+function isAuthPagePath(pathname: string) {
   return (
-    pathname === "/onboarding/household" ||
-    pathname.startsWith("/onboarding/household/")
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password"
   );
 }
 
-function isPaymentPath(pathname: string): boolean {
-  return (
-    pathname === "/onboarding/payment" ||
-    pathname.startsWith("/onboarding/payment/")
-  );
-}
-
-function isTrialEndedPath(pathname: string): boolean {
-  return pathname === "/trial-ended" || pathname.startsWith("/trial-ended/");
-}
-
-function isInvitePath(pathname: string): boolean {
+function isInvitePath(pathname: string) {
   return pathname === "/invite" || pathname.startsWith("/invite/");
 }
 
-function isAuthFlowPath(pathname: string): boolean {
-  return (
-    pathname === "/auth/callback" ||
-    pathname.startsWith("/auth/callback/") ||
-    pathname === "/auth/email" ||
-    pathname.startsWith("/auth/email/") ||
-    pathname === "/api/auth/signout" ||
-    pathname === "/auth/start" ||
-    pathname.startsWith("/auth/start/")
-  );
+function isOnboardingPath(pathname: string) {
+  return pathname === "/onboarding/household" || pathname.startsWith("/onboarding/household/");
 }
 
-function redirectWithCookieUpdates(
-  request: NextRequest,
-  pathname: string,
-  cookieUpdates: CookieUpdate[],
-  headerUpdates: Map<string, string>,
-) {
-  const response = NextResponse.redirect(new URL(pathname, request.url));
-
-  cookieUpdates.forEach(({ name, options, value }) =>
-    response.cookies.set(name, value, options),
-  );
-  headerUpdates.forEach((value, key) => response.headers.set(key, value));
-
-  return response;
+function redirectWithNext(request: NextRequest, currentPath: string) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("next", `${currentPath}${request.nextUrl.search}`);
+  return NextResponse.redirect(loginUrl);
 }
 
 async function authProxy(request: NextRequest, pathnameOverride?: string) {
-  let response = NextResponse.next({ request });
-  const cookieUpdates: CookieUpdate[] = [];
-  const headerUpdates = new Map<string, string>();
-  const runtime = getSupabaseRuntimeConfig();
-
-  const supabase = createServerClient(
-    runtime.supabaseUrl,
-    runtime.supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet, headers) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          cookieUpdates.splice(0, cookieUpdates.length, ...cookiesToSet);
-          Object.entries(headers).forEach(([key, value]) =>
-            headerUpdates.set(key, value),
-          );
-
-          response = NextResponse.next({ request });
-          cookieUpdates.forEach(({ name, options, value }) =>
-            response.cookies.set(name, value, options),
-          );
-          headerUpdates.forEach((value, key) =>
-            response.headers.set(key, value),
-          );
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const pathname = pathnameOverride ?? request.nextUrl.pathname;
+  const session = await getCurrentAppSession(request);
 
-  if (!user) {
-    if (isPublicPath(pathname)) {
-      return response;
+  if (!session) {
+    if (isPublicPath(pathname) || isInvitePath(pathname)) {
+      return NextResponse.next();
     }
 
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-    return redirectWithCookieUpdates(
-      request,
-      `${loginUrl.pathname}${loginUrl.search}`,
-      cookieUpdates,
-      headerUpdates,
+    return redirectWithNext(request, pathname);
+  }
+
+  const hasMembership = await hasHouseholdMembership(session.user.id);
+
+  if (isAuthPagePath(pathname)) {
+    return NextResponse.redirect(
+      new URL(hasMembership ? "/app" : "/onboarding/household", request.url),
     );
   }
 
-  const { deletedAt, ...upsertedUser } = await upsertSupabaseUser(user);
-
-  if (deletedAt) {
-    if (isPublicPath(pathname)) return response;
-    return redirectWithCookieUpdates(
-      request,
-      "/login",
-      cookieUpdates,
-      headerUpdates,
-    );
+  if (!hasMembership && !isPublicPath(pathname) && !isInvitePath(pathname) && !isOnboardingPath(pathname)) {
+    return NextResponse.redirect(new URL("/onboarding/household", request.url));
   }
 
-  const appUser = await ensureTrialStartedAt(upsertedUser);
-
-  const membership = await prisma.householdMember.findFirst({
-    select: {
-      id: true,
-      householdId: true,
-      household: {
-        select: {
-          billingSubscription: {
-            select: {
-              status: true,
-            },
-          },
-        },
-      },
-    },
-    where: { accountId: appUser.id, household: { deletedAt: null } },
-  });
-
-  if (membership) {
-    const hasAccessToApp = hasAccess({
-      billingSubscription: membership.household.billingSubscription,
-      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
-      trialStartedAt: appUser.trialStartedAt,
-    });
-    const hasExpiredTrial = Boolean(appUser.trialStartedAt) && !hasAccessToApp;
-
-    if (
-      !hasAccessToApp &&
-      !isPublicPath(pathname) &&
-      !isAuthFlowPath(pathname)
-    ) {
-      if (hasExpiredTrial && !isTrialEndedPath(pathname)) {
-        return redirectWithCookieUpdates(
-          request,
-          "/trial-ended",
-          cookieUpdates,
-          headerUpdates,
-        );
-      }
-
-      if (!hasExpiredTrial && !isOnboardingPath(pathname)) {
-        return redirectWithCookieUpdates(
-          request,
-          "/onboarding/household",
-          cookieUpdates,
-          headerUpdates,
-        );
-      }
-    }
-
-    if (
-      hasAccessToApp &&
-      (pathname === "/login" ||
-        isOnboardingPath(pathname) ||
-        isPaymentPath(pathname))
-    ) {
-      return redirectWithCookieUpdates(
-        request,
-        "/app",
-        cookieUpdates,
-        headerUpdates,
-      );
-    }
-
-    return response;
+  if (hasMembership && isOnboardingPath(pathname)) {
+    return NextResponse.redirect(new URL("/app", request.url));
   }
 
-  if (
-    !isPublicPath(pathname) &&
-    !isInvitePath(pathname) &&
-    !isAuthFlowPath(pathname)
-  ) {
-    const billingSubscription = await prisma.billingSubscription.findUnique({
-      select: { status: true },
-      where: { userId: appUser.id },
-    });
-    const hasPreHouseholdAccess = hasAccess({
-      billingSubscription,
-      developmentAccessGrantedAt: appUser.developmentAccessGrantedAt,
-      trialStartedAt: appUser.trialStartedAt,
-    });
-    const hasExpiredTrial =
-      Boolean(appUser.trialStartedAt) && !hasPreHouseholdAccess;
-
-    if (hasPreHouseholdAccess) {
-      if (!isOnboardingPath(pathname)) {
-        return redirectWithCookieUpdates(
-          request,
-          "/onboarding/household",
-          cookieUpdates,
-          headerUpdates,
-        );
-      }
-    } else if (hasExpiredTrial) {
-      if (!isTrialEndedPath(pathname)) {
-        return redirectWithCookieUpdates(
-          request,
-          "/trial-ended",
-          cookieUpdates,
-          headerUpdates,
-        );
-      }
-    } else if (!isOnboardingPath(pathname)) {
-      return redirectWithCookieUpdates(
-        request,
-        "/onboarding/household",
-        cookieUpdates,
-        headerUpdates,
-      );
-    }
-  }
-
-  if (isPaymentPath(pathname) && appUser.developmentAccessGrantedAt) {
-    return redirectWithCookieUpdates(
-      request,
-      "/onboarding/household",
-      cookieUpdates,
-      headerUpdates,
-    );
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -327,13 +122,10 @@ function redirectLegacyEnglishLocale(request: NextRequest) {
 }
 
 function prefixLocale(path: string, locale: string): string {
-  if (
-    !path.startsWith("/") ||
-    path.startsWith(`/${locale}/`) ||
-    path === `/${locale}`
-  ) {
+  if (!path.startsWith("/") || path === `/${locale}` || path.startsWith(`/${locale}/`)) {
     return path;
   }
+
   return `/${locale}${path}`;
 }
 
@@ -341,9 +133,10 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const legacyEnglishRedirect = redirectLegacyEnglishLocale(request);
-  if (legacyEnglishRedirect) return legacyEnglishRedirect;
+  if (legacyEnglishRedirect) {
+    return legacyEnglishRedirect;
+  }
 
-  // Skip intl for standalone public routes, API routes, auth route handlers, and Next.js internals
   if (
     isNonLocalizedPath(pathname) ||
     pathname.startsWith("/api/") ||
@@ -354,44 +147,22 @@ export async function proxy(request: NextRequest) {
   }
 
   const pathnameWithoutLocale = stripLocalePrefix(pathname);
-
-  // Detect the current locale from the URL (for redirect prefixing)
   const localeMatch = pathname.match(localePrefixPattern);
   const currentLocale = localeMatch ? localeMatch[1] : routing.defaultLocale;
-
-  // Run auth/billing checks against the locale-stripped path
   const proxyResponse = await authProxy(request, pathnameWithoutLocale);
 
-  // If proxy issued a redirect, re-prefix the target with the locale
   if (proxyResponse.status >= 300 && proxyResponse.status < 400) {
     const location = proxyResponse.headers.get("location");
+
     if (location) {
       const locationUrl = new URL(location, request.url);
       const localeStrippedPath = stripLocalePrefix(locationUrl.pathname);
-      const prefixedPath = prefixLocale(localeStrippedPath, currentLocale);
-      locationUrl.pathname = prefixedPath;
-
-      const redirectResponse = NextResponse.redirect(locationUrl.toString(), {
-        status: proxyResponse.status,
-      });
-      proxyResponse.cookies.getAll().forEach((cookie) => {
-        redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-      });
-      proxyResponse.headers.forEach((value, key) => {
-        if (key !== "location" && key !== "set-cookie") {
-          redirectResponse.headers.set(key, value);
-        }
-      });
-      return redirectResponse;
+      locationUrl.pathname = prefixLocale(localeStrippedPath, currentLocale);
+      return NextResponse.redirect(locationUrl.toString(), { status: proxyResponse.status });
     }
   }
 
-  // Path permitted by proxy — run intl middleware to handle locale rewriting
-  const intlResponse = intlMiddleware(request);
-  proxyResponse.cookies.getAll().forEach((cookie) => {
-    intlResponse.cookies.set(cookie.name, cookie.value, cookie);
-  });
-  return intlResponse;
+  return intlMiddleware(request);
 }
 
 export const config = {

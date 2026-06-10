@@ -22,6 +22,7 @@ const memberColorSchema = z
 
 export type HouseholdActionState = Readonly<{
   error: string | null;
+  inviteUrl?: string | null;
   success: boolean;
 }>;
 
@@ -65,10 +66,10 @@ export async function sendHouseholdMemberInviteAction(
     select: { name: true },
   });
 
-  if (!household || !getOptionalEmailConfig()) {
+  if (!household) {
     return {
       success: false,
-      error: t("errorInviteSend"),
+      error: t("errorHouseholdNotFound"),
     };
   }
 
@@ -111,25 +112,32 @@ export async function sendHouseholdMemberInviteAction(
 
   const { appUrl } = getAppRuntimeConfig();
   const origin = appUrl ?? "http://localhost:3000";
+  const inviteUrl = `${origin}/${locale}/invite/${invite.token}?openApp=1`;
+
+  if (!getOptionalEmailConfig()) {
+    refreshHouseholdViews();
+    return { success: true, error: null, inviteUrl };
+  }
 
   try {
     await sendInviteEmail({
       toEmail: invite.email,
       inviterName: session.user.name,
       householdName: household.name,
-      inviteUrl: `${origin}/${locale}/invite/${invite.token}?openApp=1`,
+      inviteUrl,
       locale,
     });
   } catch (error) {
     logger.error("[sendHouseholdMemberInviteAction] email failed", { error });
     return {
-      success: false,
-      error: t("errorInviteSend"),
+      success: true,
+      error: null,
+      inviteUrl,
     };
   }
 
   refreshHouseholdViews();
-  return { success: true, error: null };
+  return { success: true, error: null, inviteUrl: null };
 }
 
 export async function createPassiveHouseholdMemberAction(

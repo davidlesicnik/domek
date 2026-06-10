@@ -159,7 +159,7 @@ function InviteSignInPage({
         <InviteAppOpenBridge locale={locale} token={token} />
       ) : null}
       <div className="mt-6">
-        <SignInOptions locale={locale} nextPath={`/invite/${token}`} />
+        <SignInOptions nextPath={`/invite/${token}`} />
       </div>
     </PageShell>
   );

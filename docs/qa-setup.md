@@ -1,42 +1,28 @@
 # QA E2E Setup
 
-This project uses Playwright `globalSetup` to authenticate a QA test account before e2e runs.
+Playwright now authenticates against Domek's local email/password flow.
 
-## 1. Create the QA account in Supabase Auth
+## Required environment
 
-1. Open Supabase Dashboard -> Authentication -> Users.
-2. Create a user with the email you want to use for e2e tests.
-3. Confirm the user so magic-link login can proceed.
+Set these values before running e2e:
 
-## 2. Grant development access in the app database
-
-The QA account must have `developmentAccessGrantedAt` set, otherwise it can be redirected by onboarding/payment guards.
-
-Example SQL in Supabase SQL editor:
-
-```sql
-update "User"
-set "developmentAccessGrantedAt" = now()
-where email = 'qa@example.com';
+```bash
+QA_TEST_EMAIL="qa@example.com"
+QA_TEST_PASSWORD="replace-with-a-test-password"
 ```
 
-## 3. Configure environment variables
+## What global setup does
 
-Set these values in your local environment:
+On each run, `playwright/global-setup.ts` will:
 
-- `SUPABASE_SERVICE_ROLE_KEY`: required so Playwright global setup can call `supabase.auth.admin.generateLink`.
-- `QA_TEST_EMAIL`: the QA account email from step 1.
-- `SUPABASE_URL` and `SUPABASE_ANON_KEY`: existing app Supabase configuration.
+1. Create the QA user locally if it does not exist.
+2. Upsert a local password credential for that user.
+3. Ensure the user belongs to a household so dashboard routes are reachable.
+4. Sign in through `/en-US/login`.
+5. Save authenticated state to `playwright/.auth/qa-session.json`.
 
-## 4. Run e2e
+## Run e2e
 
 ```bash
 npm run test:e2e
 ```
-
-On each run, global setup will:
-
-1. Generate a Supabase magic link for `QA_TEST_EMAIL`.
-2. Open it in headless Chromium.
-3. Wait for session cookie creation.
-4. Save authenticated state to `playwright/.auth/qa-session.json`.

@@ -7,7 +7,7 @@ function isSafeRelativePath(value: string | null | undefined): value is string {
 type SanitizeNextOptions = {
   blockedPrefixes: readonly string[];
   fallback: string;
-  rejectOAuthCodeParam?: boolean;
+  rejectCodeQueryParam?: boolean;
 };
 
 function sanitizeNextPath(value: string | null | undefined, options: SanitizeNextOptions): string {
@@ -21,7 +21,7 @@ function sanitizeNextPath(value: string | null | undefined, options: SanitizeNex
     return options.fallback;
   }
 
-  if (options.rejectOAuthCodeParam && value.includes("code=")) {
+  if (options.rejectCodeQueryParam && value.includes("code=")) {
     return options.fallback;
   }
 
@@ -30,16 +30,16 @@ function sanitizeNextPath(value: string | null | undefined, options: SanitizeNex
 
 export function sanitizeAuthStartNextPath(value: string | null | undefined): string {
   return sanitizeNextPath(value, {
-    blockedPrefixes: ["/login", "/auth/callback", "/auth/start"],
+    blockedPrefixes: ["/login", "/register", "/forgot-password", "/reset-password"],
     fallback: "/",
-    rejectOAuthCodeParam: true,
+    rejectCodeQueryParam: true,
   });
 }
 
 export function sanitizeAuthCallbackNextPath(value: string | null | undefined): string {
   return sanitizeNextPath(value, {
-    blockedPrefixes: ["/login", "/auth/callback", "/auth/start"],
+    blockedPrefixes: ["/login", "/register", "/forgot-password", "/reset-password"],
     fallback: "/app",
-    rejectOAuthCodeParam: true,
+    rejectCodeQueryParam: true,
   });
 }

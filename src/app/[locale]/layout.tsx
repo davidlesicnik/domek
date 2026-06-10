@@ -4,12 +4,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 
-import { MetaPixel } from "@/components/analytics/meta-pixel";
-import { UmamiAnalytics } from "@/components/analytics/umami-analytics";
 import { AppThemeProvider } from "@/components/theme-provider";
 import { routing } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
-import { getOptionalMetaPixelId } from "@/lib/env";
 import { themePreferenceToForcedTheme } from "@/lib/theme";
 
 import "../globals.css";
@@ -53,7 +50,6 @@ export default async function LocaleLayout({
 
   const [messages, session] = await Promise.all([getMessages(), getCurrentAppSession()]);
   const forcedTheme = themePreferenceToForcedTheme(session?.user.themePreference);
-  const metaPixelId = getOptionalMetaPixelId();
 
   return (
     <html
@@ -65,8 +61,6 @@ export default async function LocaleLayout({
         <AppThemeProvider forcedTheme={forcedTheme}>
           <NextIntlClientProvider messages={messages}>
             {children}
-            <UmamiAnalytics />
-            <MetaPixel pixelId={metaPixelId} />
           </NextIntlClientProvider>
         </AppThemeProvider>
       </body>

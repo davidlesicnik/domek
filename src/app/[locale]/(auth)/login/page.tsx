@@ -1,37 +1,36 @@
 import { useTranslations } from "next-intl";
 import { getLocale } from "next-intl/server";
 
-import { SignInOptions } from "@/components/auth/sign-in-options";
+import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/server";
-import { stripLocalePrefix } from "@/i18n/routing";
 import { getCurrentAppSession } from "@/lib/authz";
 import { hasHouseholdMembership } from "@/lib/users";
+import { AuthNotice, AuthPageShell, authTextLinkClassName } from "../auth-page-shell";
+import { safeNextPath, stringParam } from "../auth-page-helpers";
+import { LoginForm } from "./login-form";
 
 type LoginPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
 
-function stringParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
-function safeNextPath(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
+function statusMessage(
+  status: string | null,
+  t: ReturnType<typeof useTranslations>,
+): LoginStatusMessage {
+  switch (status) {
+    case "registered":
+      return { kind: "success", text: t("registered") };
+    case "reset_success":
+      return { kind: "success", text: t("resetSuccess") };
+    case "password_not_set":
+      return { kind: "error", text: t("passwordNotSet") };
+    case "setup_error":
+      return { kind: "error", text: t("setupError") };
+    case "auth_error":
+      return { kind: "error", text: t("authError") };
+    default:
+      return null;
   }
-
-  // Block both bare and locale-prefixed login/callback paths
-  const stripped = stripLocalePrefix(value);
-  if (stripped.startsWith("/login") || stripped.startsWith("/auth/callback")) {
-    return "/app";
-  }
-
-  if (value.includes("code=")) {
-    return "/app";
-  }
-
-  return value;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -47,23 +46,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     return await redirect("/onboarding/household");
   }
 
-  const hasAuthError = stringParam(params.error) === "auth";
-  const hasMagicLinkSent = stringParam(params.email) === "sent";
+  const status = stringParam(params.status);
 
   return (
-    <main className="min-h-dvh border-t-4 border-[var(--surface-strong)] bg-[var(--page-background)] px-4 py-8 text-[var(--text-primary)] sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-[980px] items-center">
-        <section className="grid w-full gap-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-float)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8">
-          <LoginLeft />
-          <LoginRight
-            hasAuthError={hasAuthError}
-            hasMagicLinkSent={hasMagicLinkSent}
-            locale={locale}
-            nextPath={nextPath}
-          />
-        </section>
-      </div>
-    </main>
+    <AuthPageShell
+      className="grid w-full gap-8 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-float)] sm:grid-cols-[1.1fr_0.9fr] sm:p-8"
+      maxWidthClassName="max-w-[980px]"
+    >
+      <LoginLeft />
+      <LoginRight locale={locale} nextPath={nextPath} status={status} />
+    </AuthPageShell>
   );
 }
 
@@ -87,17 +79,17 @@ function LoginLeft() {
 }
 
 function LoginRight({
-  hasAuthError,
-  hasMagicLinkSent,
   locale,
   nextPath,
+  status,
 }: {
-  hasAuthError: boolean;
-  hasMagicLinkSent: boolean;
   locale: string;
   nextPath: string;
+  status: string | null;
 }) {
   const t = useTranslations("login");
+  const message = statusMessage(status, t);
+
   return (
     <div className="self-center">
       <h2 className="font-serif text-2xl font-semibold tracking-normal text-[var(--text-strong)]">
@@ -106,19 +98,22 @@ function LoginRight({
       <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
         {t("subtitle")}
       </p>
-      {hasAuthError ? (
-        <p className="mt-4 rounded-md border border-[var(--accent-rose-border)] bg-[var(--accent-rose-soft)] px-3 py-2 text-sm font-medium text-[var(--accent-rose-text)]">
-          {t("authError")}
-        </p>
-      ) : null}
-      {hasMagicLinkSent ? (
-        <p className="mt-4 rounded-md border border-[var(--accent-sage-border)] bg-[var(--accent-sage-surface)] px-3 py-2 text-sm font-medium text-[var(--accent-sage-text)]">
-          {t("magicLinkSent")}
-        </p>
-      ) : null}
-      <div className="mt-5">
-        <SignInOptions locale={locale} nextPath={nextPath} />
+      {message ? <AuthNotice kind={message.kind} text={message.text} /> : null}
+      <LoginForm locale={locale} nextPath={nextPath} />
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--text-muted)]">
+        <Link className={authTextLinkClassName} href={{ pathname: "/register", query: { next: nextPath } }}>
+          {t("createAccount")}
+        </Link>
+        <Link className={authTextLinkClassName} href={{ pathname: "/forgot-password", query: { next: nextPath } }}>
+          {t("forgotPassword")}
+        </Link>
       </div>
     </div>
   );
 }
+type LoginStatusMessage =
+  | {
+      kind: "error" | "success";
+      text: string;
+    }
+  | null;

@@ -1,51 +1,81 @@
+import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 
 import { chromium } from "@playwright/test";
 
-import { createSupabaseAdminClient } from "../src/lib/supabase";
+import { hashPassword } from "../src/lib/auth/password";
+import { prisma } from "../src/lib/db";
 
 const QA_STORAGE_STATE_PATH = "playwright/.auth/qa-session.json";
 
-function getRequiredQaTestEmail() {
-  const qaTestEmail = process.env.QA_TEST_EMAIL;
-  if (!qaTestEmail) {
-    throw new Error("QA_TEST_EMAIL is not configured");
+function getRequiredEnv(name: "QA_TEST_EMAIL" | "QA_TEST_PASSWORD") {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is not configured`);
   }
-  return qaTestEmail;
+
+  return value;
 }
 
-async function waitForSupabaseSessionCookie(getCookies: () => Promise<string[]>) {
-  const timeoutMs = 15_000;
-  const start = Date.now();
+async function ensureQaUser() {
+  const email = getRequiredEnv("QA_TEST_EMAIL").toLowerCase();
+  const password = getRequiredEnv("QA_TEST_PASSWORD");
+  const existingUser = await prisma.user.findUnique({
+    select: { id: true, name: true },
+    where: { email },
+  });
+  const userId = existingUser?.id ?? randomUUID();
 
-  while (Date.now() - start < timeoutMs) {
-    const cookieNames = await getCookies();
-    if (cookieNames.some((name) => name.startsWith("sb-") && name.endsWith("-auth-token"))) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
+  if (!existingUser) {
+    await prisma.user.create({
+      data: {
+        email,
+        id: userId,
+        name: "QA Test User",
+      },
+    });
   }
 
-  throw new Error("Timed out waiting for Supabase auth session cookie");
+  await prisma.passwordCredential.upsert({
+    create: {
+      passwordHash: await hashPassword(password),
+      passwordSetAt: new Date(),
+      userId,
+    },
+    update: {
+      passwordHash: await hashPassword(password),
+      passwordSetAt: new Date(),
+    },
+    where: { userId },
+  });
+
+  const membership = await prisma.householdMember.findFirst({
+    select: { id: true },
+    where: { accountId: userId, household: { deletedAt: null } },
+  });
+
+  if (!membership) {
+    const household = await prisma.household.create({
+      data: { name: "QA Household" },
+      select: { id: true },
+    });
+
+    await prisma.householdMember.create({
+      data: {
+        accountId: userId,
+        createdByUserId: userId,
+        householdId: household.id,
+        name: "QA Test User",
+        role: "OWNER",
+      },
+    });
+  }
+
+  return { email, password };
 }
 
 export default async function globalSetup() {
-  const qaTestEmail = getRequiredQaTestEmail();
-  const supabaseAdmin = createSupabaseAdminClient();
-
-  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-    type: "magiclink",
-    email: qaTestEmail,
-  });
-
-  if (error) {
-    throw new Error(`Failed generating QA magic link: ${error.message}`);
-  }
-
-  const magicLink = data.properties?.action_link;
-  if (!magicLink) {
-    throw new Error("Supabase did not return an action_link for QA magic link generation");
-  }
+  const { email, password } = await ensureQaUser();
 
   await mkdir("playwright/.auth", { recursive: true });
 
@@ -53,11 +83,11 @@ export default async function globalSetup() {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto(magicLink, { waitUntil: "networkidle" });
-  await waitForSupabaseSessionCookie(async () => {
-    const cookies = await context.cookies();
-    return cookies.map((cookie) => cookie.name);
-  });
+  await page.goto("http://localhost:3000/en-US/login", { waitUntil: "networkidle" });
+  await page.fill('input[name="email"]', email);
+  await page.fill('input[name="password"]', password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/en-US\/app/, { timeout: 15_000 });
   await context.storageState({ path: QA_STORAGE_STATE_PATH });
 
   await context.close();
