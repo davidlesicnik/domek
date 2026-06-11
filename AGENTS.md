@@ -59,6 +59,12 @@ docker compose config
 docker compose build
 ```
 
+## Local Verification Hygiene
+
+- If you start a local dev server for verification (for example `npm run dev`), treat it as temporary and stop it when you are done.
+- Before wrapping up, verify that any port you used for ad hoc local servers is no longer occupied by a stray app process (for example with `lsof -nP -iTCP:3000 -sTCP:LISTEN`).
+- Do not leave background Next.js dev servers running after checks; they can mask the Docker app and cause confusing localhost behavior.
+
 ## Production Migrations
 
 - Run production migrations before app startup so schema changes are applied before the container begins serving traffic.
@@ -103,16 +109,6 @@ Rules that apply to every new feature or page:
 - Translation files live at `messages/en.json` and `messages/sl.json`. Namespace keys by feature area (e.g. `nav`, `footer`, `onboarding`).
 - Legal prose pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only — no Slovenian translation required for them.
 
-## Blog
-
-- The SEO blog is intentionally English-only and lives outside the locale-prefixed tree at `/blog`.
-- Blog content is repo-managed MDX in `content/blog/*.mdx`; do not move it into the database or `messages/*.json`.
-- The content loader and frontmatter schema live in `src/lib/blog.tsx`. Keep frontmatter typed and validated server-side.
-- Use optional per-article CTA fields (`ctaTitle`, `ctaBody`, `ctaLabel`, `ctaHref`) when the article needs a contextual bottom CTA. Keep article CTAs to one block at the end unless the user explicitly asks for a different pattern.
-- `src/app/sitemap.ts` and `src/app/robots.ts` are part of the blog/SEO surface. If you add new public SEO pages, include them in sitemap/robots considerations.
-- Any new public blog/SEO route must also be added to `PUBLIC_PATHS` in `src/proxy.ts`, and if it lives outside `src/app/[locale]/`, also to `NON_LOCALIZED_PATHS`.
-- `src/lib/site.ts` defines the canonical origin used by metadata routes. Do not revert it to localhost fallbacks for sitemap or robots output.
-
 ## Web Push Notifications
 
 The app uses VAPID-based Web Push (via `web-push` npm package) for opt-in daily reminders.
@@ -156,31 +152,32 @@ Authorization: Bearer <NOTIFY_SECRET>
 
 ## Git Workflow
 
-Every agent (Coder, CMO, or any other role) MUST follow this workflow for every assigned task:
+Every agent MUST follow this workflow for every assigned task:
 
 ### Starting work
 
-1. **Create a fresh branch** from `main` before writing any code:
+1. **Create a fresh branch** from `develop` before writing any code:
    ```bash
-   git checkout main && git pull
+   git checkout develop && git pull
    git checkout -b feat/<short-description>   # or fix/, chore/, etc.
    ```
-2. Never commit directly to `main` or reuse a stale branch from a previous task.
+2. Never commit directly to `develop` or `main`, and never reuse a stale branch from a previous task.
 3. Branch name should reflect the task — use the issue identifier when possible (e.g. `feat/DOMA-42-calendar-reminders`).
 
 ### Finishing work
 
-1. Push commits to the feature branch and open a PR targeting `main`.
+1. Push commits to the feature branch and open a PR targeting `develop`.
 2. Hand the PR to QA for review (set issue status to `in_review`, link the PR).
-3. Do **not** merge or push to `main` yourself.
+3. Do **not** merge or push to `develop` or `main` yourself.
 
 ### QA sign-off
 
 1. QA reviews the branch and verifies the work.
 2. When approved, QA commits any final fixups and pushes to the feature branch.
 3. Commit message must follow Conventional Commits: `type(scope): subject` — e.g. `feat(chores): add recurrence support`.
-4. QA opens a GitHub PR targeting `main` and marks the issue `done`.
-5. Do **not** merge the PR — leave that to the board/maintainer.
+4. QA opens or advances the feature PR targeting `develop` and marks the issue `done`.
+5. Once the planned feature set is in `develop`, open a separate manual PR from `develop` to `main`.
+6. Do **not** merge the PR — leave that to the board/maintainer.
 
 ## Security Notes
 

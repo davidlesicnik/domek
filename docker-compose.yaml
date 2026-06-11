@@ -1,5 +1,7 @@
 services:
-  web:
+  app:
+    image: ${DOMEK_IMAGE:-ghcr.io/davidlesicnik/domek:latest}
+    pull_policy: always
     build:
       context: .
     restart: unless-stopped
@@ -45,7 +47,7 @@ services:
     image: curlimages/curl:8.14.1
     restart: unless-stopped
     depends_on:
-      web:
+      app:
         condition: service_started
     environment:
       NOTIFY_INTERVAL_SECONDS: ${NOTIFY_INTERVAL_SECONDS:-86400}
@@ -56,7 +58,7 @@ services:
       - |
         sleep 15
         while true; do
-          curl -fsS -X POST http://web:3000/api/notify/send -H "Authorization: Bearer $$NOTIFY_SECRET" || true
+          curl -fsS -X POST http://app:3000/api/notify/send -H "Authorization: Bearer $$NOTIFY_SECRET" || true
           sleep "$$NOTIFY_INTERVAL_SECONDS"
         done
 

@@ -6,7 +6,7 @@
 
 Domek is a self-hosted household planner for shared calendars, chores, shopping lists, notes, and expenses.
 
-Use it as a private home board for your household. You run it yourself with Docker Compose and PostgreSQL.
+Use it as a private home board for your household. You run it yourself with Docker Compose and PostgreSQL, using the published GHCR image for the app container.
 
 ## Preview
 
@@ -30,11 +30,23 @@ The easiest way to run Domek is with Docker Compose.
 - Git
 - A domain or local URL where you want to open Domek
 
-### 1. Get the code
+### 1. Get the deployment files
 
 ```bash
 git clone https://github.com/davidlesicnik/domek.git
 cd domek
+```
+
+The default Compose setup pulls:
+
+```text
+ghcr.io/davidlesicnik/domek:latest
+```
+
+If you want to pin a specific release, set this in `.env`:
+
+```bash
+DOMEK_IMAGE="ghcr.io/davidlesicnik/domek:v0.1.0"
 ```
 
 ### 2. Copy the environment file
@@ -75,12 +87,12 @@ CONTAINER_DATABASE_URL="postgresql://your-user:your-password@postgres:5432/domek
 ### 4. Start Domek
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 This starts:
 
-- `web` for the app
+- `app` for the Domek application
 - `postgres` for the database
 - `scheduler` for daily reminder delivery
 
@@ -89,17 +101,17 @@ This starts:
 On first install, create the database tables:
 
 ```bash
-docker compose exec web npx prisma migrate deploy
+docker compose exec app npx prisma migrate deploy
 ```
 
 ### 6. Check that everything is running
 
 ```bash
 docker compose ps
-docker compose logs -f web
+docker compose logs -f app
 ```
 
-You should see the `web` service running and the app starting without errors.
+You should see the `app` service running and the app starting without errors.
 
 ### 7. Open the app
 
@@ -149,25 +161,29 @@ docker compose up -d
 
 ## Updating Domek
 
-When you pull a newer version:
+When you want the newest published app image:
 
 ```bash
 git pull
-docker compose up -d --build
+docker compose pull app
+docker compose up -d
 ```
+
+If you pinned `DOMEK_IMAGE` to a version tag, update that value in `.env` first, then run the same commands above.
 
 If the release includes database changes, run migrations:
 
 ```bash
-docker compose exec web npx prisma migrate deploy
+docker compose exec app npx prisma migrate deploy
 ```
 
 ## Releasing
 
 This section is for maintainers publishing a new Domek image to GitHub Container Registry.
 
-1. Merge the release changes to `main`.
-2. Create and push a version tag in `vX.Y.Z` format:
+1. Merge feature branches into `develop`.
+2. When the release batch is ready, open and merge a manual PR from `develop` into `main`.
+3. Create and push a version tag from `main` in `vX.Y.Z` format:
 
 ```bash
 git checkout main
@@ -176,13 +192,15 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-3. Wait for the `Publish Docker image` workflow to finish on GitHub Actions.
+4. Wait for the `Publish Docker image` workflow to finish on GitHub Actions.
 
 That workflow publishes:
 
 - `ghcr.io/davidlesicnik/domek:vX.Y.Z` when you push a matching tag
 - `ghcr.io/davidlesicnik/domek:latest` from pushes to `main`
 - branch and `sha-*` tags for traceability
+
+Operators deploy those images by setting `DOMEK_IMAGE` in `.env` or by following the default `latest` flow above.
 
 If you also want a GitHub Release entry, create it in the GitHub UI after the tag is pushed.
 
@@ -194,8 +212,6 @@ For a simple setup, make sure you back up:
 
 - your `.env`
 - your PostgreSQL data volume
-
-This repo also includes PostgreSQL backup scripts in `scripts/` for more advanced setups.
 
 ## Optional push notifications
 
@@ -257,7 +273,7 @@ CONTAINER_DATABASE_URL=
 Then restart the stack:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 ### I changed `.env` but nothing happened
@@ -265,7 +281,7 @@ docker compose up -d --build
 Restart the services:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
 ## Developer notes
@@ -309,7 +325,7 @@ POSTGRES_PASSWORD="domek"
 POSTGRES_PORT="5432"
 ```
 
-Optional direct connection for migrations and backups:
+Optional direct connection for migrations:
 
 ```bash
 # DIRECT_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
