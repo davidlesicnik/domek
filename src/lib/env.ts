@@ -21,7 +21,6 @@ const authRuntimeSchema = z.object({
 
 const databaseSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  DIRECT_URL: z.string().min(1).optional(),
 });
 
 const smtpSchema = z.object({
@@ -78,7 +77,6 @@ export function getAuthConfig() {
 export function getDatabaseConfig() {
   return databaseSchema.parse({
     DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: readOptionalEnv("DIRECT_URL") ?? process.env.DATABASE_URL,
   });
 }
 
