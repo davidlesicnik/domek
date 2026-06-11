@@ -59,6 +59,12 @@ docker compose config
 docker compose build
 ```
 
+## Local Verification Hygiene
+
+- If you start a local dev server for verification (for example `npm run dev`), treat it as temporary and stop it when you are done.
+- Before wrapping up, verify that any port you used for ad hoc local servers is no longer occupied by a stray app process (for example with `lsof -nP -iTCP:3000 -sTCP:LISTEN`).
+- Do not leave background Next.js dev servers running after checks; they can mask the Docker app and cause confusing localhost behavior.
+
 ## Production Migrations
 
 - Run production migrations before app startup so schema changes are applied before the container begins serving traffic.
@@ -103,16 +109,6 @@ Rules that apply to every new feature or page:
 - Translation files live at `messages/en.json` and `messages/sl.json`. Namespace keys by feature area (e.g. `nav`, `footer`, `onboarding`).
 - Legal prose pages (`/privacy`, `/terms`, `/refund-policy`, `/cookies`) are English-only — no Slovenian translation required for them.
 
-## Blog
-
-- The SEO blog is intentionally English-only and lives outside the locale-prefixed tree at `/blog`.
-- Blog content is repo-managed MDX in `content/blog/*.mdx`; do not move it into the database or `messages/*.json`.
-- The content loader and frontmatter schema live in `src/lib/blog.tsx`. Keep frontmatter typed and validated server-side.
-- Use optional per-article CTA fields (`ctaTitle`, `ctaBody`, `ctaLabel`, `ctaHref`) when the article needs a contextual bottom CTA. Keep article CTAs to one block at the end unless the user explicitly asks for a different pattern.
-- `src/app/sitemap.ts` and `src/app/robots.ts` are part of the blog/SEO surface. If you add new public SEO pages, include them in sitemap/robots considerations.
-- Any new public blog/SEO route must also be added to `PUBLIC_PATHS` in `src/proxy.ts`, and if it lives outside `src/app/[locale]/`, also to `NON_LOCALIZED_PATHS`.
-- `src/lib/site.ts` defines the canonical origin used by metadata routes. Do not revert it to localhost fallbacks for sitemap or robots output.
-
 ## Web Push Notifications
 
 The app uses VAPID-based Web Push (via `web-push` npm package) for opt-in daily reminders.
@@ -156,7 +152,7 @@ Authorization: Bearer <NOTIFY_SECRET>
 
 ## Git Workflow
 
-Every agent (Coder, CMO, or any other role) MUST follow this workflow for every assigned task:
+Every agent MUST follow this workflow for every assigned task:
 
 ### Starting work
 
