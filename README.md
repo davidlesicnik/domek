@@ -162,6 +162,30 @@ If the release includes database changes, run migrations:
 docker compose exec web npx prisma migrate deploy
 ```
 
+## Releasing
+
+This section is for maintainers publishing a new Domek image to GitHub Container Registry.
+
+1. Merge the release changes to `main`.
+2. Create and push a version tag in `vX.Y.Z` format:
+
+```bash
+git checkout main
+git pull
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+3. Wait for the `Publish Docker image` workflow to finish on GitHub Actions.
+
+That workflow publishes:
+
+- `ghcr.io/davidlesicnik/domek:vX.Y.Z` when you push a matching tag
+- `ghcr.io/davidlesicnik/domek:latest` from pushes to `main`
+- branch and `sha-*` tags for traceability
+
+If you also want a GitHub Release entry, create it in the GitHub UI after the tag is pushed.
+
 ## Backups
 
 Your data lives in PostgreSQL.
