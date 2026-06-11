@@ -2,8 +2,6 @@ services:
   app:
     image: ${DOMEK_IMAGE:-ghcr.io/davidlesicnik/domek:latest}
     pull_policy: always
-    build:
-      context: .
     restart: unless-stopped
     depends_on:
       postgres:
