@@ -80,8 +80,7 @@ If you want to change the PostgreSQL username or password, update all related va
 ```bash
 POSTGRES_USER="your-user"
 POSTGRES_PASSWORD="your-password"
-DATABASE_URL="postgresql://your-user:your-password@localhost:5432/domek?schema=public"
-CONTAINER_DATABASE_URL="postgresql://your-user:your-password@postgres:5432/domek?schema=public"
+DATABASE_URL="postgresql://your-user:your-password@postgres:5432/domek?schema=public"
 ```
 
 ### 4. Start Domek
@@ -267,7 +266,6 @@ Make sure these values still match each other:
 POSTGRES_USER=
 POSTGRES_PASSWORD=
 DATABASE_URL=
-CONTAINER_DATABASE_URL=
 ```
 
 Then restart the stack:
@@ -298,16 +296,30 @@ Everything below is for local development, maintenance, or repo work.
 
 ### Local development
 
+The checked-in `.env.example` is designed for the Docker Compose runtime, where the app reaches PostgreSQL at the internal hostname `postgres`.
+
+For the standard local setup, run the stack with Docker Compose:
+
 ```bash
-npm install
 cp .env.example .env
-npm run db:up
-npm run db:generate
-npm run db:migrate
-npm run dev
+docker compose up -d
+docker compose exec app npx prisma migrate deploy
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+If you want to run `npm run dev` on the host instead, use your own reachable PostgreSQL endpoint and override `DATABASE_URL` accordingly.
+
+Example host-run workflow:
+
+```bash
+npm install
+cp .env.example .env.local-dev
+# edit DATABASE_URL in .env.local-dev to point at your own reachable Postgres instance
+export $(grep -v '^#' .env.local-dev | xargs)
+npx prisma generate
+npm run dev
+```
 
 ### Important environment values
 
@@ -317,29 +329,21 @@ Required core values:
 # Required. Set to the URL you use to open the app.
 APP_URL="http://localhost:3000"
 AUTH_SECRET="replace-with-a-long-random-secret"
-DATABASE_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
-CONTAINER_DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
+DATABASE_URL="postgresql://domek:domek@postgres:5432/domek?schema=public"
 POSTGRES_DB="domek"
 POSTGRES_USER="domek"
 POSTGRES_PASSWORD="domek"
-POSTGRES_PORT="5432"
-```
-
-Optional direct connection for migrations:
-
-```bash
-# DIRECT_URL="postgresql://domek:domek@localhost:5432/domek?schema=public"
 ```
 
 ### Database commands
 
 ```bash
-npm run db:generate
-npm run db:migrate
-npm run db:migrate:deploy
-npm run db:migrate:status
-npm run db:healthcheck
-npm run db:deploy:verify
+docker compose exec app npx prisma generate
+docker compose exec app npx prisma migrate dev
+docker compose exec app npx prisma migrate deploy
+docker compose exec app npx prisma migrate status
+docker compose exec app node scripts/db-healthcheck.mjs
+docker compose exec app node scripts/db-deploy-verify.mjs
 ```
 
 ### E2E / QA

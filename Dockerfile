@@ -16,6 +16,7 @@ RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 RUN groupadd --gid 1001 nodejs \
   && useradd --uid 1001 --gid nodejs --shell /usr/sbin/nologin --create-home nextjs
 COPY package.json package-lock.json ./

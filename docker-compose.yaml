@@ -1,38 +1,26 @@
 services:
   app:
+    container_name: domek-web
     image: ${DOMEK_IMAGE:-ghcr.io/davidlesicnik/domek:latest}
     pull_policy: always
+    env_file:
+      - .env
     restart: unless-stopped
+    networks:
+      - default
+      - proxy
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      DATABASE_URL: ${CONTAINER_DATABASE_URL:-postgresql://domek:domek@postgres:5432/domek?schema=public}
-      APP_URL: ${APP_URL:-}
-      AUTH_SECRET: ${AUTH_SECRET:-change-me}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      NOTIFY_SECRET: ${NOTIFY_SECRET:-}
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_MAILTO: ${VAPID_MAILTO:-}
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
-    ports:
-      - "3000:3000"
 
   postgres:
+    container_name: domek-postgres
     image: postgres:17-alpine
+    env_file:
+      - .env
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-domek}
-      POSTGRES_USER: ${POSTGRES_USER:-domek}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-domek}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - default
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -42,14 +30,16 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   scheduler:
+    container_name: domek-scheduler
     image: curlimages/curl:8.14.1
+    env_file:
+      - .env
     restart: unless-stopped
+    networks:
+      - default
     depends_on:
       app:
         condition: service_started
-    environment:
-      NOTIFY_INTERVAL_SECONDS: ${NOTIFY_INTERVAL_SECONDS:-86400}
-      NOTIFY_SECRET: ${NOTIFY_SECRET:-}
     command:
       - sh
       - -c
@@ -62,3 +52,7 @@ services:
 
 volumes:
   postgres-data:
+
+networks:
+  proxy:
+    external: true
