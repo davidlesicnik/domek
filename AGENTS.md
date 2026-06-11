@@ -156,27 +156,28 @@ Every agent MUST follow this workflow for every assigned task:
 
 ### Starting work
 
-1. **Create a fresh branch** from `main` before writing any code:
+1. **Create a fresh branch** from `develop` before writing any code:
    ```bash
-   git checkout main && git pull
+   git checkout develop && git pull
    git checkout -b feat/<short-description>   # or fix/, chore/, etc.
    ```
-2. Never commit directly to `main` or reuse a stale branch from a previous task.
+2. Never commit directly to `develop` or `main`, and never reuse a stale branch from a previous task.
 3. Branch name should reflect the task — use the issue identifier when possible (e.g. `feat/DOMA-42-calendar-reminders`).
 
 ### Finishing work
 
-1. Push commits to the feature branch and open a PR targeting `main`.
+1. Push commits to the feature branch and open a PR targeting `develop`.
 2. Hand the PR to QA for review (set issue status to `in_review`, link the PR).
-3. Do **not** merge or push to `main` yourself.
+3. Do **not** merge or push to `develop` or `main` yourself.
 
 ### QA sign-off
 
 1. QA reviews the branch and verifies the work.
 2. When approved, QA commits any final fixups and pushes to the feature branch.
 3. Commit message must follow Conventional Commits: `type(scope): subject` — e.g. `feat(chores): add recurrence support`.
-4. QA opens a GitHub PR targeting `main` and marks the issue `done`.
-5. Do **not** merge the PR — leave that to the board/maintainer.
+4. QA opens or advances the feature PR targeting `develop` and marks the issue `done`.
+5. Once the planned feature set is in `develop`, open a separate manual PR from `develop` to `main`.
+6. Do **not** merge the PR — leave that to the board/maintainer.
 
 ## Security Notes
 

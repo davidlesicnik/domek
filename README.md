@@ -181,8 +181,9 @@ docker compose exec app npx prisma migrate deploy
 
 This section is for maintainers publishing a new Domek image to GitHub Container Registry.
 
-1. Merge the release changes to `main`.
-2. Create and push a version tag in `vX.Y.Z` format:
+1. Merge feature branches into `develop`.
+2. When the release batch is ready, open and merge a manual PR from `develop` into `main`.
+3. Create and push a version tag from `main` in `vX.Y.Z` format:
 
 ```bash
 git checkout main
@@ -191,7 +192,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-3. Wait for the `Publish Docker image` workflow to finish on GitHub Actions.
+4. Wait for the `Publish Docker image` workflow to finish on GitHub Actions.
 
 That workflow publishes:
 
